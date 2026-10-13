@@ -47,7 +47,7 @@ Item {
     ShortcutExt{ sequence:"F1"; onActivated: DialogsProvider.helpDialog() }
     ShortcutExt{ sequence:"F10"; onActivated: MainCtx.toggleToolbarMenu() }
     ShortcutExt{ sequence:"F11"; onActivated: MainCtx.toggleInterfaceFullScreen() }
-    ShortcutExt{ sequence:"Ctrl+H"; onActivated: MainCtx.minimalView = !MainCtx.minimalView; }
+    ShortcutExt{ sequence:"Ctrl+\\"; onActivated: MainCtx.minimalView = !MainCtx.minimalView; }
 
     ShortcutExt{ sequences: [StandardKey.ZoomIn, "Ctrl+="]; onActivated: MainCtx.incrementIntfUserScaleFactor(true) }
     ShortcutExt{ sequences: [StandardKey.ZoomOut, "Ctrl+Shift+-"]; onActivated: MainCtx.incrementIntfUserScaleFactor(false) }

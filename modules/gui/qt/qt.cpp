@@ -94,6 +94,7 @@ extern "C" char **environ;
 #include "util/csdmenu_win32.h"
 #else
 # include "maininterface/mainctx.hpp"   /* MainCtx creation */
+# include "style/menustyle.hpp"
 #endif
 #include "style/defaultthemeproviders.hpp"
 #include "dialogs/extensions/extensions_manager.hpp" /* Extensions manager */
@@ -1461,6 +1462,9 @@ static void *Thread( void *obj )
         }
     }
 #undef QTSTYLE_KEY
+
+    /* Figma styled menus */
+    MenuStyle::install();
 
     /* Launch */
     app.exec();

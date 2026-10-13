@@ -283,6 +283,8 @@ libqt_plugin_la_SOURCES = \
 	style/colorcontext.hpp \
 	style/systempalette.cpp \
 	style/systempalette.hpp \
+	style/menustyle.cpp \
+	style/menustyle.hpp \
 	style/vlcicons.cpp 	style/vlcicons.hpp \
 	style/defaultthemeproviders.hpp \
 	style/systempalettethemeprovider.cpp \
@@ -489,6 +491,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	network/standardpathmodel.moc.cpp \
 	style/colorcontext.moc.cpp \
 	style/systempalette.moc.cpp \
+	style/menustyle.moc.cpp \
 	style/vlcicons.moc.cpp \
 	player/delay_estimator.moc.cpp \
 	player/input_models.moc.cpp \
@@ -932,6 +935,49 @@ libqt_plugin_la_RES = \
 	pixmaps/menu/ic_fluent_skip_forward_10.svg \
 	pixmaps/menu/ic_fluent_arrow_shuffle.svg \
 	pixmaps/menu/ic_fluent_stop.svg \
+	pixmaps/menu/figma/file_add_audio_tracks.svg \
+	pixmaps/menu/figma/file_add_subtitle_tracks.svg \
+	pixmaps/menu/figma/file_add_to_playlist.svg \
+	pixmaps/menu/figma/file_add_to_queue.svg \
+	pixmaps/menu/figma/file_convert.svg \
+	pixmaps/menu/figma/file_favorite.svg \
+	pixmaps/menu/figma/file_go_to_source.svg \
+	pixmaps/menu/figma/file_mark_as_watched.svg \
+	pixmaps/menu/figma/file_play.svg \
+	pixmaps/menu/figma/file_properties_metadata.svg \
+	pixmaps/menu/figma/file_show_in_file_explorer.svg \
+	pixmaps/menu/figma/file_stream.svg \
+	pixmaps/menu/figma/folder_add_file.svg \
+	pixmaps/menu/figma/folder_add_folder.svg \
+	pixmaps/menu/figma/folder_edit_audio_tracks.svg \
+	pixmaps/menu/figma/folder_edit_subtitle_tracks.svg \
+	pixmaps/menu/figma/folder_info.svg \
+	pixmaps/menu/figma/folder_resync.svg \
+	pixmaps/menu/figma/player_audio.svg \
+	pixmaps/menu/figma/player_hide_ui.svg \
+	pixmaps/menu/figma/player_more_settings.svg \
+	pixmaps/menu/figma/player_next_item.svg \
+	pixmaps/menu/figma/player_open_media.svg \
+	pixmaps/menu/figma/player_pause.svg \
+	pixmaps/menu/figma/player_play.svg \
+	pixmaps/menu/figma/player_playback.svg \
+	pixmaps/menu/figma/player_playlist.svg \
+	pixmaps/menu/figma/player_previous_item.svg \
+	pixmaps/menu/figma/player_quit_vlc.svg \
+	pixmaps/menu/figma/player_record.svg \
+	pixmaps/menu/figma/player_stop.svg \
+	pixmaps/menu/figma/player_subtitle.svg \
+	pixmaps/menu/figma/player_video.svg \
+	pixmaps/menu/figma/playlist_add_audio_tracks.svg \
+	pixmaps/menu/figma/playlist_add_subtitle_tracks.svg \
+	pixmaps/menu/figma/playlist_add_to_queue.svg \
+	pixmaps/menu/figma/playlist_export_playlist.svg \
+	pixmaps/menu/figma/playlist_favorite.svg \
+	pixmaps/menu/figma/playlist_play.svg \
+	pixmaps/menu/figma/playlist_properties_metadata.svg \
+	pixmaps/menu/figma/playlist_shuffle.svg \
+	pixmaps/menu/figma/view_grid_view.svg \
+	pixmaps/menu/figma/view_list_view.svg \
 	pixmaps/menu/stream.svg \
 	pixmaps/menu/sync.svg \
 	pixmaps/menu/update.svg \

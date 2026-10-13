@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 #include "systempalette.hpp"
+#include "menustyle.hpp"
 #include <QGuiApplication>
 #include <QPalette>
 #include <QSettings>
@@ -425,6 +426,10 @@ void SystemPalette::updatePalette()
             m_palettePriv.get(), &ExternalPaletteImpl::CSDMetricsChanged,
             this, &SystemPalette::CSDMetricsChanged);
     }
+    // native menus are drawn by MenuStyle, which follows the interface
+    // color scheme (VLCStyle.palette, not the always dark player palette)
+    if (objectName() == QLatin1String("themePalette"))
+        MenuStyle::setDark(m_isDark);
     emit paletteChanged();
 
     bool hasCSDImage = m_palettePriv && m_palettePriv->hasCSDImages();

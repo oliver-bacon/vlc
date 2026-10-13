@@ -81,21 +81,54 @@ QtObject {
             return;
 
         _dataList = data
-
-        const textStrings = []
         _effectiveActions = []
-        for (let i in actions) {
-            const action = actions[i]
 
-            if (!action.hasOwnProperty("visible")
-                    || (typeof action.visible === "boolean" && action.visible)
-                    || (typeof action.visible === "function" && action.visible(_dataList, _options, _indexes))) {
-                _effectiveActions.push(action)
-                textStrings.push(action.text)
+        menu.popup(_popupPoint, _buildItems(actions))
+    }
+
+    function _isVisible(action) {
+        return !action.hasOwnProperty("visible")
+                || (typeof action.visible === "boolean" && action.visible)
+                || (typeof action.visible === "function" && action.visible(_dataList, _options, _indexes))
+    }
+
+    // actions may also have:
+    //  "icon": name of a :/menu/figma/ icon
+    //  "checked": bool or function(dataList, options, indexes), shows a check mark
+    //  "separator": true, a divider
+    //  "children": [actions], a submenu (hidden when it has no visible action)
+    function _buildItems(list) {
+        const items = []
+        for (let i in list) {
+            const action = list[i]
+            if (!_isVisible(action))
+                continue
+
+            if (action.separator) {
+                if (items.length > 0 && !items[items.length - 1].separator)
+                    items.push({ "separator": true })
+                continue
             }
-        }
 
-        menu.popup(_popupPoint, textStrings)
+            if (action.children) {
+                const children = _buildItems(action.children)
+                if (children.length > 0)
+                    items.push({ "text": action.text, "icon": action.icon ?? "", "children": children })
+                continue
+            }
+
+            const item = { "text": action.text, "icon": action.icon ?? "" }
+            if (action.hasOwnProperty("checked")) {
+                item.checked = (typeof action.checked === "function")
+                        ? action.checked(_dataList, _options, _indexes)
+                        : action.checked
+            }
+            _effectiveActions.push(action)
+            items.push(item)
+        }
+        if (items.length > 0 && items[items.length - 1].separator)
+            items.pop()
+        return items
     }
 
     function _executeAction(index) {

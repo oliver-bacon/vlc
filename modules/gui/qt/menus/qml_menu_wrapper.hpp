@@ -92,10 +92,20 @@ class StringListMenu : public BasicMenuContainer
 public:
     using BasicMenuContainer::BasicMenuContainer;
 
+    /**
+     * @param stringList entries are either strings or maps:
+     *   { text, icon (name of a :/menu/figma/ icon), checked, enabled,
+     *     separator: true, children: [entries of a submenu] }
+     * selected() gives the index of the action among all actions, submenus
+     * included, in the order they are listed
+     */
     Q_INVOKABLE void popup(const QPoint &point, const QVariantList &stringList);
 
 signals:
     void selected(int index, const QString &str);
+
+private:
+    void addItems(QMenu *menu, const QVariantList &items, int &index);
 };
 
 class SortMenu : public QObject

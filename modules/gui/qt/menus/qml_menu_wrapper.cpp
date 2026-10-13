@@ -70,19 +70,59 @@ namespace
     }
 }
 
+void StringListMenu::addItems(QMenu *menu, const QVariantList &items, int &index)
+{
+    for (const QVariant &entry : items)
+    {
+        // plain string: simple action
+        if (entry.typeId() != QMetaType::QVariantMap)
+        {
+            const QString str = entry.toString();
+            menu->addAction(str, this, [this, i = index, str]() { emit selected(i, str); });
+            ++index;
+            continue;
+        }
+
+        const QVariantMap item = entry.toMap();
+        if (item.value("separator").toBool())
+        {
+            menu->addSeparator();
+            continue;
+        }
+
+        const QString str = item.value("text").toString();
+        const QString icon = item.value("icon").toString();
+        const QVariantList children = item.value("children").toList();
+        if (!children.isEmpty())
+        {
+            QMenu *submenu = menu->addMenu(str);
+            if (!icon.isEmpty())
+                submenu->menuAction()->setIcon(QIcon(QStringLiteral(":/menu/figma/%1.svg").arg(icon)));
+            addItems(submenu, children, index);
+            continue;
+        }
+
+        QAction *action = menu->addAction(str, this, [this, i = index, str]() { emit selected(i, str); });
+        if (!icon.isEmpty())
+            action->setIcon(QIcon(QStringLiteral(":/menu/figma/%1.svg").arg(icon)));
+        if (item.contains("checked"))
+        {
+            action->setCheckable(true);
+            action->setChecked(item.value("checked").toBool());
+        }
+        if (item.contains("enabled"))
+            action->setEnabled(item.value("enabled").toBool());
+        ++index;
+    }
+}
+
 void StringListMenu::popup(const QPoint &point, const QVariantList &stringList)
 {
     assert(m_ctx);
     QMenu *m = newMenu();
 
-    for (int i = 0; i != stringList.size(); ++i)
-    {
-        const auto str = stringList[i].toString();
-        m->addAction(str, this, [this, i, str]()
-        {
-            emit selected(i, str);
-        });
-    }
+    int index = 0;
+    addItems(m, stringList, index);
 
     m->popup(point);
 }
@@ -142,7 +182,8 @@ void SortMenu::popup(const QPoint &point, const bool popupAbovePoint, const QVar
         const bool checked = obj.value("checked").toBool();
         action->setChecked(checked);
 
-        if (checked)
+        // without an order, the check mark alone shows the current sort
+        if (checked && obj.contains("order"))
             action->setIcon(sortIcon(m_menu.get(), obj.value("order").toInt()));
 
         connect(action, &QAction::triggered, this, [this, i]()
@@ -834,21 +875,29 @@ void PlaylistListContextMenu::popup(const QModelIndexList & selected, QPoint pos
 
     MediaLib * ml = m_model->ml();
 
-    QAction * action = menu->addAction(qtr("Add and play"));
+    // Figma "playlist context menu" (items without a VLC feature yet are
+    // left out), VLC's other actions in "More"
+    const auto figmaIcon = [](const char *name) {
+        return QIcon(QStringLiteral(":/menu/figma/%1.svg").arg(QLatin1String(name)));
+    };
+
+    QAction * action = menu->addAction(figmaIcon("playlist_play"), qtr("Play"));
 
     connect(action, &QAction::triggered, [ml, ids]() {
         ml->addAndPlay(ids);
     });
 
-    action = menu->addAction(qtr("Enqueue"));
+    action = menu->addAction(figmaIcon("playlist_add_to_queue"), qtr("Add to Queue"));
 
     connect(action, &QAction::triggered, [ml, ids]() {
         ml->addToPlaylist(ids);
     });
 
+    QMenu *more = menu->addMenu(qtr("More"));
+
     if (ids.count() == 1)
     {
-        action = menu->addAction(qtr("Rename"));
+        action = more->addAction(qtr("Rename"));
 
         QModelIndex index = selected.first();
 
@@ -857,7 +906,7 @@ void PlaylistListContextMenu::popup(const QModelIndexList & selected, QPoint pos
         });
     }
 
-    action = menu->addAction(qtr("Delete"));
+    action = more->addAction(qtr("Delete"));
 
     connect(action, &QAction::triggered, this, &PlaylistListContextMenu::requestDeleteSelectedPlaylists);
 

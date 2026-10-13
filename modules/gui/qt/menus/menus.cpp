@@ -340,8 +340,8 @@ void VLCMenuBar::ViewMenu(qt_intf_t *p_intf, QMenu *menu)
     action->setChecked( mi->interfaceVisibility() == QWindow::FullScreen );
 
     /*Minimal View*/
-    action = menu->addAction( qtr( "&Minimal View" ) );
-    action->setShortcut(QString( "Ctrl+H" ));
+    action = menu->addAction( qtr( "&Hide UI" ) );
+    action->setShortcut(QString( "Ctrl+\\" ));
     action->setCheckable( true );
     connect( action, &QAction::triggered, mi, &MainCtx::setMinimalView );
     action->setChecked( mi->isMinimalView() );
@@ -487,7 +487,7 @@ void VLCMenuBar::VideoMenu( qt_intf_t *p_intf, QMenu *current )
  * Navigation Menu
  * For DVD, MP4, MOV and other chapter based format
  **/
-void VLCMenuBar::NavigMenu( qt_intf_t *p_intf, QMenu *menu )
+void VLCMenuBar::NavigMenu( qt_intf_t *p_intf, QMenu *menu, bool withTransport )
 {
     QAction *action;
     QMenu *submenu;
@@ -524,7 +524,8 @@ void VLCMenuBar::NavigMenu( qt_intf_t *p_intf, QMenu *menu )
 
     PopupMenuControlEntries( menu, p_intf );
 
-    RebuildNavigMenu( p_intf, menu );
+    if( withTransport )
+        RebuildNavigMenu( p_intf, menu );
 }
 
 void VLCMenuBar::RebuildNavigMenu( qt_intf_t *p_intf, QMenu *menu )
@@ -743,129 +744,205 @@ QMenu* VLCMenuBar::MiscPopupMenu( qt_intf_t *p_intf, bool show )
 }
 
 /* Main Menu that sticks everything together  */
+namespace {
+
+/* Icon of the Figma "right-click menu" rows (two-tone, not colorized) */
+QIcon figmaMenuIcon( const char *name )
+{
+    return QIcon( QStringLiteral( ":/menu/figma/%1.svg" ).arg( QLatin1String( name ) ) );
+}
+
+/* "Ctrl+q" -> "Ctrl + Q", as displayed by the design */
+QString hotkeyText( const char *var )
+{
+    char *psz = config_GetPsz( var );
+    // several keys may be bound, separated by tabs: show the first one
+    QString key = qfu( psz ? psz : "" ).section( '\t', 0, 0 );
+    free( psz );
+    QStringList parts = key.split( '+', Qt::SkipEmptyParts );
+    for( QString &part : parts )
+    {
+        if( part.size() == 1 )
+            part = part.toUpper();
+        else
+            part[0] = part[0].toUpper();
+    }
+    return parts.join( QStringLiteral( " + " ) );
+}
+
+/* Menu text with the shortcut drawn in the right column (the key itself is
+ * handled by the hotkeys module, not by the menu) */
+QString withHotkey( const QString &text, const QString &key )
+{
+    return key.isEmpty() ? text : text + '\t' + key;
+}
+
+QAction *addSubmenu( QMenu *menu, QMenu *submenu, const QString &text, const char *icon )
+{
+    QAction *action = menu->addMenu( submenu );
+    action->setText( text );
+    action->setIcon( figmaMenuIcon( icon ) );
+    if( submenu->isEmpty() )
+        action->setEnabled( false );
+    return action;
+}
+
+} // namespace
+
+/* Player right-click menu, organized like the "right-click menu" of the
+ * VLC Redesign Figma file */
 QMenu* VLCMenuBar::PopupMenu( qt_intf_t *p_intf, bool show )
 {
-    /* */
     QMenu* menu = new VLCMenu(p_intf);
-    input_item_t* p_input = THEMIM->getInput();
+    const bool hasInput = THEMIM->hasInput();
+    const bool playlistEmpty = THEMPL->isEmpty();
     QAction *action;
-    bool b_isFullscreen = false;
 
-    PopupMenuPlaylistEntries( menu, p_intf );
-    menu->addSeparator();
-
-    if( p_input )
-    {
-        QMenu *submenu;
-        SharedVOutThread p_vout = THEMIM->getVout();
-
-        /* Add a fullscreen switch button, since it is the most used function */
-        if( p_vout )
-        {
-            menu->addAction(new BooleanPropertyAction(qtr( "&Fullscreen" ), THEMIM, "fullscreen", menu) );
-            menu->addSeparator();
-        }
-
-        /* Input menu */
-
-        /* Audio menu */
-        submenu = new QMenu( menu );
-        AudioMenu( p_intf, submenu );
-        action = menu->addMenu( submenu );
-        action->setText( qtr( "&Audio" ) );
-        if( action->menu()->isEmpty() )
-            action->setEnabled( false );
-
-        /* Video menu */
-        submenu = new QMenu( menu );
-        VideoMenu( p_intf, submenu );
-        action = menu->addMenu( submenu );
-        action->setText( qtr( "&Video" ) );
-        if( action->menu()->isEmpty() )
-            action->setEnabled( false );
-
-        /* Subtitles menu */
-        submenu = new QMenu( menu );
-        SubtitleMenu( p_intf, submenu, true );
-        action = menu->addMenu( submenu );
-        action->setText( qtr( "Subti&tle") );
-
-        /* Playback menu for chapters */
-        submenu = new QMenu( menu );
-        NavigMenu( p_intf, submenu );
-        action = menu->addMenu( submenu );
-        action->setText( qtr( "&Playback" ) );
-        if( action->menu()->isEmpty() )
-            action->setEnabled( false );
-    }
-
-    menu->addSeparator();
-
-    /* Add some special entries for windowed mode: Interface Menu */
-    if( !b_isFullscreen )
-    {
-        if( p_intf->b_isDialogProvider )
-        {
-            // same as Tool menu but with extra entries
-            QMenu* submenu = new QMenu( qtr( "Interface" ), menu );
-            ToolsMenu( p_intf, submenu );
-            submenu->addSeparator();
-
-            vlc_object_t* p_object = vlc_object_parent(p_intf->intf);
-
-            /* Open skin dialog box */
-            if (var_Type(p_object, "intf-skins-interactive") & VLC_VAR_ISCOMMAND)
-            {
-                QAction* openSkinAction = new QAction(qtr("Open skin..."), menu);
-                openSkinAction->setShortcut( QKeySequence( "Ctrl+Shift+S" ));
-                connect(openSkinAction, &QAction::triggered, [=]() {
-                    var_TriggerCallback(p_object, "intf-skins-interactive");
-                });
-                submenu->addAction(openSkinAction);
-            }
-
-            VLCVarChoiceModel* skinmodel = new VLCVarChoiceModel(p_object, "intf-skins", submenu);
-            CheckableListMenu* skinsubmenu = new CheckableListMenu(qtr("Interface"), skinmodel, QActionGroup::ExclusionPolicy::ExclusiveOptional, submenu);
-            submenu->addMenu(skinsubmenu);
-
-            submenu->addSeparator();
-
-            /* list of extensions */
-            ExtensionsMenu( p_intf, submenu );
-
-            menu->addMenu( submenu );
-        }
+    /* Transport */
+    const bool playing = hasInput && THEMIM->getPlayingState() == PlayerController::PLAYING_STATE_PLAYING;
+    action = menu->addAction( figmaMenuIcon( playing ? "player_pause" : "player_play" ),
+                              withHotkey( playing ? qtr( "Pause" ) : qtr( "Play" ), hotkeyText( "key-play-pause" ) ),
+                              [p_intf]() {
+        if ( THEMPL->isEmpty() )
+            THEDP->openFileDialog();
         else
-        {
-            QMenu* toolsMenu = new QMenu( qtr( "Tool&s" ), menu );
-            ToolsMenu( p_intf, toolsMenu );
-            menu->addMenu( toolsMenu );
+            THEMPL->togglePlayPause();
+    });
 
-            QMenu* viewMenu = new QMenu( qtr( "V&iew" ), menu );
-            ViewMenu( p_intf, viewMenu );
-            menu->addMenu( viewMenu );
-        }
-    }
+    action = menu->addAction( figmaMenuIcon( "player_stop" ), withHotkey( qtr( "Stop" ), hotkeyText( "key-stop" ) ),
+                              THEMPL, &PlaylistController::stop );
+    action->setEnabled( hasInput );
 
-    /* Static entries for ending, like open */
-    if( p_intf->b_isDialogProvider )
+    action = menu->addAction( figmaMenuIcon( "player_previous_item" ),
+                              withHotkey( qtr( "Previous Item" ), hotkeyText( "key-prev" ) ),
+                              THEMPL, &PlaylistController::prev );
+    action->setEnabled( !playlistEmpty );
+
+    action = menu->addAction( figmaMenuIcon( "player_next_item" ),
+                              withHotkey( qtr( "Next Item" ), hotkeyText( "key-next" ) ),
+                              THEMPL, &PlaylistController::next );
+    action->setEnabled( !playlistEmpty );
+
+    action = menu->addAction( figmaMenuIcon( "player_record" ), withHotkey( qtr( "Record" ), hotkeyText( "key-record" ) ),
+                              THEMIM, &PlayerController::toggleRecord );
+    action->setEnabled( hasInput );
+
+    menu->addSeparator();
+
+    /* Hide UI (the player controls stay hidden until toggled again) */
+    MainCtx *mi = p_intf->p_mi;
+    action = menu->addAction( figmaMenuIcon( "player_hide_ui" ), withHotkey( qtr( "Hide UI" ), QStringLiteral( "Ctrl + \\" ) ) );
+    if( mi )
     {
-
-        QMenu* openmenu = new QMenu( qtr( "Open Media" ), menu );
-        FileMenu( p_intf, openmenu );
-        menu->addMenu( openmenu );
-
-        menu->addSeparator();
-
-        QMenu* helpmenu = new QMenu( qtr( "Help" ), menu );
-        HelpMenu( p_intf, helpmenu );
-        menu->addMenu( helpmenu );
-
-        addDPStaticEntry( menu, qtr( "Quit" ), ":/menu/exit.svg",
-                          &DialogsProvider::quit, "Ctrl+Q", QAction::QuitRole );
+        action->setCheckable( true );
+        action->setChecked( mi->isMinimalView() );
+        connect( action, &QAction::triggered, mi, &MainCtx::setMinimalView );
     }
     else
-        PopupMenuStaticEntries( menu );
+        action->setEnabled( false );
+
+    menu->addSeparator();
+
+    /* Playback, Video, Audio, Subtitle */
+    QMenu *submenu = new QMenu( menu );
+    if( hasInput )
+    {
+        /* play/pause, stop... are already at the top of the menu */
+        NavigMenu( p_intf, submenu, false );
+    }
+    addSubmenu( menu, submenu, qtr( "Playback" ), "player_playback" );
+
+    submenu = new QMenu( menu );
+    if( hasInput )
+        VideoMenu( p_intf, submenu );
+    addSubmenu( menu, submenu, qtr( "Video" ), "player_video" );
+
+    submenu = new QMenu( menu );
+    if( hasInput )
+        AudioMenu( p_intf, submenu );
+    addSubmenu( menu, submenu, qtr( "Audio" ), "player_audio" );
+
+    submenu = new QMenu( menu );
+    if( hasInput )
+        SubtitleMenu( p_intf, submenu, true );
+    addSubmenu( menu, submenu, qtr( "Subtitle" ), "player_subtitle" );
+
+    menu->addSeparator();
+
+    /* More Settings: everything the design does not show */
+    submenu = new QMenu( menu );
+    ToolsMenu( p_intf, submenu );
+    submenu->addSeparator();
+    if( p_intf->b_isDialogProvider )
+    {
+        vlc_object_t* p_object = vlc_object_parent(p_intf->intf);
+
+        /* Open skin dialog box */
+        if (var_Type(p_object, "intf-skins-interactive") & VLC_VAR_ISCOMMAND)
+        {
+            QAction* openSkinAction = new QAction(qtr("Open skin..."), submenu);
+            openSkinAction->setShortcut( QKeySequence( "Ctrl+Shift+S" ));
+            connect(openSkinAction, &QAction::triggered, [=]() {
+                var_TriggerCallback(p_object, "intf-skins-interactive");
+            });
+            submenu->addAction(openSkinAction);
+        }
+
+        VLCVarChoiceModel* skinmodel = new VLCVarChoiceModel(p_object, "intf-skins", submenu);
+        CheckableListMenu* skinsubmenu = new CheckableListMenu(qtr("Interface"), skinmodel, QActionGroup::ExclusionPolicy::ExclusiveOptional, submenu);
+        submenu->addMenu(skinsubmenu);
+
+        submenu->addSeparator();
+        ExtensionsMenu( p_intf, submenu );
+    }
+    else
+    {
+        QMenu* viewMenu = new QMenu( qtr( "V&iew" ), submenu );
+        ViewMenu( p_intf, viewMenu );
+        submenu->addMenu( viewMenu );
+    }
+    QMenu* helpmenu = new QMenu( qtr( "Help" ), submenu );
+    HelpMenu( p_intf, helpmenu );
+    submenu->addMenu( helpmenu );
+    addSubmenu( menu, submenu, qtr( "More Settings" ), "player_more_settings" );
+
+    /* Playlist: play queue options */
+    submenu = new QMenu( menu );
+    action = submenu->addAction( qtr( "Shuffle" ) );
+    action->setCheckable( true );
+    action->setChecked( THEMPL->isRandom() );
+    connect( action, &QAction::toggled, THEMPL, &PlaylistController::setRandom );
+    const auto repeat = THEMPL->getRepeatMode();
+    action = submenu->addAction( qtr( "Repeat All" ) );
+    action->setCheckable( true );
+    action->setChecked( repeat == PlaylistController::PLAYBACK_REPEAT_ALL );
+    connect( action, &QAction::toggled, THEMPL, [p_intf]( bool on ) {
+        THEMPL->setRepeatMode( on ? PlaylistController::PLAYBACK_REPEAT_ALL : PlaylistController::PLAYBACK_REPEAT_NONE );
+    } );
+    action = submenu->addAction( qtr( "Repeat One" ) );
+    action->setCheckable( true );
+    action->setChecked( repeat == PlaylistController::PLAYBACK_REPEAT_CURRENT );
+    connect( action, &QAction::toggled, THEMPL, [p_intf]( bool on ) {
+        THEMPL->setRepeatMode( on ? PlaylistController::PLAYBACK_REPEAT_CURRENT : PlaylistController::PLAYBACK_REPEAT_NONE );
+    } );
+    submenu->addSeparator();
+    addDPStaticEntry( submenu, qfut( I_PL_SAVE ), "", &DialogsProvider::savePlayingToPlaylist );
+    action = submenu->addAction( qtr( "Clear the Play Queue" ), THEMPL, &PlaylistController::clear );
+    action->setEnabled( !playlistEmpty );
+    addSubmenu( menu, submenu, qtr( "Playlist" ), "player_playlist" );
+
+    /* Open Media */
+    submenu = new QMenu( menu );
+    addDPStaticEntry( submenu, qfut( I_OP_OPF ), "", &DialogsProvider::openFileDialog );
+    addDPStaticEntry( submenu, qfut( I_OP_OPDIR ), "", &DialogsProvider::PLOpenDir );
+    addDPStaticEntry( submenu, qtr( "Open &Disc..." ), "", &DialogsProvider::openDiscDialog );
+    addDPStaticEntry( submenu, qtr( "Open &Network..." ), "", &DialogsProvider::openNetDialog );
+    addDPStaticEntry( submenu, qtr( "Open &Capture Device..." ), "", &DialogsProvider::openCaptureDialog );
+    addSubmenu( menu, submenu, qtr( "Open Media" ), "player_open_media" );
+
+    action = menu->addAction( figmaMenuIcon( "player_quit_vlc" ), withHotkey( qtr( "Quit VLC" ), QStringLiteral( "Ctrl + Q" ) ),
+                              THEDP, &DialogsProvider::quit );
+    action->setMenuRole( QAction::QuitRole );
 
     if( show )
         menu->popup( QCursor::pos() );

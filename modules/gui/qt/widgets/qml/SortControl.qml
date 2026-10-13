@@ -83,30 +83,51 @@ Widgets.IconToolButton {
         target: (_menu) ? _menu : null
 
         function onSelected(index: int) {
-            const selectedSortKey = root.model[index].criteria
+            const entry = root._entries[index]
+            if (!entry)
+                return
 
-            if (root.sortKey !== selectedSortKey) {
-                root.sortSelected(selectedSortKey)
-                root.sortOrderSelected(Qt.AscendingOrder)
-            } else {
-                root.sortOrderSelected(root.sortOrder === Qt.AscendingOrder ? Qt.DescendingOrder
-                                                                            : Qt.AscendingOrder)
-            }
+            if (root.sortKey !== entry.criteria)
+                root.sortSelected(entry.criteria)
+            root.sortOrderSelected(entry.order)
         }
     }
 
     // Functions
 
+    // Entries of the menu, laid out like the "Sorting Options" of the
+    // VLC Redesign Figma file: one entry per sort key and direction
+    property var _entries: []
+
+    readonly property var _dateKeys: ["release_year", "last_played_date", "fileModified", "insertion"]
+    readonly property var _numericKeys: ["duration", "track_number", "disc_number", "nb_tracks", "nb_videos",
+                                         "count", "fileSizeRaw64", "mrl", "url"]
+
     function show() {
-        const model = root.model.map(function(modelData) {
-            const checked = modelData.criteria === sortKey
-            const order = checked ? root.sortOrder : undefined
-            return {
-                "text": modelData.text,
-                "checked": checked,
-                "order": order
+        const dateCount = root.model.filter((m) => _dateKeys.includes(m.criteria)).length
+        const entries = []
+
+        for (let i = 0; i < root.model.length; ++i) {
+            const modelData = root.model[i]
+            const key = modelData.criteria
+            if (_dateKeys.includes(key)) {
+                const prefix = (dateCount > 1) ? modelData.text + ": " : ""
+                entries.push({ criteria: key, order: Qt.DescendingOrder, text: prefix + qsTr("Newest First") })
+                entries.push({ criteria: key, order: Qt.AscendingOrder, text: prefix + qsTr("Oldest First") })
+            } else if (_numericKeys.includes(key)) {
+                entries.push({ criteria: key, order: Qt.AscendingOrder, text: qsTr("%1 Ascending").arg(modelData.text) })
+                entries.push({ criteria: key, order: Qt.DescendingOrder, text: qsTr("%1 Descending").arg(modelData.text) })
+            } else {
+                entries.push({ criteria: key, order: Qt.AscendingOrder, text: qsTr("%1 A-Z").arg(modelData.text) })
+                entries.push({ criteria: key, order: Qt.DescendingOrder, text: qsTr("%1 Z-A").arg(modelData.text) })
             }
-        })
+        }
+        root._entries = entries
+
+        const model = entries.map((entry) => ({
+            "text": entry.text,
+            "checked": entry.criteria === root.sortKey && entry.order === root.sortOrder
+        }))
 
         let point
 

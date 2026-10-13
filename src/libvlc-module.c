@@ -2504,7 +2504,7 @@ vlc_module_begin ()
 #   define KEY_SUBSYNC_RESET      "Ctrl+Shift+k"
 #   define KEY_AUDIODELAY_UP      "k"
 #   define KEY_AUDIODELAY_DOWN    "j"
-#   define KEY_RANDOM             "r"
+#   define KEY_RANDOM             NULL
 #   define KEY_LOOP               "l"
 
 #   define KEY_AUDIO_TRACK        "b"
@@ -2536,7 +2536,7 @@ vlc_module_begin ()
 
 #   define KEY_AUDIODEVICE_CYCLE  "Shift+a"
 
-#   define KEY_RECORD             "Shift+r"
+#   define KEY_RECORD             "r"
 #   define KEY_WALLPAPER          "w"
 
 /* Cropping */

@@ -28,6 +28,7 @@
 
 #include "custom_menus.hpp"
 #include "widgets/native/qvlcframe.hpp"
+#include "style/menustyle.hpp"
 
 #include <QObject>
 
@@ -39,6 +40,8 @@ public:
     explicit VLCMenu(qt_intf_t* p_intf) : QMenu()
     {
         assert(p_intf);
+        // before the native window exists: the style makes it translucent
+        MenuStyle::apply(this);
         if (isWindow())
         {
             QVLCDialog::setWindowTransientParent(this, nullptr, p_intf);
@@ -84,7 +87,7 @@ public:
     static void InterfacesMenu( qt_intf_t *p_intf, QMenu * );
     static void ExtensionsMenu( qt_intf_t *p_intf, QMenu * );
 
-    static void NavigMenu( qt_intf_t *, QMenu * );
+    static void NavigMenu( qt_intf_t *, QMenu *, bool withTransport = true );
 
     static void RebuildNavigMenu(qt_intf_t *, QMenu *);
 
