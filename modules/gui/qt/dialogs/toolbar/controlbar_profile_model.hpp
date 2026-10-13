@@ -51,7 +51,8 @@ public:
         MINIMALIST_STYLE,
         ONE_LINER_STYLE,
         SIMPLEST_STYLE,
-        CLASSIC_STYLE
+        CLASSIC_STYLE,
+        MODERN_STYLE
     };
 
     // Editable:

@@ -34,7 +34,10 @@ T.Pane {
     enum TimeTextPosition {
         Hide,
         AboveSlider,
-        LeftRightSlider
+        LeftRightSlider,
+        // Single row: [left controls] time [seek track] length [right controls].
+        // Only valid when the layout has no center controls, see `canInline`.
+        Inline
     }
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
@@ -46,10 +49,19 @@ T.Pane {
 
     bottomPadding: VLCStyle.margin_xsmall
 
-    readonly property real sliderY: mapFromItem(contentItem, 0, contentItem.sliderY).y
+    readonly property bool _inline: (textPosition === ControlBar.TimeTextPosition.Inline)
+
+    // In the single-row layout the seek bar sits inside the controls row, so
+    // the bar starts at the top of the pane (used to place the play queue).
+    readonly property real sliderY: _inline ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
     property int textPosition: ControlBar.TimeTextPosition.AboveSlider
+
+    // Whether the current control layout can use TimeTextPosition.Inline
+    readonly property bool canInline: !(contentItem?.playerControlLayout?.hasCenterControls ?? true)
+
     property int identifier: -1
     property real sliderHeight: VLCStyle.heightBar_xxsmall
+    property real inlineSliderHeight: VLCStyle.dp(28, VLCStyle.scale)
     property real bookmarksHeight: VLCStyle.controlBarBookmarksHeight
     property bool showRemainingTime: true
 
@@ -114,6 +126,14 @@ T.Pane {
 
     background: Rectangle {
         color: theme.bg.primary
+
+        // Hairline separating the single-row control bar from the video
+        Rectangle {
+            visible: root._inline
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: VLCStyle.border
+            color: theme.border
+        }
     }
 
     contentItem: ColumnLayout {
@@ -131,13 +151,14 @@ T.Pane {
             T.Label {
                 id: mediaTime
 
-                Layout.preferredWidth: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? timeTextMetrics.width : -1
+                Layout.preferredWidth: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider || root._inline) ? timeTextMetrics.width : -1
 
                 text: {
                     const length = Player.length
                     return Player.time.formatHMS(length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
                 }
-                color: theme.fg.primary
+                // The redesign uses the muted text color for both times
+                color: root._inline ? theme.fg.secondary : theme.fg.primary
                 font: timeTextMetrics.font
                 horizontalAlignment: Text.AlignHCenter
 
@@ -156,7 +177,7 @@ T.Pane {
             T.Label {
                 id: mediaRemainingTime
 
-                Layout.preferredWidth: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? timeTextMetrics.width : -1
+                Layout.preferredWidth: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider || root._inline) ? timeTextMetrics.width : -1
 
                 readonly property bool showRemainingTime: (MainCtx.showRemainingTime && Player.remainingTime.valid())
 
@@ -217,7 +238,9 @@ T.Pane {
             SliderBar {
                 id: trackPositionSlider
 
-                barHeight: root.sliderHeight
+                barHeight: root._inline ? root.inlineSliderHeight : root.sliderHeight
+                trackStyle: root._inline
+                Layout.alignment: Qt.AlignVCenter
 
                 Accessible.role: Accessible.Slider
                 Accessible.name: qsTr("Progress")
@@ -241,7 +264,9 @@ T.Pane {
                 id: bookmarksLoader
 
                 parent: root
-                active: MainCtx.mediaLibraryAvailable
+                // FIXME: bookmarks are positioned below row2, which is empty
+                // in the single-row layout; they are not shown there yet.
+                active: MainCtx.mediaLibraryAvailable && !root._inline
                 source: "qrc:///qt/qml/VLC/MediaLibrary/Bookmarks.qml"
 
                 x: root.leftPadding + trackPositionSlider.x + row2.Layout.leftMargin
@@ -278,6 +303,7 @@ T.Pane {
                     return [mediaTime, mediaRemainingTime]
                 case ControlBar.TimeTextPosition.Hide:
                 case ControlBar.TimeTextPosition.LeftRightSlider:
+                case ControlBar.TimeTextPosition.Inline:
                 default:
                     return []
                 }
@@ -294,6 +320,7 @@ T.Pane {
                     return [trackPositionSlider]
                 case ControlBar.TimeTextPosition.LeftRightSlider:
                     return [mediaTime, trackPositionSlider, mediaRemainingTime]
+                case ControlBar.TimeTextPosition.Inline: // hosted by playerControlLayout
                 default:
                     return []
                 }
@@ -321,12 +348,16 @@ T.Pane {
 
             identifier: root.identifier
 
-            implicitHeight: MainCtx.pinVideoControls ? VLCStyle.controlLayoutHeightPinned
-                                                     : VLCStyle.controlLayoutHeight
+            inlineItems: root._inline ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
+
+            implicitHeight: (MainCtx.pinVideoControls || root._inline) ? VLCStyle.controlLayoutHeightPinned
+                                                                       : VLCStyle.controlLayoutHeight
 
             visible: !model?.empty ?? false
 
-            Navigation.upItem: trackPositionSlider.enabled ? trackPositionSlider : root.Navigation.upItem
+            // In the single-row layout the slider is part of this row and
+            // is reached with Tab / left-right navigation instead.
+            Navigation.upItem: (trackPositionSlider.enabled && !root._inline) ? trackPositionSlider : root.Navigation.upItem
 
             onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
 

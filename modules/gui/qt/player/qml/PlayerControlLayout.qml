@@ -36,6 +36,14 @@ FocusScope {
 
     property int identifier: -1
 
+    // Items placed between the left and the right controls, filling the
+    // free space (used by the single-row control bar to host the seek bar).
+    // Only shown when the layout has no center controls.
+    property list<Item> inlineItems
+    property real inlineMinimumWidth: VLCStyle.dp(120, VLCStyle.scale)
+
+    readonly property bool hasCenterControls: !!model?.center && (model.center.count > 0)
+
     readonly property PlayerControlbarModel model: {
         if (!!MainCtx.controlbarProfileModel.currentModel)
             return MainCtx.controlbarProfileModel.currentModel.getModel(identifier)
@@ -129,11 +137,29 @@ FocusScope {
                     return false
                 }
 
-                Layout.minimumWidth: (containsVisibleItem(leftRepeater) && containsVisibleItem(rightRepeater)) ? playerControlLayout.layoutSpacing
-                                                                                                               : 0
+                readonly property bool hasInlineItems: playerControlLayout.inlineItems.length > 0
+
+                Layout.minimumWidth: {
+                    if (hasInlineItems)
+                        return playerControlLayout.inlineMinimumWidth
+                    return (containsVisibleItem(leftRepeater) && containsVisibleItem(rightRepeater)) ? playerControlLayout.layoutSpacing
+                                                                                                     : 0
+                }
 
                 Layout.fillWidth: true
+                Layout.fillHeight: true
+                // Spacing for the filler acts as padding around the inline items
+                Layout.leftMargin: hasInlineItems ? playerControlLayout.layoutSpacing - playerControlLayout.spacing : 0
+                Layout.rightMargin: Layout.leftMargin
                 visible: true
+
+                RowLayout {
+                    anchors.fill: parent
+
+                    spacing: VLCStyle.margin_xsmall
+
+                    children: playerControlLayout.inlineItems
+                }
             }
 
             ControlRepeater {

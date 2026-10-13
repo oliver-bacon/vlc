@@ -94,6 +94,78 @@ decltype (ControlbarProfileModel::m_defaults)
                 }
             },
             {
+                // Single-row layout from the VLC Redesign Figma file. Listed
+                // first so that it is selected by default on new
+                // configurations. It has no center controls, which lets the
+                // video player put the seek bar inline (see ControlBar.qml).
+                Style::MODERN_STYLE,
+                N_("Modern Style"),
+                {
+                    {
+                        PlayerControlbarModel::Videoplayer,
+                        {
+                            {
+                                {
+                                    ControlListModel::PREVIOUS_BUTTON,
+                                    ControlListModel::SKIP_BACK_BUTTON,
+                                    ControlListModel::PLAY_BUTTON,
+                                    ControlListModel::SKIP_FW_BUTTON,
+                                    ControlListModel::NEXT_BUTTON
+                                },
+                                {},
+                                {
+                                    ControlListModel::VOLUME,
+                                    ControlListModel::LANG_BUTTON,
+                                    ControlListModel::EXTENDED_BUTTON,
+                                    ControlListModel::PLAYLIST_BUTTON
+                                }
+                            }
+                        }
+                    },
+                    {
+                        PlayerControlbarModel::Audioplayer,
+                        {
+                            {
+                                {
+                                    ControlListModel::PREVIOUS_BUTTON,
+                                    ControlListModel::SKIP_BACK_BUTTON,
+                                    ControlListModel::PLAY_BUTTON,
+                                    ControlListModel::SKIP_FW_BUTTON,
+                                    ControlListModel::NEXT_BUTTON
+                                },
+                                {},
+                                {
+                                    ControlListModel::VOLUME,
+                                    ControlListModel::LANG_BUTTON,
+                                    ControlListModel::PLAYLIST_BUTTON
+                                }
+                            }
+                        }
+                    },
+                    {
+                        PlayerControlbarModel::Miniplayer,
+                        {
+                            {
+                                {
+                                    ControlListModel::ARTWORK_INFO
+                                },
+                                {
+                                    ControlListModel::RANDOM_BUTTON,
+                                    ControlListModel::PREVIOUS_BUTTON,
+                                    ControlListModel::PLAY_BUTTON,
+                                    ControlListModel::NEXT_BUTTON,
+                                    ControlListModel::LOOP_BUTTON
+                                },
+                                {
+                                    ControlListModel::VOLUME,
+                                    ControlListModel::PLAYER_SWITCH_BUTTON
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            {
                 Style::DEFAULT_STYLE,
                 N_("Default Style"),
                 {

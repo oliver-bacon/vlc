@@ -217,10 +217,11 @@ T.Control {
                 return VLCIcons.play_filled
         }
 
-        color: cursorInside ? theme.accent
-                            : "black"  //foreground is always black
+        // Dark glyph on the accent fill (Figma: Dark/FG/B1 on Accent/Main)
+        color: accentTheme.fg.primary
 
-        font.pixelSize: Math.round(parent.height / 1.7)
+        // 24px glyph in the 28px tall pill, as in the Figma file
+        font.pixelSize: Math.round(parent.height * 0.75)
 
         font.family: VLCIcons.fontFamily
 
@@ -239,15 +240,31 @@ T.Control {
         }
     }
 
+    // Rounded-rectangle accent button from the VLC Redesign Figma file
+    // (54x28, radius 6). The dim accent shows through while the inner
+    // fill shrinks on press-and-hold, which keeps the existing hold feedback.
     background: Item {
-        implicitWidth: height
-        implicitHeight: VLCStyle.icon_medium
+        implicitWidth: VLCStyle.dp(54, VLCStyle.scale)
+        implicitHeight: VLCStyle.dp(28, VLCStyle.scale)
+
+        readonly property real _radius: VLCStyle.dp(6, VLCStyle.scale)
+
+        readonly property ColorContext accentContext: ColorContext {
+            id: accentTheme
+
+            colorSet: ColorContext.ButtonAccent
+
+            enabled: root.enabled || root.paintOnly
+            focused: root.activeFocus
+            hovered: root.cursorInside
+            pressed: mouseArea.containsPress
+        }
 
         Widgets.AnimatedBackground {
             anchors.fill: parent
-            anchors.margins: -border.width * 4
+            anchors.margins: -border.width * 2
 
-            radius: width / 2
+            radius: parent._radius + border.width * 2
             border.pixelAligned: false
 
             enabled: theme.initialized
@@ -258,12 +275,9 @@ T.Control {
         Rectangle {
             anchors.fill: parent
 
-            radius: width / 2
+            radius: parent._radius
 
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#e25b01" }
-                GradientStop { position: 1.0; color: "#f89a06" }
-            }
+            color: Qt.darker(accentTheme.bg.primary, 1.23) // Accent/Dim
 
             Widgets.RoundedRectangleShadow {
                 id: hoverShadow
@@ -280,13 +294,13 @@ T.Control {
             Rectangle {
                 id: innerRectangle
 
-                color: "white"
+                color: accentTheme.bg.primary
 
                 anchors.fill: parent
-                anchors.margins: _diminished ? (parent.width / 2)
-                                             : VLCStyle.dp(2, VLCStyle.scale)
+                anchors.margins: _diminished ? (parent.height / 2)
+                                             : 0
 
-                radius: width / 2
+                radius: Math.max(0, parent.radius - anchors.margins)
 
                 property bool _diminished: false
 

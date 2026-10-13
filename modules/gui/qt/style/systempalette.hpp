@@ -111,8 +111,38 @@ public:
     Q_PROPERTY(CSDMetrics* csdMetrics READ getCSDMetrics NOTIFY CSDMetricsChanged FINAL)
 
     //standard color definitions used by light/dark themes
-    COLOR_DEFINITION(orange500, "#FF8800");
-    COLOR_DEFINITION(orange800, "#FF610A");
+    //orange500 is the dark theme accent, orange800 the light theme accent;
+    //both are replaced when the user picks an accent color (qt-accent-color)
+    COLOR_DEFINITION(orange500, "#D37918"); // Dark/Accent/Main
+    COLOR_DEFINITION(orange800, "#E8851A"); // Light/Accent/Main
+
+    //tokens from the "VLC Redesign" Figma file, dark variant
+    COLOR_DEFINITION(accentDim, "#AB6314");          // Dark/Accent/Dim
+    COLOR_DEFINITION(accentBrightDark, "#371F06");   // Dark/BG/Accent Bright
+    COLOR_DEFINITION(figDarkBgA1, "#222222");        // Dark/BG/A1
+    COLOR_DEFINITION(figDarkBgA3, "#1B1B1B");        // Dark/BG/A3
+    COLOR_DEFINITION(figDarkBgA4, "#191919");        // Dark/BG/A4
+    COLOR_DEFINITION(figDarkBgA5, "#151515");        // Dark/BG/A5
+    COLOR_DEFINITION(figDarkBgB1, "#0E0E0E");        // Dark/BG/B1
+    COLOR_DEFINITION(figDarkBgB2, "#090909");        // Dark/BG/B2
+    COLOR_DEFINITION(figDarkFg1, "#EAEAEA");         // Dark/FG/1
+    COLOR_DEFINITION(figDarkFg2, "#C6C6C6");         // Dark/FG/2
+    COLOR_DEFINITION(figDarkFgA2, "#8F8F8F");        // Dark/FG/A2
+    COLOR_DEFINITION(figDarkFgA3, "#6B6B6B");        // Dark/FG/A3
+    COLOR_DEFINITION(figDarkFgA4, "#404040");        // Dark/FG/A4
+    COLOR_DEFINITION(figDarkFgB1, "#161616");        // Dark/FG/B1 (text on accent)
+    COLOR_DEFINITION(figDarkDividerBright, "#373737"); // Dark/Divider/Bright
+    COLOR_DEFINITION(figDarkDividerDim, "#222222");  // Dark/Divider/Dim
+
+    //tokens from the "VLC Redesign" Figma file, light variant
+    COLOR_DEFINITION(accentBrightLight, "#D8BA9A");  // Light/BG/Accent Bright
+    COLOR_DEFINITION(figLightBgA3, "#D5D5D5");       // Light/BG/A3
+    COLOR_DEFINITION(figLightBgB1, "#E7E7E7");       // Light/BG/B1
+    COLOR_DEFINITION(figLightBgB2, "#DEDEDE");       // Light/BG/B2
+    COLOR_DEFINITION(figLightFgA2, "#2E2E2E");       // Light/FG/A2
+    COLOR_DEFINITION(figLightFgA3, "#6B6B6B");       // Light/FG/A3
+    COLOR_DEFINITION(figLightDividerBright, "#9B9B9B"); // Light/Divider/Bright
+    COLOR_DEFINITION(figLightDividerDim, "#ACACAC"); // Light/Divider/Dim
 
     COLOR_DEFINITION(orange400, "#f89a06"); //FIXME name have been chosen randomly by me
     COLOR_DEFINITION(orange200, "#e29a06"); //FIXME name have been chosen randomly by me

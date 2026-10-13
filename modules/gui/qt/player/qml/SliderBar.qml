@@ -28,14 +28,27 @@ import VLC.MainInterface
 T.ProgressBar {
     id: control
 
-    readonly property real _hoveredScalingFactor: 1.8
+    // "Track" style from the VLC Redesign Figma file: a tall rounded track,
+    // played part filled with the dim accent background, and a thin
+    // always-visible accent playhead instead of the round hover handle.
+    property bool trackStyle: false
+    readonly property int trackRadius: VLCStyle.dp(6, VLCStyle.scale)
+    readonly property int playheadWidth: VLCStyle.dp(4, VLCStyle.scale)
+    readonly property int playheadMargin: VLCStyle.dp(2, VLCStyle.scale)
+
+    readonly property real _hoveredScalingFactor: trackStyle ? 1.0 : 1.8
     property int barHeight: VLCStyle.dp(5, VLCStyle.scale)
     readonly property real _scaledBarHeight: control.barHeight * _hoveredScalingFactor
     readonly property real _scaledY: (-control.barHeight / 2) * (control._hoveredScalingFactor - 1)
 
     property bool _isSeekPointsShown: true
     readonly property int _seekPointsDistance: VLCStyle.dp(2, VLCStyle.scale)
-    readonly property int _seekPointsRadius: VLCStyle.dp(0.5, VLCStyle.scale)
+    readonly property int _seekPointsRadius: trackStyle ? trackRadius : VLCStyle.dp(0.5, VLCStyle.scale)
+    // Played part of the track: the accent over the track color. Derived
+    // from the accent rather than a palette role so that it also works with
+    // system/external palettes (Figma: BG/Accent Bright, about 24% / 35%).
+    readonly property color _progressColor: trackStyle ? Qt.alpha(theme.fg.primary, theme.palette.isDark ? 0.24 : 0.35)
+                                                       : theme.fg.primary
     readonly property real _scaledSeekPointsRadius: _seekPointsRadius * _hoveredScalingFactor
 
     property bool _currentChapterHovered: false
@@ -324,7 +337,7 @@ T.ProgressBar {
             visible: !Player.hasChapters
             color: control.backgroundColor
             anchors.fill: parent
-            radius: implicitHeight
+            radius: control.trackStyle ? control.trackRadius : implicitHeight
         }
 
         Repeater {
@@ -357,7 +370,7 @@ T.ProgressBar {
                     readonly property bool _hovered: hoverHandler.hovered &&
                                             (hoverHandler.point.position.x > x && hoverHandler.point.position.x < x+width)
 
-                    color: _currentChapter < 0 ? theme.fg.primary : control.backgroundColor
+                    color: _currentChapter < 0 ? control._progressColor : control.backgroundColor
                     width: sliderRect.width * seekpointsRect.endPosition - x - control._seekPointsDistance
                     x: sliderRect.width * seekpointsRect.startPosition
 
@@ -370,7 +383,7 @@ T.ProgressBar {
 
                         width: sliderRect.width * control.visualPosition - parent.x - control._seekPointsDistance
                         visible: parent._currentChapter === 0
-                        color: theme.fg.primary
+                        color: control._progressColor
 
                         // We use dynamic mutability group because time interpolation
                         // may induce rapid change:
@@ -431,7 +444,7 @@ T.ProgressBar {
             id: progressRect
             width: control.visualPosition * parent.width
             visible: !Player.hasChapters
-            color: theme.fg.primary
+            color: control._progressColor
             height: control.barHeight
             radius: control._seekPointsRadius
 
@@ -459,7 +472,7 @@ T.ProgressBar {
             height: control.barHeight
             opacity: 0.4
             color: theme.fg.neutral //FIXME buffer color ?
-            radius: control.barHeight
+            radius: control.trackStyle ? control.trackRadius : control.barHeight
 
             // TODO: Do not use `Binding` when minimum Qt is 6.12:
             Binding {
@@ -625,8 +638,40 @@ T.ProgressBar {
             }
         ]
 
-        state: (hoverHandler.hovered || control.visualFocus)
+        state: (!control.trackStyle && (hoverHandler.hovered || control.visualFocus))
                ? ((control._currentChapterHovered || (Player.hasChapters && fsm._state === fsm.fsmHeld)) ? "visibleLarge" : "visible")
                : "hidden"
+    }
+
+    // Track style playhead: thin accent pill, always visible, inset by
+    // playheadMargin from the top and bottom of the track.
+    Rectangle {
+        id: trackPlayhead
+
+        visible: control.trackStyle
+
+        width: control.playheadWidth
+        height: Math.max(0, control.barHeight - 2 * control.playheadMargin)
+
+        x: Helpers.clamp((control.visualPosition * control.availableWidth) - width / 2,
+                         0, control.availableWidth - width)
+        y: control.playheadMargin
+
+        radius: control.playheadWidth
+        color: theme.fg.primary
+
+        // Keyboard focus is otherwise invisible in track style, as the
+        // round handle that used to signal it is hidden.
+        border.width: control.visualFocus ? VLCStyle.focus_border : 0
+        border.color: theme.visualFocus
+
+        // TODO: Do not use `Binding` when minimum Qt is 6.12:
+        Binding {
+            target: trackPlayhead
+            property: "mutabilityGroup"
+            when: (trackPlayhead.mutabilityGroup !== undefined)
+            value: (Player.playingState === Player.PLAYING_STATE_PLAYING) ? Item.DynamicMutabilityGroup
+                                                                          : Item.StaticMutabilityGroup
+        }
     }
 }

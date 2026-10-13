@@ -1295,10 +1295,16 @@ FocusScope {
         rightPadding: VLCStyle.applicationHorizontalMargin
         leftPadding: VLCStyle.applicationHorizontalMargin
         bottomPadding: VLCStyle.applicationVerticalMargin + VLCStyle.margin_xsmall
+        topPadding: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.margin_xsmall : 0
 
-        textPosition: (MainCtx.pinVideoControls)
-                      ? ControlBar.TimeTextPosition.LeftRightSlider
-                      : ControlBar.TimeTextPosition.AboveSlider
+        // Single-row bar when the control layout allows it (no center
+        // controls, e.g. the "Modern Style" profile); otherwise the
+        // classic two-row bar.
+        textPosition: (canInline)
+                      ? ControlBar.TimeTextPosition.Inline
+                      : (MainCtx.pinVideoControls)
+                        ? ControlBar.TimeTextPosition.LeftRightSlider
+                        : ControlBar.TimeTextPosition.AboveSlider
 
         // hide right text so that it won't overlap with play queue
         showRemainingTime: (textPosition !== ControlBar.TimeTextPosition.AboveSlider)
