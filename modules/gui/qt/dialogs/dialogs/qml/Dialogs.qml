@@ -595,6 +595,21 @@ Item {
     }
 
     Loader {
+        id: settingsWindowLoader
+        active: false
+        source: "qrc:///qt/qml/VLC/Dialogs/SettingsWindow.qml"
+
+        Connections {
+            target: DialogsProvider
+
+            function onShowSettingsWindow() {
+                settingsWindowLoader.active = true
+                settingsWindowLoader.item.open()
+            }
+        }
+    }
+
+    Loader {
         id: toolbarEditorDialogLoader
         active: false
         source: "qrc:///qt/qml/VLC/Dialogs/ToolbarEditorDialog.qml"

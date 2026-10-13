@@ -36,6 +36,7 @@
 #include "playlist/playlist_model.hpp"
 #include "playlist/playlist_controller.hpp"
 
+#include "util/config_bridge.hpp"
 #include "util/csdmenu.hpp"
 #include "util/item_key_event_filter.hpp"
 #include "util/imageluminanceextractor.hpp"
@@ -237,6 +238,7 @@ void MainUI::registerQMLTypes()
         qmlRegisterUncreatableType<UINotifier>(uri, versionMajor, versionMinor, "UINotifier", "");
         qmlRegisterSingletonInstance<UINotifier>(uri, versionMajor, versionMinor, "UINotifier", new UINotifier(m_mainCtx, m_mainCtx));
         qmlRegisterSingletonInstance<NavigationHistory>(uri, versionMajor, versionMinor, "History", new NavigationHistory(this));
+        qmlRegisterSingletonInstance<ConfigBridge>(uri, versionMajor, versionMinor, "VLCConfig", new ConfigBridge(m_mainCtx->getIntf(), this));
         qmlRegisterType<VideoSurface>(uri, versionMajor, versionMinor, "VideoSurface");
         qmlRegisterUncreatableType<BaseModel>( uri, versionMajor, versionMinor, "BaseModel", "Base Model is uncreatable." );
         qmlRegisterUncreatableType<VLCVarChoiceModel>(uri, versionMajor, versionMinor, "VLCVarChoiceModel", "generic variable with choice model" );

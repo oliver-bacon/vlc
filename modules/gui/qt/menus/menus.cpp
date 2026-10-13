@@ -272,7 +272,7 @@ void VLCMenuBar::ToolsMenu( qt_intf_t *p_intf, QMenu *menu )
             ":/menu/preferences.svg", &DialogsProvider::showToolbarEditorDialog);
 
     addDPStaticEntry( menu, qtr( "&Preferences" ),
-        ":/menu/preferences.svg", &DialogsProvider::prefsDialog, "Ctrl+P", QAction::PreferencesRole );
+        ":/menu/preferences.svg", &DialogsProvider::settingsDialog, "Ctrl+P", QAction::PreferencesRole );
 }
 
 /**

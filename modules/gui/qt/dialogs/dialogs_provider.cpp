@@ -61,6 +61,7 @@
 #include <vlc_url.h>
 
 #include <QEvent>
+#include <QMetaMethod>
 #include <QApplication>
 #include <QSignalMapper>
 #include <QFileDialog>
@@ -192,7 +193,7 @@ void DialogsProvider::customEvent( QEvent *event )
         case INTF_DIALOG_FILEINFO:
            mediaInfoDialog(); break;
         case INTF_DIALOG_PREFS:
-           prefsDialog(); break;
+           settingsDialog(); break;
         case INTF_DIALOG_BOOKMARKS:
            bookmarksDialog(); break;
         case INTF_DIALOG_EXTENDED:
@@ -286,6 +287,17 @@ bool DialogsProvider::eventFilter(QObject *watched, QEvent *event) {
  ****************************************************************************/
 const QEvent::Type DialogEvent::DialogEvent_Type =
         (QEvent::Type)QEvent::registerEventType();
+
+void DialogsProvider::settingsDialog()
+{
+    // The QML main interface connects to this signal to show its settings
+    // window; without it (e.g. dialogs-only use of this module), fall back
+    // to the classic preferences dialog.
+    if (isSignalConnected(QMetaMethod::fromSignal(&DialogsProvider::showSettingsWindow)))
+        emit showSettingsWindow();
+    else
+        prefsDialog();
+}
 
 void DialogsProvider::prefsDialog()
 {
