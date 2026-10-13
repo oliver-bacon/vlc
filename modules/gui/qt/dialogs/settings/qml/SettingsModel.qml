@@ -73,7 +73,7 @@ QtObject {
             ]
         },
         interface: {
-            name: qsTr("Interface"), title: qsTr("Interface Settings"), icon: VLCIcons.panel_left,
+            name: qsTr("Interface"), title: qsTr("Interface Settings"), icon: VLCIcons.interface,
             sections: [
                 { title: qsTr("Window"), rows: [
                     { label: qsTr("Play video inside main window"), option: "embedded-video" },
@@ -109,7 +109,7 @@ QtObject {
             ]
         },
         privacy: {
-            name: qsTr("Privacy"), title: qsTr("Privacy Settings"), icon: VLCIcons.history,
+            name: qsTr("Privacy"), title: qsTr("Privacy Settings"), icon: VLCIcons.privacy,
             sections: [
                 { title: qsTr("Network"), rows: [
                     { label: qsTr("Fetch titles and cover art from the internet"), option: "metadata-network-access" },
@@ -120,7 +120,7 @@ QtObject {
             ]
         },
         controls: {
-            name: qsTr("Controls"), title: qsTr("Mouse, Keyboard & Remote Controls"), icon: VLCIcons.ic_fluent_arrow_move,
+            name: qsTr("Controls"), title: qsTr("Mouse, Keyboard & Remote Controls"), icon: VLCIcons.hotkeys,
             sections: [
                 { title: qsTr("Keyboard Shortcuts"), rows: [
                     { label: qsTr("Edit keyboard shortcuts"), kind: "action", action: "openAdvancedSettings", buttonText: qsTr("Edit") }
@@ -142,7 +142,7 @@ QtObject {
             ]
         },
         playback: {
-            name: qsTr("Playback"), title: qsTr("Playback Preferences"), icon: VLCIcons.play,
+            name: qsTr("Playback"), title: qsTr("Playback Preferences"), icon: VLCIcons.playback_settings,
             sections: [
                 { title: qsTr("Startup"), rows: [
                     { label: qsTr("Start paused"), option: "start-paused" },
@@ -174,7 +174,7 @@ QtObject {
             ]
         },
         video: {
-            name: qsTr("Video"), title: qsTr("Video Defaults"), icon: VLCIcons.topbar_video,
+            name: qsTr("Video"), title: qsTr("Video Defaults"), icon: VLCIcons.video,
             sections: [
                 { title: qsTr("Output"), rows: [
                     { label: qsTr("Enable video"), option: "video" },
@@ -209,7 +209,7 @@ QtObject {
             ]
         },
         audio: {
-            name: qsTr("Audio"), title: qsTr("Audio Defaults"), icon: VLCIcons.volume_high,
+            name: qsTr("Audio"), title: qsTr("Audio Defaults"), icon: VLCIcons.visualization,
             sections: [
                 { title: qsTr("Output"), rows: [
                     { label: qsTr("Enable audio"), option: "audio" },
@@ -250,7 +250,7 @@ QtObject {
             ]
         },
         subtitles: {
-            name: qsTr("Subtitles"), title: qsTr("Subtitle Defaults"), icon: VLCIcons.audiosub,
+            name: qsTr("Subtitles"), title: qsTr("Subtitle Defaults"), icon: VLCIcons.subtitle,
             sections: [
                 { title: qsTr("Tracks & Languages"), rows: [
                     { label: qsTr("Enable subtitles"), option: "spu" },
@@ -289,7 +289,7 @@ QtObject {
             ]
         },
         library: {
-            name: qsTr("Library"), title: qsTr("Playlists, Folders & Files"), icon: VLCIcons.list,
+            name: qsTr("Library"), title: qsTr("Playlists, Folders & Files"), icon: VLCIcons.lists,
             sections: [
                 { title: qsTr("Opening Files"), rows: [
                     { label: qsTr("Only allow one VLC window"), option: "one-instance" },
@@ -306,7 +306,7 @@ QtObject {
             ]
         },
         network: {
-            name: qsTr("Network"), title: qsTr("Network Connections & Security"), icon: VLCIcons.topbar_network,
+            name: qsTr("Network"), title: qsTr("Network Connections & Security"), icon: VLCIcons.stream,
             sections: [
                 { title: qsTr("Buffering"), rows: [
                     { label: qsTr("Local files"), option: "file-caching", kind: "number", unit: "ms" },
@@ -325,7 +325,7 @@ QtObject {
             ]
         },
         performance: {
-            name: qsTr("Performance"), title: qsTr("Performance Settings"), icon: VLCIcons.effect_filter,
+            name: qsTr("Performance"), title: qsTr("Performance Settings"), icon: VLCIcons.speed,
             sections: [
                 { title: qsTr("Decoding"), rows: [
                     { label: qsTr("Hardware-accelerated decoding"), option: "dec-dev" },
@@ -350,7 +350,7 @@ QtObject {
             ]
         },
         extensions: {
-            name: qsTr("Extensions"), title: qsTr("Add-ons & Scripts"), icon: VLCIcons.add,
+            name: qsTr("Extensions"), title: qsTr("Add-ons & Scripts"), icon: VLCIcons.plugins,
             sections: [
                 { title: qsTr("Add-ons"), rows: [
                     { label: qsTr("Manage add-ons"), kind: "action", action: "openAddons", buttonText: qsTr("Open") },

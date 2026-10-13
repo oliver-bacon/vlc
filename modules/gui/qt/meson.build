@@ -777,6 +777,8 @@ qml_modules += {
        'player/qml/controlbarcontrols/AtoBButton.qml',
        'player/qml/controlbarcontrols/BackButton.qml',
        'player/qml/controlbarcontrols/BookmarkButton.qml',
+       'player/qml/controlbarcontrols/FavoriteButton.qml',
+       'player/qml/controlbarcontrols/PipButton.qml',
        'player/qml/controlbarcontrols/ChapterNextButton.qml',
        'player/qml/controlbarcontrols/ChapterPreviousButton.qml',
        'player/qml/controlbarcontrols/DvdMenuButton.qml',

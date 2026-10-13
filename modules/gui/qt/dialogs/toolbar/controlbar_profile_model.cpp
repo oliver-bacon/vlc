@@ -114,9 +114,11 @@ decltype (ControlbarProfileModel::m_defaults)
                                 },
                                 {},
                                 {
+                                    ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
                                     ControlListModel::LANG_BUTTON,
                                     ControlListModel::EXTENDED_BUTTON,
+                                    ControlListModel::PIP_BUTTON,
                                     ControlListModel::PLAYLIST_BUTTON
                                 }
                             }
@@ -135,6 +137,7 @@ decltype (ControlbarProfileModel::m_defaults)
                                 },
                                 {},
                                 {
+                                    ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
                                     ControlListModel::LANG_BUTTON,
                                     ControlListModel::PLAYLIST_BUTTON

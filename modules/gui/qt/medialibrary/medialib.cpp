@@ -247,6 +247,55 @@ void MediaLib::reload()
     });
 }
 
+void MediaLib::queryMediaFavorite(const QUrl& mrl)
+{
+    if (mrl.isEmpty())
+        return;
+
+    struct Ctx {
+        bool known = false;
+        bool favorite = false;
+    };
+
+    runOnMLThread<Ctx>(this,
+    //ML thread
+    [mrl = mrl.toString(QUrl::FullyEncoded).toUtf8()](vlc_medialibrary_t* ml, Ctx& ctx){
+        ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media_by_mrl(ml, mrl.constData()) };
+        if (media)
+        {
+            ctx.known = true;
+            ctx.favorite = media->b_is_favorite;
+        }
+    },
+    //UI thread
+    [this, mrl](quint64, Ctx& ctx){
+        emit mediaFavoriteState(mrl, ctx.known, ctx.favorite);
+    });
+}
+
+void MediaLib::setMediaFavorite(const QUrl& mrl, bool favorite)
+{
+    if (mrl.isEmpty())
+        return;
+
+    struct Ctx {
+        bool known = false;
+    };
+
+    runOnMLThread<Ctx>(this,
+    //ML thread
+    [mrl = mrl.toString(QUrl::FullyEncoded).toUtf8(), favorite](vlc_medialibrary_t* ml, Ctx& ctx){
+        ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media_by_mrl(ml, mrl.constData()) };
+        if (media && vlc_ml_media_set_favorite(ml, media->i_id, favorite) == VLC_SUCCESS)
+            ctx.known = true;
+    },
+    //UI thread
+    [this, mrl, favorite](quint64, Ctx& ctx){
+        if (ctx.known)
+            emit mediaFavoriteState(mrl, true, favorite);
+    });
+}
+
 void MediaLib::mlInputItem(const QVector<MLItemId>& itemIdVector, QJSValue callback)
 {
     if (!callback.isCallable()) // invalid argument

@@ -270,25 +270,25 @@ public:
         if (m_hasMedialib)
         {
             ModelEntry videoEntry{ qtr("Video"), "video", VLCIcons::topbar_video, QStringLiteral(":/icons/ic_fluent_filmstrip.svg") };
-            videoEntry.children.emplace_back(qtr("All"), "all");
-            videoEntry.children.emplace_back(qtr("Playlists"), "playlists");
+            videoEntry.children.emplace_back(qtr("All"), "all", VLCIcons::topbar_video);
+            videoEntry.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::lists);
             m_model.children.push_back(std::move(videoEntry));
 
             ModelEntry musicEntry{ qtr("Music"), "music", VLCIcons::topbar_music, QStringLiteral(":/icons/ic_fluent_music_note_2.svg") };
-            musicEntry.children.emplace_back(qtr("Artists"), "artists");
-            musicEntry.children.emplace_back(qtr("Albums"), "albums");
-            musicEntry.children.emplace_back(qtr("Tracks"), "tracks");
-            musicEntry.children.emplace_back(qtr("Genres"), "genres");
-            musicEntry.children.emplace_back(qtr("Playlists"), "playlists");
+            musicEntry.children.emplace_back(qtr("Artists"), "artists", VLCIcons::artist);
+            musicEntry.children.emplace_back(qtr("Albums"), "albums", VLCIcons::album_cover);
+            musicEntry.children.emplace_back(qtr("Tracks"), "tracks", VLCIcons::songs);
+            musicEntry.children.emplace_back(qtr("Genres"), "genres", VLCIcons::genre);
+            musicEntry.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::lists);
             m_model.children.push_back(std::move(musicEntry));
         }
 
         m_model.children.emplace_back(qtr("Browse"), "network", VLCIcons::topbar_network, QStringLiteral(":/icons/ic_fluent_wifi_1.svg"));
 
         ModelEntry discoverEntry{ qtr("Discover"), "discover", VLCIcons::topbar_discover, QStringLiteral(":/icons/ic_fluent_globe.svg") };
-        discoverEntry.children.emplace_back(qtr("Services"), "services");
+        discoverEntry.children.emplace_back(qtr("Services"), "services", VLCIcons::tv);
 
-        discoverEntry.children.emplace_back(qtr("URL"), "url");
+        discoverEntry.children.emplace_back(qtr("URL"), "url", VLCIcons::link);
         m_model.children.push_back(std::move(discoverEntry));
 
         m_model.visibleChildren = m_model.children.size();

@@ -63,6 +63,12 @@ public:
 
     Q_INVOKABLE void mlInputItem(const QVector<MLItemId>& itemIdVector, QJSValue callback);
 
+    /// Looks up the favorite state of the media with this MRL; the answer
+    /// comes back through mediaFavoriteState()
+    Q_INVOKABLE void queryMediaFavorite(const QUrl& mrl);
+    /// Adds the media with this MRL to the favorites (or removes it)
+    Q_INVOKABLE void setMediaFavorite(const QUrl& mrl, bool favorite);
+
     inline bool idle() const { return m_idle; }
     inline int discoveryPending() const { return m_discoveryPending; }
     inline QString discoveryEntryPoint() const { return m_discoveryEntryPoint; }
@@ -172,6 +178,8 @@ signals:
     void discoveryEntryPointChanged( QString entryPoint );
     void discoveryPendingChanged( bool state );
     void idleChanged();
+    /// @param known whether the media is part of the media library
+    void mediaFavoriteState(const QUrl& mrl, bool known, bool favorite);
 
 private:
     static void onMediaLibraryEvent( void* data, const vlc_ml_event_t* event );
