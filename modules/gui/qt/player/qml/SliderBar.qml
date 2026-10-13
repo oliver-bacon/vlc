@@ -47,7 +47,7 @@ T.ProgressBar {
     // Played part of the track: the accent over the track color. Derived
     // from the accent rather than a palette role so that it also works with
     // system/external palettes (Figma: BG/Accent Bright, about 24% / 35%).
-    readonly property color _progressColor: trackStyle ? Qt.alpha(theme.fg.primary, theme.palette.isDark ? 0.24 : 0.35)
+    readonly property color _progressColor: trackStyle ? Qt.alpha(theme.fg.primary, (theme.palette?.isDark ?? true) ? 0.24 : 0.35)
                                                        : theme.fg.primary
     readonly property real _scaledSeekPointsRadius: _seekPointsRadius * _hoveredScalingFactor
 
@@ -590,6 +590,10 @@ T.ProgressBar {
         implicitHeight: sliderHandle._size
         radius: VLCStyle.margin_small
         color: theme.fg.primary
+
+        // Replaced by trackPlayhead in track style. The state machine below
+        // toggles `visible` itself, so hide through opacity instead.
+        opacity: control.trackStyle ? 0.0 : 1.0
 
         // We use dynamic mutability group because time interpolation
         // may induce rapid change:

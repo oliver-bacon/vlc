@@ -98,7 +98,79 @@ T.Pane {
             id: volControl
 
             // FIXME: use VLCStyle
-            implicitWidth: VLCStyle.dp(100, VLCStyle.scale)
+            implicitWidth: VLCStyle.dp(88, VLCStyle.scale)
+
+            // Wedge-shaped volume meter from the VLC Redesign Figma file: a
+            // track that widens to the right, filled with a green to red
+            // gradient up to the current volume. Drawn with Canvas so that no
+            // extra QML module (QtQuick.Shapes) is needed.
+            background: Item {
+                x: volControl.leftPadding
+                y: volControl.topPadding + (volControl.availableHeight - height) / 2
+
+                implicitWidth: VLCStyle.dp(88, VLCStyle.scale)
+                implicitHeight: VLCStyle.dp(24, VLCStyle.scale)
+
+                width: volControl.availableWidth
+                height: Math.min(implicitHeight, volControl.availableHeight)
+
+                Canvas {
+                    id: wedge
+
+                    anchors.fill: parent
+
+                    readonly property real level: volControl.visualPosition
+                    readonly property color trackColor: volControl.bgColor
+
+                    onLevelChanged: requestPaint()
+                    onTrackColorChanged: requestPaint()
+                    onWidthChanged: requestPaint()
+                    onHeightChanged: requestPaint()
+
+                    function _wedgePath(ctx, w, h) {
+                        const tip = h * 0.12 // half height at the quiet end
+                        const r = Math.min(VLCStyle.dp(3, VLCStyle.scale), h / 4)
+                        ctx.beginPath()
+                        ctx.moveTo(0, h / 2 - tip)
+                        ctx.lineTo(w - r, 0)
+                        ctx.arcTo(w, 0, w, r, r)
+                        ctx.lineTo(w, h - r)
+                        ctx.arcTo(w, h, w - r, h, r)
+                        ctx.lineTo(0, h / 2 + tip)
+                        ctx.closePath()
+                    }
+
+                    onPaint: {
+                        const ctx = getContext("2d")
+                        const w = width
+                        const h = height
+                        ctx.reset()
+                        if (w <= 0 || h <= 0)
+                            return
+
+                        _wedgePath(ctx, w, h)
+                        ctx.fillStyle = wedge.trackColor
+                        ctx.fill()
+
+                        // Colors sampled from the Figma volume component
+                        const gradient = ctx.createLinearGradient(0, 0, w, 0)
+                        gradient.addColorStop(0.0, "#7AA513")
+                        gradient.addColorStop(0.55, "#8E8914")
+                        gradient.addColorStop(0.73, "#A16D13")
+                        gradient.addColorStop(0.88, "#B64D1D")
+                        gradient.addColorStop(1.0, "#C23B26")
+
+                        ctx.save()
+                        ctx.beginPath()
+                        ctx.rect(0, 0, w * Helpers.clamp(wedge.level, 0, 1), h)
+                        ctx.clip()
+                        _wedgePath(ctx, w, h)
+                        ctx.fillStyle = gradient
+                        ctx.fill()
+                        ctx.restore()
+                    }
+                }
+            }
 
             // WARNING: Directly setting the insets break handle and background positioning.
             Binding on topInset {

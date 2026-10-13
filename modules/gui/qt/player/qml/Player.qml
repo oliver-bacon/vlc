@@ -954,7 +954,8 @@ FocusScope {
                   resumeVisible)
 
         focus: true
-        title: Player.title
+        // Falls back to the file name when the media has no title tag
+        title: Player.title || Player.name
 
         pinControls: MainCtx.pinVideoControls
 
@@ -1013,8 +1014,14 @@ FocusScope {
 
             anchors.fill: parent
 
+            // The single-line bar (window title centered, as in the Figma
+            // file) is always drawn on a solid surface.
+            readonly property bool _singleLine: topBar._showCenterText
+
             opacity: {
-                if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
+                if (_singleLine && !(MainCtx.intfMainWindow.visibility === Window.FullScreen && MainCtx.hasEmbededVideo)) {
+                    return 0.95
+                } else if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
                     return 0.6
                 } else if (MainCtx.intfMainWindow.visibility === Window.FullScreen && MainCtx.hasEmbededVideo) {
                     return MainCtx.pinOpacity
@@ -1025,7 +1032,7 @@ FocusScope {
 
             tintColor: windowTheme.bg.primary
 
-            visible: MainCtx.pinVideoControls || (MainCtx.hasEmbededVideo && !rootPlayer.displayFadeRectangles)
+            visible: _singleLine || MainCtx.pinVideoControls || (MainCtx.hasEmbededVideo && !rootPlayer.displayFadeRectangles)
         }
     }
 
@@ -1342,10 +1349,16 @@ FocusScope {
         background: Rectangle {
             id: controlBarBackground
 
-            visible: !MainCtx.hasEmbededVideo || MainCtx.pinVideoControls || !rootPlayer.displayFadeRectangles
+            readonly property bool _inline: (controlBar.textPosition === ControlBar.TimeTextPosition.Inline)
+
+            // The single-row bar is always drawn on a solid surface (Figma:
+            // BG/A3 at 95%), instead of fading into the video.
+            visible: _inline || !MainCtx.hasEmbededVideo || MainCtx.pinVideoControls || !rootPlayer.displayFadeRectangles
 
             opacity: {
-                if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
+                if (_inline && !((Window.visibility === Window.FullScreen) && MainCtx.hasEmbededVideo)) {
+                    return 0.95
+                } else if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
                     return 0.6
                 } else if ((Window.visibility === Window.FullScreen) && MainCtx.hasEmbededVideo) {
                     return MainCtx.pinOpacity
@@ -1357,6 +1370,14 @@ FocusScope {
             }
 
             color: windowTheme.bg.primary
+
+            // Hairline separating the single-row bar from the video
+            Rectangle {
+                visible: controlBarBackground._inline
+                anchors { top: parent.top; left: parent.left; right: parent.right }
+                height: VLCStyle.border
+                color: windowTheme.border
+            }
         }
 
         FadeControllerStateGroup {
