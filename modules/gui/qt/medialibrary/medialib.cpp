@@ -17,6 +17,9 @@
  *****************************************************************************/
 
 #include "medialib.hpp"
+
+#include <QDir>
+#include <vlc_url.h>
 #include "mlhelper.hpp"
 #include "playlist/playlist_controller.hpp"
 #include "util/shared_input_item.hpp"
@@ -270,6 +273,42 @@ void MediaLib::queryMediaFavorite(const QUrl& mrl)
     //UI thread
     [this, mrl](quint64, Ctx& ctx){
         emit mediaFavoriteState(mrl, ctx.known, ctx.favorite);
+    });
+}
+
+void MediaLib::addExternalSubtitles(const QVariantList& pairs)
+{
+    std::vector<std::pair<QByteArray, QByteArray>> list;
+    for (const QVariant& pair : pairs)
+    {
+        const QVariantMap map = pair.toMap();
+        // encode the MRLs the way the media library does (vlc_path2uri)
+        const auto toMrl = [](const QVariant& value) -> QByteArray {
+            const QUrl url(value.toString());
+            if (!url.isLocalFile())
+                return url.toString(QUrl::FullyEncoded).toUtf8();
+            char* uri = vlc_path2uri(qtu(QDir::toNativeSeparators(url.toLocalFile())), "file");
+            const QByteArray ret(uri ? uri : "");
+            free(uri);
+            return ret;
+        };
+        const QByteArray media = toMrl(map.value("media"));
+        const QByteArray subtitle = toMrl(map.value("subtitle"));
+        if (!media.isEmpty() && !subtitle.isEmpty())
+            list.emplace_back(media, subtitle);
+    }
+    if (list.empty())
+        return;
+
+    runOnMLThread(this,
+    //ML thread
+    [list](vlc_medialibrary_t* ml){
+        for (const auto& [media, subtitle] : list)
+        {
+            ml_unique_ptr<vlc_ml_media_t> item { vlc_ml_get_media_by_mrl(ml, media.constData()) };
+            if (item)
+                vlc_ml_media_add_external_mrl(ml, item->i_id, subtitle.constData(), VLC_ML_FILE_TYPE_SUBTITLE);
+        }
     });
 }
 

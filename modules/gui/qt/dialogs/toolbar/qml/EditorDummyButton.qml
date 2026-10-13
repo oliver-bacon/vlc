@@ -16,11 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
+import QtQuick.Controls.Basic as Basic
 
 
 import VLC.Style
 
-Label {
+Basic.Label {
     font.pixelSize: VLCStyle.icon_medium
     font.family: VLCIcons.fontFamily
 

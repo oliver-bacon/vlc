@@ -219,6 +219,13 @@ public slots:
     /// Opens the settings window of the QML interface, or the classic
     /// preferences dialog when no settings window is available
     void settingsDialog();
+    /// Shows a dialog of the Figma redesign, returns false when the QML
+    /// interface is not there to show it
+    bool figmaDialog(const QString& name, const QVariant& args = {});
+    void keyboardShortcutsDialog();
+    void customizePlayerDialog();
+    void newPlaylistDialog(const QVariantList& files = {});
+    void addSubtitlesDialog(const QVariant& target);
     void firstRunDialog();
     void extendedDialog();
     void synchroDialog();
@@ -292,6 +299,10 @@ signals:
     void releaseMouseEvents();
     void showToolbarEditorDialog();
     void showSettingsWindow();
+    /// Asks the QML interface to show one of the dialogs of the Figma
+    /// redesign ("network", "newPlaylist", "shortcuts", "subtitles",
+    /// "customize"); args depend on the dialog
+    void showFigmaDialog(const QString& name, const QVariant& args);
 
     //visiblity signal
     void openDialogVisibleChanged();

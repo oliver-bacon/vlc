@@ -29,9 +29,13 @@
 #include "dialogs/dialogs_provider.hpp"
 #include "util/colorizedsvgicon.hpp"
 #include "maininterface/navigationmodel.hpp"
+#include "medialibrary/mlrecentmediamodel.hpp"
+#include "menus/custom_menus.hpp"
+#include "util/settings_profiles.hpp"
 
 // Qt includes
 #include <QPainter>
+#include <QInputDialog>
 #include <QSignalMapper>
 #include <QScreen>
 #include <QActionGroup>
@@ -305,30 +309,103 @@ void QmlGlobalMenu::popup(QPoint pos)
         aboutToHide();
     });
 
-    submenu = m_menu->addMenu(qtr( "&Media" ));
+    /* Laid out like the main menu of the VLC Redesign Figma file; VLC's
+     * classic menus are in "More" */
+    const auto icon = [](const char *name) {
+        return QIcon(QStringLiteral(":/menu/figma/%1.svg").arg(QLatin1String(name)));
+    };
+    const auto withKey = [](const QString &text, const char *key) -> QString {
+        return text + '\t' + QString::fromLatin1(key);
+    };
+    QMenu *menu = m_menu.get();
+    QAction *action;
+
+    menu->addAction(icon("main_open_file_s"), withKey(qtr("Open File(s)"), "Ctrl + O"),
+                    []() { THEDP->simpleOpenDialog(); });
+    menu->addAction(icon("main_open_folder"), withKey(qtr("Open Folder"), "Ctrl + F"),
+                    THEDP, &DialogsProvider::PLOpenDir);
+    menu->addAction(icon("main_open_network_stream"), withKey(qtr("Open Network Stream"), "Ctrl + N"),
+                    THEDP, &DialogsProvider::openNetDialog);
+    menu->addAction(icon("main_open_disc"), withKey(qtr("Open Disc"), "Ctrl + D"),
+                    THEDP, &DialogsProvider::openDiscDialog);
+    menu->addAction(icon("main_open_capture_device"), withKey(qtr("Open Capture Device"), "Ctrl + C"),
+                    THEDP, &DialogsProvider::openCaptureDialog);
+    menu->addAction(icon("main_convert"), withKey(qtr("Convert"), "Ctrl + R"),
+                    THEDP, &DialogsProvider::openAndTranscodingDialogs);
+
+    MainCtx *mi = p_intf->p_mi;
+    if (mi && var_InheritBool(p_intf, "save-recentplay") && mi->hasMediaLibrary())
+    {
+        MLRecentMediaModel* recentModel = new MLRecentMediaModel(nullptr);
+        recentModel->setMl(mi->getMediaLibrary());
+        recentModel->setLimit(10);
+        QMenu* recentsMenu = new RecentMenu(recentModel, mi->getMediaLibrary(), menu);
+        recentModel->setParent(recentsMenu);
+        recentsMenu->setTitle(qtr("Open Recent"));
+        recentsMenu->menuAction()->setIcon(icon("main_open_recent"));
+        menu->addMenu(recentsMenu);
+    }
+
+    menu->addSeparator();
+
+    /* settings profiles */
+    const QString current = SettingsProfiles::current(p_intf);
+    submenu = menu->addMenu(icon("main_profile"), qtr("Profile (%1)").arg(current));
+    auto group = new QActionGroup(submenu);
+    for (const QString &name : SettingsProfiles::names(p_intf))
+    {
+        action = submenu->addAction(name, [p_intf, name]() {
+            SettingsProfiles::switchTo(p_intf, name);
+        });
+        action->setCheckable(true);
+        action->setChecked(name == current);
+        action->setActionGroup(group);
+    }
+    submenu->addAction(icon("main_new"), qtr("New"), [p_intf]() {
+        bool ok = false;
+        const QString name = QInputDialog::getText(nullptr, qtr("New Profile"),
+                                                   qtr("Name of the new settings profile:"),
+                                                   QLineEdit::Normal, {}, &ok);
+        if (ok)
+            SettingsProfiles::create(p_intf, name.trimmed());
+    });
+
+    menu->addAction(icon("main_keyboard_shortcuts"), qtr("Keyboard Shortcuts"),
+                    THEDP, &DialogsProvider::keyboardShortcutsDialog);
+    menu->addAction(icon("main_customize_player"), qtr("Customize Player"),
+                    THEDP, &DialogsProvider::customizePlayerDialog);
+    menu->addAction(icon("main_settings"), withKey(qtr("Settings"), "Ctrl + P"),
+                    THEDP, &DialogsProvider::settingsDialog);
+    menu->addAction(icon("main_about_vlc"), withKey(qtr("About VLC"), "Shift + F1"),
+                    THEDP, &DialogsProvider::aboutDialog);
+
+    menu->addSeparator();
+
+    /* VLC's classic menus */
+    QMenu *more = menu->addMenu(qtr("More"));
+
+    submenu = more->addMenu(qtr( "&Media" ));
     FileMenu( p_intf, submenu );
 
-    /* Dynamic menus, rebuilt before being showed */
-    submenu = m_menu->addMenu(qtr( "P&layback" ));
+    submenu = more->addMenu(qtr( "P&layback" ));
     NavigMenu( p_intf, submenu );
 
-    submenu = m_menu->addMenu(qtr( "&Audio" ));
+    submenu = more->addMenu(qtr( "&Audio" ));
     AudioMenu( p_intf, submenu );
 
-    submenu = m_menu->addMenu(qtr( "&Video" ));
+    submenu = more->addMenu(qtr( "&Video" ));
     VideoMenu( p_intf, submenu );
 
-    submenu = m_menu->addMenu(qtr( "Subti&tle" ));
+    submenu = more->addMenu(qtr( "Subti&tle" ));
     SubtitleMenu( p_intf, submenu );
 
-    submenu = m_menu->addMenu(qtr( "Tool&s" ));
+    submenu = more->addMenu(qtr( "Tool&s" ));
     ToolsMenu( p_intf, submenu );
 
-    /* View menu, a bit different */
-    submenu = m_menu->addMenu(qtr( "V&iew" ));
+    submenu = more->addMenu(qtr( "V&iew" ));
     ViewMenu( p_intf, submenu );
 
-    submenu = m_menu->addMenu(qtr( "&Help" ));
+    submenu = more->addMenu(qtr( "&Help" ));
     HelpMenu( p_intf, submenu );
 
     m_menu->popup(pos);
@@ -909,6 +986,12 @@ void PlaylistListContextMenu::popup(const QModelIndexList & selected, QPoint pos
     action = more->addAction(qtr("Delete"));
 
     connect(action, &QAction::triggered, this, &PlaylistListContextMenu::requestDeleteSelectedPlaylists);
+
+    more->addSeparator();
+    action = more->addAction(qtr("New Playlist..."));
+    connect(action, &QAction::triggered, this, [this]() {
+        DialogsProvider::getInstance()->newPlaylistDialog();
+    });
 
     menu->popup(pos);
 }

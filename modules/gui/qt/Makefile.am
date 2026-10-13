@@ -314,6 +314,7 @@ libqt_plugin_la_SOURCES = \
 	util/base_model.hpp util/base_model_p.hpp util/base_model.cpp \
 	util/color_scheme_model.cpp util/color_scheme_model.hpp \
 	util/config_bridge.cpp util/config_bridge.hpp \
+	util/settings_profiles.cpp util/settings_profiles.hpp \
 	util/ui_notifier.cpp util/ui_notifier.hpp \
 	util/color_svg_image_provider.cpp util/color_svg_image_provider.hpp \
 	util/vlcaccess_image_provider.cpp util/vlcaccess_image_provider.hpp \
@@ -935,6 +936,19 @@ libqt_plugin_la_RES = \
 	pixmaps/menu/ic_fluent_skip_forward_10.svg \
 	pixmaps/menu/ic_fluent_arrow_shuffle.svg \
 	pixmaps/menu/ic_fluent_stop.svg \
+	pixmaps/menu/figma/main_about_vlc.svg \
+	pixmaps/menu/figma/main_convert.svg \
+	pixmaps/menu/figma/main_customize_player.svg \
+	pixmaps/menu/figma/main_keyboard_shortcuts.svg \
+	pixmaps/menu/figma/main_new.svg \
+	pixmaps/menu/figma/main_open_capture_device.svg \
+	pixmaps/menu/figma/main_open_disc.svg \
+	pixmaps/menu/figma/main_open_file_s.svg \
+	pixmaps/menu/figma/main_open_folder.svg \
+	pixmaps/menu/figma/main_open_network_stream.svg \
+	pixmaps/menu/figma/main_open_recent.svg \
+	pixmaps/menu/figma/main_profile.svg \
+	pixmaps/menu/figma/main_settings.svg \
 	pixmaps/menu/figma/file_add_audio_tracks.svg \
 	pixmaps/menu/figma/file_add_subtitle_tracks.svg \
 	pixmaps/menu/figma/file_add_to_playlist.svg \
@@ -1090,6 +1104,12 @@ libqml_module_dialogs_a_QML = \
 	dialogs/settings/qml/SettingRow.qml \
 	dialogs/settings/qml/SettingsModel.qml \
 	dialogs/settings/qml/SettingsWindow.qml \
+	dialogs/figma/qml/FigmaDialog.qml \
+	dialogs/figma/qml/NetworkStreamDialog.qml \
+	dialogs/figma/qml/NewPlaylistDialog.qml \
+	dialogs/figma/qml/KeyboardShortcutsDialog.qml \
+	dialogs/figma/qml/AddSubtitlesDialog.qml \
+	dialogs/figma/qml/CustomizePlayerDialog.qml \
 	dialogs/toolbar/qml/EditorDNDDelegate.qml \
 	dialogs/toolbar/qml/EditorDNDView.qml\
 	dialogs/toolbar/qml/EditorDummyButton.qml \
@@ -1259,6 +1279,17 @@ libqml_module_playercontrols_a_QML = \
 	player/qml/controlbarcontrols/BookmarkButton.qml \
 	player/qml/controlbarcontrols/FavoriteButton.qml \
 	player/qml/controlbarcontrols/PipButton.qml \
+	player/qml/controlbarcontrols/GoHomeButton.qml \
+	player/qml/controlbarcontrols/SettingsButton.qml \
+	player/qml/controlbarcontrols/PropertiesButton.qml \
+	player/qml/controlbarcontrols/ReplayButton.qml \
+	player/qml/controlbarcontrols/SidebarButton.qml \
+	player/qml/controlbarcontrols/ZoomButton.qml \
+	player/qml/controlbarcontrols/DividerWidget.qml \
+	player/qml/controlbarcontrols/FileNameLabel.qml \
+	player/qml/controlbarcontrols/ArtistNameLabel.qml \
+	player/qml/controlbarcontrols/FolderNameLabel.qml \
+	player/qml/controlbarcontrols/MediaLabel.qml \
 	player/qml/controlbarcontrols/ChapterNextButton.qml \
 	player/qml/controlbarcontrols/ChapterPreviousButton.qml \
 	player/qml/controlbarcontrols/DvdMenuButton.qml \

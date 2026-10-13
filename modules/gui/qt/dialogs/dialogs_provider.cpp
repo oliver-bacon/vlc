@@ -299,6 +299,35 @@ void DialogsProvider::settingsDialog()
         prefsDialog();
 }
 
+bool DialogsProvider::figmaDialog(const QString& name, const QVariant& args)
+{
+    if (!isSignalConnected(QMetaMethod::fromSignal(&DialogsProvider::showFigmaDialog)))
+        return false;
+    emit showFigmaDialog(name, args);
+    return true;
+}
+
+void DialogsProvider::keyboardShortcutsDialog()
+{
+    if (!figmaDialog(QStringLiteral("shortcuts")))
+        prefsDialog();
+}
+
+void DialogsProvider::customizePlayerDialog()
+{
+    figmaDialog(QStringLiteral("customize"));
+}
+
+void DialogsProvider::newPlaylistDialog(const QVariantList& files)
+{
+    figmaDialog(QStringLiteral("newPlaylist"), files);
+}
+
+void DialogsProvider::addSubtitlesDialog(const QVariant& target)
+{
+    figmaDialog(QStringLiteral("subtitles"), target);
+}
+
 void DialogsProvider::prefsDialog()
 {
     if (Q_LIKELY(!m_prefsDialog))
@@ -659,7 +688,8 @@ void DialogsProvider::openDiscDialog()
 }
 void DialogsProvider::openNetDialog()
 {
-    openDialog( OpenDialog::OPEN_NETWORK_TAB );
+    if( !figmaDialog( QStringLiteral( "network" ) ) )
+        openDialog( OpenDialog::OPEN_NETWORK_TAB );
 }
 void DialogsProvider::openCaptureDialog()
 {

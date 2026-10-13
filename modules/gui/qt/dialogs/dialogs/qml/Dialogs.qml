@@ -594,6 +594,36 @@ Item {
         onAboutToHide: restoreFocus()
     }
 
+    // dialogs of the Figma redesign, created on first use
+    readonly property var _figmaDialogs: ({
+        "network": "NetworkStreamDialog.qml",
+        "newPlaylist": "NewPlaylistDialog.qml",
+        "shortcuts": "KeyboardShortcutsDialog.qml",
+        "subtitles": "AddSubtitlesDialog.qml",
+        "customize": "CustomizePlayerDialog.qml"
+    })
+    property var _figmaDialogInstances: ({})
+
+    Connections {
+        target: DialogsProvider
+
+        function onShowFigmaDialog(name, args) {
+            let dialog = root._figmaDialogInstances[name]
+            if (!dialog) {
+                const component = Qt.createComponent("qrc:///qt/qml/VLC/Dialogs/" + root._figmaDialogs[name])
+                if (component.status !== Component.Ready) {
+                    console.warn("cannot load dialog", name, component.errorString())
+                    return
+                }
+                dialog = component.createObject(root)
+                root._figmaDialogInstances[name] = dialog
+            }
+            if (typeof dialog.reset === "function")
+                dialog.reset(args)
+            dialog.open()
+        }
+    }
+
     Loader {
         id: settingsWindowLoader
         active: false

@@ -37,8 +37,8 @@ GridView {
     currentIndex: -1
     highlightFollowsCurrentItem: false
 
-    cellWidth: VLCStyle.cover_small
-    cellHeight: cellWidth
+    cellWidth: VLCStyle.dp(101, VLCStyle.scale)
+    cellHeight: VLCStyle.dp(110, VLCStyle.scale)
 
     boundsBehavior: Flickable.StopAtBounds
 
@@ -180,30 +180,48 @@ GridView {
             buttonDragItem.x = pos.x + VLCStyle.dragDelta
         }
 
+        // Figma "Customize Player": icon in a dashed rounded box, label below
         Rectangle {
             anchors.fill: parent
+            anchors.margins: VLCStyle.dp(4, VLCStyle.scale)
 
-            implicitWidth: childrenRect.width
-            implicitHeight: childrenRect.height
-
-            color: "transparent"
-
-            border.width: VLCStyle.dp(1, VLCStyle.scale)
-            border.color: containsMouse && !buttonDragItem.Drag.active ? colorContext.border
-                                                                       : "transparent"
-            border.pixelAligned: (radius < Number.EPSILON)
+            radius: VLCStyle.dp(6, VLCStyle.scale)
+            color: containsMouse && !buttonDragItem.Drag.active ? Qt.alpha(colorContext.fg.primary, 0.05)
+                                                                : "transparent"
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 10
+                anchors.topMargin: VLCStyle.dp(14, VLCStyle.scale)
+                spacing: VLCStyle.dp(10, VLCStyle.scale)
 
-                EditorDummyButton {
-                    Layout.preferredWidth: VLCStyle.icon_medium
-                    Layout.preferredHeight: VLCStyle.icon_medium
+                Item {
+                    Layout.preferredWidth: VLCStyle.dp(24, VLCStyle.scale)
+                    Layout.preferredHeight: VLCStyle.dp(24, VLCStyle.scale)
                     Layout.alignment: Qt.AlignHCenter
 
-                    color: colorContext.fg.primary
-                    text: PlayerControlbarControls.controlList[model.index].label
+                    Canvas {
+                        anchors.fill: parent
+                        anchors.margins: -VLCStyle.dp(4, VLCStyle.scale)
+                        onPaint: {
+                            const ctx = getContext("2d")
+                            ctx.reset()
+                            ctx.strokeStyle = colorContext.fg.secondary
+                            ctx.globalAlpha = 0.6
+                            ctx.setLineDash([2, 2])
+                            ctx.beginPath()
+                            ctx.roundedRect(0.5, 0.5, width - 1, height - 1, 4, 4)
+                            ctx.stroke()
+                        }
+                    }
+
+                    EditorDummyButton {
+                        anchors.fill: parent
+                        font.pixelSize: VLCStyle.dp(18, VLCStyle.scale)
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: colorContext.fg.secondary
+                        text: PlayerControlbarControls.controlList[model.index].label
+                    }
                 }
 
                 Widgets.ListSubtitleLabel {
@@ -212,10 +230,11 @@ GridView {
 
                     color: colorContext.fg.secondary
                     elide: Text.ElideNone
-                    fontSizeMode: Text.Fit
+                    font.pixelSize: VLCStyle.dp(13, VLCStyle.scale)
                     text: PlayerControlbarControls.controlList[model.index].text
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignTop
                 }
             }
         }

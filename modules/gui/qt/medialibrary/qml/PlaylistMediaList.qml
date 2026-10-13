@@ -523,15 +523,21 @@ MainViewLoader {
     Component {
         id: emptyLabel
 
-        Widgets.EmptyLabelHint {
+        Widgets.EmptyLabelButton {
             visible: (model.count === 0)
 
             focus: true
 
             text: qsTr("No playlists found")
-            hint: qsTr("Right click on a media\nto add it to a playlist")
 
             cover: VLCStyle.noArtAlbumCover
+
+            button.text: qsTr("New Playlist")
+            button.iconTxt: VLCIcons.add
+
+            function onNavigate(reason) {
+                DialogsProvider.newPlaylistDialog()
+            }
         }
     }
 }

@@ -40,7 +40,8 @@ public:
         FOLDER_THUMBNAIL,
         FOLDER_DURATION,
         FOLDER_COUNT,
-        FOLDER_NB_VIDEOS
+        FOLDER_NB_VIDEOS,
+        FOLDER_MRL
     };
 
 public:

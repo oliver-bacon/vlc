@@ -74,6 +74,24 @@ public:
     Q_INVOKABLE QString browse(const QString& title, const QString& current,
                                bool directory, bool save) const;
 
+    /// Asks the user for several files, returns their URLs
+    Q_INVOKABLE QVariantList browseFiles(const QString& title, const QString& filter = {}) const;
+    /// Asks the user for a folder, returns its URL or an empty string
+    Q_INVOKABLE QString browseFolder(const QString& title) const;
+
+    /// All hotkey options, in VLC's order: list of
+    /// { name, text, global (name of the matching global hotkey option) }
+    Q_INVOKABLE QVariantList hotkeys() const;
+    /// VLC key string ("Ctrl+Shift+a") for a key event received in QML,
+    /// empty for lone modifiers
+    Q_INVOKABLE QString keyFromEvent(int key, int modifiers, const QString& text) const;
+    /// Human readable form of a VLC key string, as shown by the design
+    Q_INVOKABLE QString keyDisplayText(const QString& key) const;
+
+    /// Names of the files of a folder (URL) with one of these extensions,
+    /// sorted naturally
+    Q_INVOKABLE QStringList listFiles(const QString& folderUrl, const QStringList& extensions) const;
+
 signals:
     void valueChanged(const QString& name);
 

@@ -155,6 +155,16 @@ NativeMenu {
             "action": openContainingFolder,
             "visible": _openContainingFolder
         }, {
+            "text": qsTr("Add Subtitle Tracks"),
+            "icon": "file_add_subtitle_tracks",
+            "action": function(dataList, options, indexes) {
+                DialogsProvider.addSubtitlesDialog({ "mode": "file", "mrl": dataList[0]["mrl"] })
+            },
+            "visible": function(dataList, options, indexes) {
+                return !root._folderMenu && dataList.length === 1
+                        && ("isNew" in dataList[0]) && _hasMrl(dataList) && _openContainingFolder(dataList)
+            }
+        }, {
             "text": qsTr("Properties & Metadata"),
             "icon": "file_properties_metadata",
             "action": function(dataList, options, indexes) {
@@ -164,6 +174,16 @@ NativeMenu {
                 return !root._folderMenu
                         && (dataList.length === 1)
                         && !(dataList[0][idDataRole].hasParent())
+            }
+        }, {
+            "text": qsTr("Edit Subtitle Tracks"),
+            "icon": "folder_edit_subtitle_tracks",
+            "action": function(dataList, options, indexes) {
+                DialogsProvider.addSubtitlesDialog({ "mode": "folder", "mrl": dataList[0]["mrl"] })
+            },
+            "visible": function(dataList, options, indexes) {
+                return root._folderMenu && dataList.length === 1
+                        && String(dataList[0]["mrl"] ?? "").startsWith("file://")
             }
         }, {
             "text": qsTr("Info"),

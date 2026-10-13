@@ -66,6 +66,9 @@ public:
     /// Looks up the favorite state of the media with this MRL; the answer
     /// comes back through mediaFavoriteState()
     Q_INVOKABLE void queryMediaFavorite(const QUrl& mrl);
+    /// Attaches subtitle files to library media, so that they are loaded
+    /// every time; pairs is a list of { media: MRL, subtitle: URL }
+    Q_INVOKABLE void addExternalSubtitles(const QVariantList& pairs);
     /// Adds the media with this MRL to the favorites (or removes it)
     Q_INVOKABLE void setMediaFavorite(const QUrl& mrl, bool favorite);
 

@@ -24,7 +24,11 @@
 #include <QColor>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QDir>
+#include <QCollator>
+#include <QUrl>
 #include <QStringList>
+#include <QKeyEvent>
 
 #include <cfloat>
 #include <cstdint>
@@ -33,6 +37,9 @@
 #include <vlc_configuration.h>
 #include <vlc_modules.h>
 #include <vlc_plugin.h>
+#include <vlc_actions.h>
+
+#include "util/vlchotkeyconverter.hpp"
 
 namespace {
 
@@ -316,6 +323,99 @@ QString ConfigBridge::browse(const QString& title, const QString& current,
     if (save)
         return QFileDialog::getSaveFileName(nullptr, title, current.isEmpty() ? dir : current);
     return QFileDialog::getOpenFileName(nullptr, title, dir);
+}
+
+QVariantList ConfigBridge::browseFiles(const QString& title, const QString& filter) const
+{
+    QVariantList ret;
+    for (const QUrl& url : QFileDialog::getOpenFileUrls(nullptr, title, {}, filter))
+        ret.append(url);
+    return ret;
+}
+
+QString ConfigBridge::browseFolder(const QString& title) const
+{
+    const QUrl url = QFileDialog::getExistingDirectoryUrl(nullptr, title);
+    return url.isEmpty() ? QString {} : url.toString();
+}
+
+QVariantList ConfigBridge::hotkeys() const
+{
+    QVariantList ret;
+    module_t* main = module_get_main();
+    unsigned count = 0;
+    module_config_t* items = module_config_get(main, &count);
+    if (!items)
+        return ret;
+
+    QStringList globals;
+    for (unsigned i = 0; i < count; ++i)
+    {
+        const module_config_t& item = items[i];
+        if (item.i_type == CONFIG_ITEM_KEY && item.psz_text && strncmp(item.psz_name, "global-", 7) == 0)
+            globals.append(qfu(item.psz_name));
+    }
+    for (unsigned i = 0; i < count; ++i)
+    {
+        const module_config_t& item = items[i];
+        if (item.i_type != CONFIG_ITEM_KEY || !item.psz_text || strncmp(item.psz_name, "global-", 7) == 0)
+            continue;
+        const QString name = qfu(item.psz_name);
+        const QString global = QStringLiteral("global-") + name;
+        ret.append(QVariantMap {
+            { QStringLiteral("name"), name },
+            { QStringLiteral("text"), qfut(item.psz_text) },
+            { QStringLiteral("global"), globals.contains(global) ? global : QString {} },
+        });
+    }
+    module_config_free(items);
+    return ret;
+}
+
+QString ConfigBridge::keyFromEvent(int key, int modifiers, const QString& text) const
+{
+    switch (key)
+    {
+    case Qt::Key_Control: case Qt::Key_Shift: case Qt::Key_Alt:
+    case Qt::Key_Meta: case Qt::Key_AltGr: case Qt::Key_unknown:
+        return {};
+    default:
+        break;
+    }
+    QKeyEvent event(QEvent::KeyPress, key, Qt::KeyboardModifiers(modifiers), text);
+    const int code = qtEventToVLCKey(&event);
+    char* str = vlc_keycode2str(code, false);
+    QString ret = qfu(str ? str : "");
+    free(str);
+    return ret;
+}
+
+QString ConfigBridge::keyDisplayText(const QString& key) const
+{
+    QStringList keys;
+    for (const QString& one : key.split('\t', Qt::SkipEmptyParts))
+    {
+        QStringList parts = one.split('+', Qt::SkipEmptyParts);
+        for (QString& part : parts)
+            part = (part.size() == 1) ? part.toUpper() : part;
+        keys.append(parts.join(QStringLiteral(" + ")));
+    }
+    return keys.join(QStringLiteral(", "));
+}
+
+QStringList ConfigBridge::listFiles(const QString& folderUrl, const QStringList& extensions) const
+{
+    const QString path = QUrl(folderUrl).toLocalFile();
+    if (path.isEmpty())
+        return {};
+    QStringList filters;
+    for (const QString& ext : extensions)
+        filters.append(QStringLiteral("*.") + ext);
+    QStringList files = QDir(path).entryList(filters, QDir::Files | QDir::Readable);
+    QCollator collator;
+    collator.setNumericMode(true);
+    std::sort(files.begin(), files.end(), collator);
+    return files;
 }
 
 void ConfigBridge::save()

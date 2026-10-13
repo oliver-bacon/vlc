@@ -18,6 +18,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQml.Models
+import QtQuick.Controls.Basic as Basic
 
 
 import VLC.MainInterface
@@ -47,7 +48,7 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        TabBar {
+        Basic.TabBar {
             id: bar
             z: 1
 
