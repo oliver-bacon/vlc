@@ -69,6 +69,8 @@ public:
     /// Attaches subtitle files to library media, so that they are loaded
     /// every time; pairs is a list of { media: MRL, subtitle: URL }
     Q_INVOKABLE void addExternalSubtitles(const QVariantList& pairs);
+    /// Adds a folder to the media library (indexed in the background)
+    Q_INVOKABLE void addFolder(const QUrl& folder);
     /// Adds the media with this MRL to the favorites (or removes it)
     Q_INVOKABLE void setMediaFavorite(const QUrl& mrl, bool favorite);
 

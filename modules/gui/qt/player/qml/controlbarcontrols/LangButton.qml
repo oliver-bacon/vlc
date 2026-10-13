@@ -53,41 +53,28 @@ Widgets.IconToolButton {
 
     // Events
 
-    onClicked: menuLoader.item.open()
+    onClicked: menuLoader.item.opened ? menuLoader.item.close() : menuLoader.item.open()
 
     // Children
 
     Loader {
         id: menuLoader
 
-        sourceComponent: TracksMenu {
+        // Figma track popover, above the button, right aligned
+        sourceComponent: TracksPopover {
             id: menu
 
-            parent: root._parentItem
-
-            x: 0
-            y: (parent.positionSliderY - height)
-            z: 1
-
-            focus: true
-
-            colorContext.palette: root.colorContext.palette
+            x: root.width - width
+            y: -height - VLCStyle.margin_small
 
             onOpened: {
                 root.requestLockUnlockAutoHide(true)
                 root.menuOpened(menu)
             }
-
             onClosed: {
                 root.requestLockUnlockAutoHide(false)
                 root.forceActiveFocus()
-                root.menuOpened(null)
             }
         }
-    }
-
-    function forceUnlock() {
-        if((menuLoader)&&(menuLoader.item))
-            menuLoader.item.close()
     }
 }

@@ -315,6 +315,7 @@ libqt_plugin_la_SOURCES = \
 	util/color_scheme_model.cpp util/color_scheme_model.hpp \
 	util/config_bridge.cpp util/config_bridge.hpp \
 	util/settings_profiles.cpp util/settings_profiles.hpp \
+	util/effects_bridge.cpp util/effects_bridge.hpp \
 	util/ui_notifier.cpp util/ui_notifier.hpp \
 	util/color_svg_image_provider.cpp util/color_svg_image_provider.hpp \
 	util/vlcaccess_image_provider.cpp util/vlcaccess_image_provider.hpp \
@@ -510,6 +511,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/base_model.moc.cpp \
 	util/color_scheme_model.moc.cpp \
 	util/config_bridge.moc.cpp \
+	util/effects_bridge.moc.cpp \
 	util/ui_notifier.moc.cpp \
 	util/color_svg_image_provider.moc.cpp \
 	util/vlcaccess_image_provider.moc.cpp \
@@ -1110,6 +1112,7 @@ libqml_module_dialogs_a_QML = \
 	dialogs/figma/qml/KeyboardShortcutsDialog.qml \
 	dialogs/figma/qml/AddSubtitlesDialog.qml \
 	dialogs/figma/qml/CustomizePlayerDialog.qml \
+	dialogs/figma/qml/OnboardingWindow.qml \
 	dialogs/toolbar/qml/EditorDNDDelegate.qml \
 	dialogs/toolbar/qml/EditorDNDView.qml\
 	dialogs/toolbar/qml/EditorDummyButton.qml \
@@ -1251,6 +1254,8 @@ libqml_module_player_a_QML = \
 	player/qml/SliderBar.qml \
 	player/qml/TopBar.qml \
 	player/qml/TracksMenu.qml \
+	player/qml/PlayerSettingsPanel.qml \
+	player/qml/TracksPopover.qml \
 	player/qml/TracksPage.qml \
 	player/qml/TracksPageAudio.qml \
 	player/qml/TracksPageSpeed.qml \

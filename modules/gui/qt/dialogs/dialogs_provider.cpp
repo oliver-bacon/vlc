@@ -62,6 +62,7 @@
 
 #include <QEvent>
 #include <QMetaMethod>
+#include <QTimer>
 #include <QApplication>
 #include <QSignalMapper>
 #include <QFileDialog>
@@ -345,6 +346,17 @@ void DialogsProvider::prefsDialog()
 
 void DialogsProvider::firstRunDialog()
 {
+    /* Figma onboarding screens, once the QML interface is ready (it may
+     * still be loading at startup); the classic wizard otherwise */
+    static int attempts = 0;
+    if (figmaDialog(QStringLiteral("onboarding")))
+        return;
+    if (attempts++ < 20)
+    {
+        QTimer::singleShot(250, this, &DialogsProvider::firstRunDialog);
+        return;
+    }
+
     ensureDialog(m_firstRunDialog);
     QVLCDialog::setWindowTransientParent(m_firstRunDialog.get(), nullptr, p_intf);
     m_firstRunDialog->show();

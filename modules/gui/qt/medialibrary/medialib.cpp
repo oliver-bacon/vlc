@@ -276,6 +276,18 @@ void MediaLib::queryMediaFavorite(const QUrl& mrl)
     });
 }
 
+void MediaLib::addFolder(const QUrl& folder)
+{
+    const QByteArray mrl = folder.toString(QUrl::FullyEncoded).toUtf8();
+    if (mrl.isEmpty())
+        return;
+    runOnMLThread(this,
+    //ML thread
+    [mrl](vlc_medialibrary_t* ml){
+        vlc_ml_add_folder(ml, mrl.constData());
+    });
+}
+
 void MediaLib::addExternalSubtitles(const QVariantList& pairs)
 {
     std::vector<std::pair<QByteArray, QByteArray>> list;

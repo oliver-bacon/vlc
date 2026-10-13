@@ -600,7 +600,8 @@ Item {
         "newPlaylist": "NewPlaylistDialog.qml",
         "shortcuts": "KeyboardShortcutsDialog.qml",
         "subtitles": "AddSubtitlesDialog.qml",
-        "customize": "CustomizePlayerDialog.qml"
+        "customize": "CustomizePlayerDialog.qml",
+        "onboarding": "OnboardingWindow.qml"
     })
     property var _figmaDialogInstances: ({})
 

@@ -22,15 +22,30 @@ import VLC.Widgets as Widgets
 import VLC.Style
 import VLC.Dialogs
 import VLC.Util
+import VLC.Player
 
 Widgets.IconToolButton {
     id: extdSettingsBtn
 
-    text: VLCIcons.effect_filter
+    text: VLCIcons.settings
 
-    description: qsTr("Extended settings")
+    description: qsTr("Player settings")
+    checked: panel.opened
 
     AccessibleCompat.id: "extendedSettingsButton"
 
-    onClicked: DialogsProvider.extendedDialog()
+    signal requestLockUnlockAutoHide(bool lock)
+
+    // Figma player settings panel, above the button, right aligned
+    onClicked: panel.opened ? panel.close() : panel.open()
+
+    PlayerSettingsPanel {
+        id: panel
+
+        x: extdSettingsBtn.width - width
+        y: -height - VLCStyle.margin_small
+
+        onOpened: extdSettingsBtn.requestLockUnlockAutoHide(true)
+        onClosed: extdSettingsBtn.requestLockUnlockAutoHide(false)
+    }
 }
