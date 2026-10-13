@@ -710,7 +710,7 @@ void SystemPalette::makeDarkPalette()
     //base set
     {
         C::ColorSet CS = C::View;
-        setColor(CS, C::Bg, C::Primary, C::Normal, figDarkBgA3 );
+        setColor(CS, C::Bg, C::Primary, C::Normal, figDarkBgB1 ); // library background
         setColor(CS, C::Bg, C::Secondary, C::Normal, figDarkBgB2 );
 
         setColor(CS, C::Fg, C::Primary, C::Normal, figDarkFg1 );

@@ -359,7 +359,7 @@ T.ItemDelegate {
                 height: implicitHeight
                 color: root.selected
                     ? theme.fg.highlight
-                    : theme.fg.primary
+                    : theme.fg.secondary
             }
         }
 

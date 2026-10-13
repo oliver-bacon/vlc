@@ -51,6 +51,10 @@ T.Pane {
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
                              implicitContentHeight + topPadding + bottomPadding)
 
+    // The panel is inset by `panelInset` (Figma: 8px around a 6px-radius
+    // panel); the content is laid out inside the panel.
+    readonly property real panelInset: VLCStyle.margin_xsmall
+
     padding: VLCStyle.margin_normal
 
     readonly property ColorContext colorContext: ColorContext {
@@ -88,9 +92,20 @@ T.Pane {
         }
     }
 
-    background: Widgets.AcrylicBackground {
-        enabled: root.useAcrylic
-        tintColor: theme.bg.primary
+    readonly property ColorContext viewColorContext: ColorContext {
+        id: viewTheme
+        colorSet: ColorContext.View
+    }
+
+    background: Rectangle {
+        color: viewTheme.bg.primary
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: root.panelInset
+            radius: VLCStyle.dp(6, VLCStyle.scale)
+            color: theme.bg.primary
+        }
     }
 
     contentItem:  Item {
@@ -100,6 +115,8 @@ T.Pane {
         //would be parented (and layouted) to the Layout
         ColumnLayout {
             anchors.fill: parent
+            anchors.margins: root.panelInset
+            anchors.topMargin: root.panelInset * 2
             spacing: VLCStyle.margin_xsmall
 
             Widgets.ListViewExt {
@@ -280,7 +297,7 @@ T.Pane {
 
                 showText: root.delegateShowText
 
-                onClicked: DialogsProvider.prefsDialog()
+                onClicked: DialogsProvider.settingsDialog()
 
                 //SideNavigationDelegate is an ItemDelegate and has NoFocus by default
                 focusPolicy: Qt.StrongFocus

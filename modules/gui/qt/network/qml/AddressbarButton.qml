@@ -110,6 +110,8 @@ T.Button {
 
             color: button.foregroundColor
 
+            // Breadcrumb text size from the Figma library header (16px)
+            font.pixelSize: VLCStyle.fontSize_xlarge
             font.weight: (highlighted) ? Font.DemiBold : Font.Normal
         }
     }

@@ -203,7 +203,7 @@ QtObject {
     readonly property int gridCover_video_height: ( gridCover_video_width * 10.0 ) / 16
     readonly property int gridCover_video_border: MainCtx.dp(4, scale)
 
-    readonly property int gridCover_radius: MainCtx.dp(4, scale)
+    readonly property int gridCover_radius: MainCtx.dp(12, scale)
 
     readonly property int expandCover_music_height: MainCtx.dp(171, scale)
     readonly property int expandCover_music_width: MainCtx.dp(171, scale)

@@ -203,7 +203,8 @@ static int updatePalette(vlc_qt_theme_provider_t* obj)
 
         if (!strcmp(accentColor, "default"))
         {
-            qcAccent = QColor( isDark ? "#FF8800" : "#FF610A" );
+            // VLC Redesign accents (see SystemPalette)
+            qcAccent = QColor( isDark ? "#D37918" : "#E8851A" );
         }
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
         else if (!strcmp(accentColor, "system"))

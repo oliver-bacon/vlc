@@ -191,8 +191,8 @@ T.Control {
                     Layout.fillHeight: true
                     visible: index !== contentRepeater.count - 1
                     text: VLCIcons.breadcrumb_sep
-                    font.pixelSize: VLCStyle.icon_addressBar
-                    color: theme.fg.secondary
+                    font.pixelSize: VLCStyle.icon_xsmall
+                    color: theme.border
                     verticalAlignment: Text.AlignVCenter
                 }
             }
@@ -205,7 +205,7 @@ T.Control {
 
     FontMetrics {
         id: fontMetrics
-        font.pixelSize: VLCStyle.fontSize_xxxlarge
+        font.pixelSize: VLCStyle.fontSize_xlarge
     }
 
     FontMetrics {

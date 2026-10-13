@@ -170,6 +170,16 @@ T.Page {
 
         background: Rectangle {
             color: theme.bg.primary
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: defaultPageHeader.leftPadding
+                anchors.rightMargin: defaultPageHeader.rightPadding
+                height: VLCStyle.border
+                color: theme.separator
+            }
         }
 
         RowLayout {
@@ -182,7 +192,9 @@ T.Page {
 
                 Layout.fillWidth: true
 
-                color: theme.fg.primary
+                color: theme.fg.secondary
+                font.pixelSize: VLCStyle.fontSize_xlarge
+                font.weight: Font.DemiBold
             }
 
             GridSortFilterControls {

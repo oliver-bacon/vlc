@@ -88,7 +88,10 @@ T.Pane {
 
             Layout.fillWidth: true
 
-            color: theme.fg.primary
+            // Section headings use the same muted style as page titles
+            color: theme.fg.secondary
+            font.pixelSize: VLCStyle.fontSize_large
+            font.weight: Font.DemiBold
         }
 
         TextToolButton {
