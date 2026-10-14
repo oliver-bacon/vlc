@@ -1002,9 +1002,13 @@ libqt_plugin_la_RES = \
 	pixmaps/menu/volume-muted.svg \
 	pixmaps/misc/cone.svg \
 	pixmaps/misc/new_indicator.svg \
+	pixmaps/misc/onboarding_system_tile.svg \
 	pixmaps/misc/theme_dark.svg \
 	pixmaps/misc/theme_daynight.svg \
 	pixmaps/misc/theme_light.svg \
+	pixmaps/misc/volume_fill.svg \
+	pixmaps/misc/volume_track_dark.svg \
+	pixmaps/misc/volume_track_light.svg \
 	pixmaps/misc/wait1.svg \
 	pixmaps/misc/wait2.svg \
 	pixmaps/misc/wait3.svg \
@@ -1111,6 +1115,7 @@ libqml_module_dialogs_a_QML = \
 	dialogs/figma/qml/NewPlaylistDialog.qml \
 	dialogs/figma/qml/PlaylistPropertiesDialog.qml \
 	dialogs/figma/qml/PlaylistThumbnailBox.qml \
+	dialogs/figma/qml/DashedBorder.qml \
 	dialogs/figma/qml/KeyboardShortcutsDialog.qml \
 	dialogs/figma/qml/AddSubtitlesDialog.qml \
 	dialogs/figma/qml/CustomizePlayerDialog.qml \

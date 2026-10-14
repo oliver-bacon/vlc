@@ -118,9 +118,13 @@
     <qresource prefix="/misc">
         <file alias="cone.svg">pixmaps/misc/cone.svg</file>
         <file alias="new_indicator.svg">pixmaps/misc/new_indicator.svg</file>
+        <file alias="onboarding_system_tile.svg">pixmaps/misc/onboarding_system_tile.svg</file>
         <file alias="theme_dark.svg">pixmaps/misc/theme_dark.svg</file>
         <file alias="theme_daynight.svg">pixmaps/misc/theme_daynight.svg</file>
         <file alias="theme_light.svg">pixmaps/misc/theme_light.svg</file>
+        <file alias="volume_fill.svg">pixmaps/misc/volume_fill.svg</file>
+        <file alias="volume_track_dark.svg">pixmaps/misc/volume_track_dark.svg</file>
+        <file alias="volume_track_light.svg">pixmaps/misc/volume_track_light.svg</file>
         <file alias="wait1.svg">pixmaps/misc/wait1.svg</file>
         <file alias="wait2.svg">pixmaps/misc/wait2.svg</file>
         <file alias="wait3.svg">pixmaps/misc/wait3.svg</file>

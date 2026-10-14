@@ -125,6 +125,23 @@ T.Control {
 
         Widgets.DefaultShadow {
         }
+
+        // The video is drawn in the background, under the tap / drag
+        // handlers (like VLC's original PiP): VideoSurface accepts every
+        // mouse button, so in the content item it would swallow the clicks
+        // meant for tap-to-pause, dragging and double-click. It is placed
+        // over `videoSlot` of the card layout.
+        VideoSurface {
+            id: videoSurface
+
+            x: cardColumn.x + videoSlot.x
+            y: cardColumn.y + videoSlot.y
+            width: videoSlot.width
+            height: videoSlot.height
+
+            videoSurfaceProvider: MainCtx.videoSurfaceProvider
+            color: root.cardHovered ? "#40000000" : "transparent"
+        }
     }
 
     contentItem: ColumnLayout {
@@ -135,18 +152,13 @@ T.Control {
 
         spacing: VLCStyle.dp(8, VLCStyle.scale)
 
-        // video, with the controls on hover
+        // video slot (the video itself is in the background), with the
+        // controls on hover
         Item {
+            id: videoSlot
+
             Layout.fillWidth: true
             Layout.preferredHeight: Math.round(width * 9 / 16)
-
-            VideoSurface {
-                id: videoSurface
-
-                anchors.fill: parent
-                videoSurfaceProvider: MainCtx.videoSurfaceProvider
-                color: root.cardHovered ? "#40000000" : "transparent"
-            }
 
             Item {
                 anchors.fill: parent

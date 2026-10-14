@@ -122,20 +122,12 @@ FigmaDialog {
             radius: root.radius
             color: dropArea.containsDrag ? Qt.lighter(root.wellColor, 1.6) : root.wellColor
 
-            Canvas {
+            DashedBorder {
                 anchors.fill: parent
-                onPaint: {
-                    const ctx = getContext("2d")
-                    ctx.reset()
-                    ctx.strokeStyle = root.dark ? "#2D2D2D" : "#9B9B9B"
-                    ctx.setLineDash([4, 3])
-                    ctx.lineWidth = 1
-                    ctx.beginPath()
-                    ctx.roundedRect(0.5, 0.5, width - 1, height - 1, root.radius, root.radius)
-                    ctx.stroke()
-                }
-                onWidthChanged: requestPaint()
-                onHeightChanged: requestPaint()
+                radius: root.radius
+                dash: 4
+                gap: 3
+                color: root.dark ? "#2D2D2D" : "#9B9B9B"
             }
 
             DropArea {

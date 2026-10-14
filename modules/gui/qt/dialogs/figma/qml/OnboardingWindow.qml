@@ -241,17 +241,11 @@ Window {
                                             border.width: 1
                                             border.color: "#404040"
                                             // System: half light, half dark
-                                            Canvas {
+                                            Image {
                                                 anchors.fill: parent
                                                 visible: tile.modelData.scheme === 0
-                                                onPaint: {
-                                                    const ctx = getContext("2d")
-                                                    ctx.fillStyle = "#222222"
-                                                    ctx.beginPath()
-                                                    ctx.moveTo(width * 0.45, 0); ctx.lineTo(width, 0)
-                                                    ctx.lineTo(width, height); ctx.lineTo(width * 0.75, height)
-                                                    ctx.closePath(); ctx.fill()
-                                                }
+                                                source: "qrc:///misc/onboarding_system_tile.svg"
+                                                sourceSize: Qt.size(width, height)
                                             }
                                         }
                                     }

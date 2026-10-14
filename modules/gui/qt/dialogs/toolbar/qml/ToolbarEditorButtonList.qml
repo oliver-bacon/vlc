@@ -199,19 +199,14 @@ GridView {
                     Layout.preferredHeight: VLCStyle.dp(24, VLCStyle.scale)
                     Layout.alignment: Qt.AlignHCenter
 
-                    Canvas {
+                    DashedBorder {
                         anchors.fill: parent
                         anchors.margins: -VLCStyle.dp(4, VLCStyle.scale)
-                        onPaint: {
-                            const ctx = getContext("2d")
-                            ctx.reset()
-                            ctx.strokeStyle = colorContext.fg.secondary
-                            ctx.globalAlpha = 0.6
-                            ctx.setLineDash([2, 2])
-                            ctx.beginPath()
-                            ctx.roundedRect(0.5, 0.5, width - 1, height - 1, 4, 4)
-                            ctx.stroke()
-                        }
+                        radius: 4
+                        dash: 2
+                        gap: 2
+                        color: colorContext.fg.secondary
+                        opacity: 0.6
                     }
 
                     EditorDummyButton {

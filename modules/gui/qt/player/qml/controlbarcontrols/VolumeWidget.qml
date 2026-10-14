@@ -100,74 +100,40 @@ T.Pane {
             // FIXME: use VLCStyle
             implicitWidth: VLCStyle.dp(88, VLCStyle.scale)
 
-            // Wedge-shaped volume meter from the VLC Redesign Figma file: a
-            // track that widens to the right, filled with a green to red
-            // gradient up to the current volume. Drawn with Canvas so that no
-            // extra QML module (QtQuick.Shapes) is needed.
+            // Wedge-shaped volume meter from the VLC Redesign Figma file: a dark
+            // track that widens to the right, with the full green to red gradient
+            // revealed from the left up to the current volume. Drawn with SVG images
+            // (VLC's Qt build has no Canvas or QtQuick.Shapes); the level only moves a
+            // straight clip edge, so the gradient never gets squeezed.
             background: Item {
                 x: volControl.leftPadding
                 y: volControl.topPadding + (volControl.availableHeight - height) / 2
 
                 implicitWidth: VLCStyle.dp(88, VLCStyle.scale)
-                implicitHeight: VLCStyle.dp(24, VLCStyle.scale)
+                implicitHeight: VLCStyle.dp(28, VLCStyle.scale)
 
                 width: volControl.availableWidth
                 height: Math.min(implicitHeight, volControl.availableHeight)
 
-                Canvas {
-                    id: wedge
-
+                Image {
                     anchors.fill: parent
+                    source: (VLCStyle.palette?.isDark ?? true) ? "qrc:///misc/volume_track_dark.svg"
+                                                               : "qrc:///misc/volume_track_light.svg"
+                    sourceSize: Qt.size(width, height)
+                    smooth: true
+                }
 
-                    readonly property real level: volControl.visualPosition
-                    readonly property color trackColor: volControl.bgColor
+                Item {
+                    width: Math.round(parent.width * Helpers.clamp(volControl.visualPosition, 0, 1))
+                    height: parent.height
+                    clip: true
 
-                    onLevelChanged: requestPaint()
-                    onTrackColorChanged: requestPaint()
-                    onWidthChanged: requestPaint()
-                    onHeightChanged: requestPaint()
-
-                    function _wedgePath(ctx, w, h) {
-                        const tip = h * 0.12 // half height at the quiet end
-                        const r = Math.min(VLCStyle.dp(3, VLCStyle.scale), h / 4)
-                        ctx.beginPath()
-                        ctx.moveTo(0, h / 2 - tip)
-                        ctx.lineTo(w - r, 0)
-                        ctx.arcTo(w, 0, w, r, r)
-                        ctx.lineTo(w, h - r)
-                        ctx.arcTo(w, h, w - r, h, r)
-                        ctx.lineTo(0, h / 2 + tip)
-                        ctx.closePath()
-                    }
-
-                    onPaint: {
-                        const ctx = getContext("2d")
-                        const w = width
-                        const h = height
-                        ctx.reset()
-                        if (w <= 0 || h <= 0)
-                            return
-
-                        _wedgePath(ctx, w, h)
-                        ctx.fillStyle = wedge.trackColor
-                        ctx.fill()
-
-                        // Colors sampled from the Figma volume component
-                        const gradient = ctx.createLinearGradient(0, 0, w, 0)
-                        gradient.addColorStop(0.0, "#7AA513")
-                        gradient.addColorStop(0.55, "#8E8914")
-                        gradient.addColorStop(0.73, "#A16D13")
-                        gradient.addColorStop(0.88, "#B64D1D")
-                        gradient.addColorStop(1.0, "#C23B26")
-
-                        ctx.save()
-                        ctx.beginPath()
-                        ctx.rect(0, 0, w * Helpers.clamp(wedge.level, 0, 1), h)
-                        ctx.clip()
-                        _wedgePath(ctx, w, h)
-                        ctx.fillStyle = gradient
-                        ctx.fill()
-                        ctx.restore()
+                    Image {
+                        width: parent.parent.width
+                        height: parent.parent.height
+                        source: "qrc:///misc/volume_fill.svg"
+                        sourceSize: Qt.size(width, height)
+                        smooth: true
                     }
                 }
             }

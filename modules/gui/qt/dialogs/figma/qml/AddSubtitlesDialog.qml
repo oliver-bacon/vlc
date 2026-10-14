@@ -216,21 +216,24 @@ FigmaDialog {
             }
 
             // dashed connector
-            Canvas {
+            Item {
+                id: dashedConnector
                 Layout.fillWidth: true
                 Layout.minimumWidth: VLCStyle.dp(40, VLCStyle.scale)
                 Layout.preferredHeight: 2
-                onPaint: {
-                    const ctx = getContext("2d")
-                    ctx.reset()
-                    ctx.strokeStyle = root.dark ? "#404040" : "#9B9B9B"
-                    ctx.setLineDash([3, 3])
-                    ctx.beginPath()
-                    ctx.moveTo(0, 1)
-                    ctx.lineTo(width, 1)
-                    ctx.stroke()
+                clip: true
+
+                Repeater {
+                    model: Math.ceil(dashedConnector.width / 6)
+                    Rectangle {
+                        required property int index
+                        x: index * 6
+                        y: 0.5
+                        width: 3
+                        height: 1
+                        color: root.dark ? "#404040" : "#9B9B9B"
+                    }
                 }
-                onWidthChanged: requestPaint()
             }
 
             SubtitleName {

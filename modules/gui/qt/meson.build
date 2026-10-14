@@ -632,6 +632,7 @@ qml_modules += {
         'dialogs/figma/qml/NewPlaylistDialog.qml',
         'dialogs/figma/qml/PlaylistPropertiesDialog.qml',
         'dialogs/figma/qml/PlaylistThumbnailBox.qml',
+        'dialogs/figma/qml/DashedBorder.qml',
         'dialogs/figma/qml/KeyboardShortcutsDialog.qml',
         'dialogs/figma/qml/AddSubtitlesDialog.qml',
         'dialogs/figma/qml/CustomizePlayerDialog.qml',
