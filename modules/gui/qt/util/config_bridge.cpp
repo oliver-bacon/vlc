@@ -27,6 +27,7 @@
 #include <QDir>
 #include <QCollator>
 #include <QUrl>
+#include <QSettings>
 #include <QStringList>
 #include <QKeyEvent>
 
@@ -41,6 +42,7 @@
 #include <vlc_plugin.h>
 #include <vlc_actions.h>
 
+#include "qt.hpp"
 #include "util/vlchotkeyconverter.hpp"
 #include "network/networkmediamodel.hpp"
 
@@ -446,4 +448,19 @@ QVariant ConfigBridge::browseNode(const QString& folderUrl) const
 void ConfigBridge::save()
 {
     config_SaveConfigFile(m_intf);
+}
+
+QVariant ConfigBridge::uiValue(const QString& key, const QVariant& defaultValue) const
+{
+    QSettings* const settings = m_intf->mainSettings;
+    return settings ? settings->value(key, defaultValue) : defaultValue;
+}
+
+void ConfigBridge::setUiValue(const QString& key, const QVariant& value)
+{
+    QSettings* const settings = m_intf->mainSettings;
+    if (!settings)
+        return;
+    settings->setValue(key, value);
+    emit uiValueChanged(key);
 }

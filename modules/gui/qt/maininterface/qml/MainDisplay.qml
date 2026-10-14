@@ -123,6 +123,17 @@ FocusScope {
             name: "discover",
             url: "qrc:///qt/qml/VLC/Network/DiscoverDisplay.qml"
         }, {
+            // VLC Redesign side navigation: Network (saved streams),
+            // Playlists (all types), Recent
+            name: "streams",
+            url: "qrc:///qt/qml/VLC/Network/StreamsDisplay.qml"
+        }, {
+            name: "playlists",
+            url: "qrc:///qt/qml/VLC/MediaLibrary/PlaylistsDisplay.qml"
+        }, {
+            name: "recent",
+            url: "qrc:///qt/qml/VLC/MediaLibrary/RecentDisplay.qml"
+        }, {
             name: "mlsettings",
             url: "qrc:///qt/qml/VLC/MediaLibrary/MLFoldersSettings.qml"
         }

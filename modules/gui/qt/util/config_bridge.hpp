@@ -96,8 +96,14 @@ public:
     /// ("Go to Source")
     Q_INVOKABLE QVariant browseNode(const QString& folderUrl) const;
 
+    /// Interface state that is not a VLC option (for instance the items
+    /// pinned to the library sidebar), kept in the Qt interface settings
+    Q_INVOKABLE QVariant uiValue(const QString& key, const QVariant& defaultValue = {}) const;
+    Q_INVOKABLE void setUiValue(const QString& key, const QVariant& value);
+
 signals:
     void valueChanged(const QString& name);
+    void uiValueChanged(const QString& key);
 
 private:
     void save();

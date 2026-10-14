@@ -99,9 +99,11 @@ Widgets.PageExt {
 
         Binding on _hasMedias {
             when: !continueWatchingRow.model.loading && !favoritesRow.model.loading
+                  && !listenAgainRow.model.loading
                   && !newVideoRow.model.loading && !newMusicRow.model.loading
             value: continueWatchingRow.visible || favoritesRow.visible
                    || newVideoRow.visible || newMusicRow.visible
+                   || listenAgainRow.visible || foldersRow.visible
             restoreMode: Binding.RestoreNone
         }
 
@@ -266,6 +268,90 @@ Widgets.PageExt {
                         }
                     }
                 }
+            }
+
+            Widgets.ViewHeader {
+                text: qsTr("Listen Again")
+                visible: listenAgainRow.visible
+                view: listenAgainRow
+                seeAllButton.visible: listenAgainRow.model.maximumCount > listenAgainRow.model.count
+
+                onSeeAllButtonClicked: function (reason) {
+                    root.seeAllButtonClicked("listenAgain", reason)
+                }
+            }
+
+            // VLC Redesign: music played last
+            MediaView {
+                id: listenAgainRow
+
+                AccessibleCompat.id: "listenAgain"
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+
+                height: currentItem?.contentHeight ?? implicitHeight
+
+                visible: model.count !== 0
+
+                listHeaderPositioning: ListView.InlineHeader
+                enableBeginningFade: false
+                enableEndFade: false
+                listSectionProperty: ""
+
+                interactive: false
+
+                emptyLabel: null
+
+                reuseItems: !MainCtx.gridView
+
+                listCoverWidth: root.listCoverWidth
+                listCoverHeight: root.listCoverHeight
+                listCoverRadius: root.listCoverRadius
+
+                Navigation.parentItem: mediaRows
+
+                model: MLRecentAudioModel {
+                    ml: MediaLib
+
+                    sortCriteria: root.sort.criteria
+                    sortOrder: root.sort.order
+                    searchPattern: root.search.pattern
+
+                    // FIXME: Make limit 0 load no items, instead of loading all items.
+                    limit: MainCtx.gridView ? Math.max(listenAgainRow.currentItem?.nbItemPerRow ?? null, 1) : 5
+                }
+
+                onActiveFocusChanged: {
+                    if (activeFocus) {
+                        const item = currentItem?.currentItem ?? currentItem?._getItem(currentIndex) // FIXME: `ExpandGridView` does not have `currentItem`.
+                        contentYBehavior.enabled = true
+                        Helpers.positionFlickableToContainItem(flickable, item ?? this)
+                        contentYBehavior.enabled = false
+                    }
+                }
+            }
+
+            Widgets.ViewHeader {
+                text: qsTr("Frequently Visited Folders")
+                visible: foldersRow.visible
+                view: foldersRow
+                seeAllButton.visible: false
+            }
+
+            // VLC Redesign: the local folders whose media were played most
+            // (play counts of the recently played media, summed per folder)
+            FrequentFolders {
+                id: foldersRow
+
+                anchors.left: parent.left
+                anchors.right: parent.right
+                leftPadding: newVideoRow.contentLeftMargin
+                rightPadding: newVideoRow.contentRightMargin
+
+                visible: count > 0
+
+                Navigation.parentItem: mediaRows
             }
 
             Widgets.ViewHeader {

@@ -25,6 +25,7 @@ import VLC.Widgets as Widgets
 
 import VLC.MainInterface
 import VLC.Dialogs
+import VLC.Menus
 import VLC.Util
 
 T.Pane {
@@ -43,6 +44,79 @@ T.Pane {
     property bool delegateShowText: true
 
     property alias model: navigationModel
+
+    // ---- pinned items (VLC Redesign: "Pin whatever you want here")
+    // [{ type: "folder" | "playlist", name, url (folder), id (playlist,
+    // serialized media library id) }], kept in the interface settings
+
+    readonly property string _pinsKey: "Library/Pins"
+    property var _pins: []
+
+    // playlists offered by "Add item" (created only with a media library)
+    property var _playlists: null
+
+    function _loadPins() {
+        try {
+            const list = JSON.parse(VLCConfig.uiValue(_pinsKey, "[]"))
+            _pins = Array.isArray(list) ? list : []
+        } catch (e) {
+            _pins = []
+        }
+    }
+
+    function _savePins(list) {
+        VLCConfig.setUiValue(_pinsKey, JSON.stringify(list))
+    }
+
+    function _pin(item) {
+        const list = _pins.filter((p) => !(p.type === item.type && p.url === item.url && p.id === item.id))
+        list.push(item)
+        _savePins(list)
+    }
+
+    function _unpin(index) {
+        const list = _pins.slice()
+        list.splice(index, 1)
+        _savePins(list)
+    }
+
+    function _openPin(pin) {
+        if (pin.type === "folder") {
+            History.push(["network", "browse"], { "tree": VLCConfig.browseNode(pin.url) })
+        } else if (pin.type === "playlist" && MainCtx.mediaLibrary) {
+            History.push(["playlists", "list"], {
+                "parentId": MainCtx.mediaLibrary.deserializeMlItemIdFromString(pin.id),
+                "title": pin.name
+            })
+        }
+    }
+
+    function _addItemMenu() {
+        const items = [{ "text": qsTr("Pin a Folder…") }]
+        if (_playlists && _playlists.count > 0) {
+            const children = []
+            for (let i = 0; i < Math.min(_playlists.count, 50); ++i)
+                children.push({ "text": _playlists.getDataAt(i).name })
+            items.push({ "text": qsTr("Pin a Playlist"), "children": children })
+        }
+        return items
+    }
+
+    Component.onCompleted: {
+        _loadPins()
+        if (MainCtx.mediaLibraryAvailable) {
+            _playlists = Qt.createQmlObject("import VLC.MediaLibrary; MLPlaylistListModel { playlistType: MLPlaylistListModel.PLAYLIST_TYPE_ALL }", root)
+            _playlists.ml = MainCtx.mediaLibrary
+        }
+    }
+
+    Connections {
+        target: VLCConfig
+        function onUiValueChanged(key) {
+            if (key === root._pinsKey)
+                root._loadPins()
+        }
+    }
 
     readonly property int minimumWidth: VLCStyle.expandNavigationPaneWidth + safeAreaLeftMargin + safeAreaRightMargin
 
@@ -123,7 +197,9 @@ T.Pane {
                 id: listView
 
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                // as high as its entries: the pinned items follow it
+                Layout.preferredHeight: contentHeight
+                Layout.maximumHeight: contentHeight
 
                 clip: !fadingEdge.implicitClipping && (height < contentHeight)
                 focus: true
@@ -250,6 +326,90 @@ T.Pane {
                         }
                     }
                 }
+            }
+
+            // pinned folders and playlists
+            Repeater {
+                model: root._pins
+
+                delegate: SideNavigationDelegate {
+                    id: pinDelegate
+
+                    required property var modelData
+                    required property int index
+
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+
+                    leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                    rightPadding: root.safeAreaRightMargin
+
+                    leftInset: root.safeAreaLeftMargin + implicitLeftInset
+                    rightInset: root.safeAreaRightMargin + implicitRightInset
+
+                    iconTxt: modelData.type === "folder" ? VLCIcons.topbar_network : VLCIcons.lists
+                    text: modelData.name
+
+                    showText: root.delegateShowText
+
+                    onClicked: root._openPin(modelData)
+
+                    TapHandler {
+                        acceptedButtons: Qt.RightButton
+                        onTapped: unpinMenu.popup(pinDelegate.mapToGlobal(point.position.x, point.position.y),
+                                                  [{ "text": qsTr("Unpin from the Sidebar") }])
+                    }
+
+                    StringListMenu {
+                        id: unpinMenu
+                        ctx: MainCtx
+                        onSelected: root._unpin(pinDelegate.index)
+                    }
+                }
+            }
+
+            SideNavigationDelegate {
+                id: addItemButton
+
+                Layout.fillWidth: true
+                Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+
+                leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                rightPadding: root.safeAreaRightMargin
+
+                leftInset: root.safeAreaLeftMargin + implicitLeftInset
+                rightInset: root.safeAreaRightMargin + implicitRightInset
+
+                iconTxt: VLCIcons.add
+                text: qsTr("Add item")
+
+                showText: root.delegateShowText
+
+                onClicked: addItemMenu.popup(addItemButton.mapToGlobal(0, addItemButton.height), root._addItemMenu())
+
+                StringListMenu {
+                    id: addItemMenu
+                    ctx: MainCtx
+                    onSelected: (index, text) => {
+                        if (index === 0) {
+                            const folder = VLCConfig.browseFolder(qsTr("Pin a Folder to the Sidebar"))
+                            if (folder !== "") {
+                                const parts = decodeURIComponent(folder).split("/").filter((p) => p !== "")
+                                root._pin({ "type": "folder", "name": parts[parts.length - 1] ?? folder, "url": folder })
+                            }
+                        } else if (root._playlists) {
+                            // playlist entries follow "Pin a Folder…"
+                            const data = root._playlists.getDataAt(index - 1)
+                            root._pin({ "type": "playlist", "name": data.name, "id": data.id.toString() })
+                        }
+                    }
+                }
+            }
+
+            Item {
+                // pushes the progress bar and Preferences to the bottom
+                Layout.fillWidth: true
+                Layout.fillHeight: true
             }
 
             Loader {

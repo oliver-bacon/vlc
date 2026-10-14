@@ -42,6 +42,8 @@ MainViewLoader {
     //---------------------------------------------------------------------------------------------
 
     property bool isMusic: false
+    // video and audio playlists together (side navigation "Playlists")
+    property bool allTypes: false
 
     readonly property int currentIndex: currentItem?.currentIndex ?? -1
 
@@ -109,7 +111,8 @@ MainViewLoader {
         id: playlistModel
         ml: MediaLib
 
-        playlistType: isMusic ? MLPlaylistListModel.PLAYLIST_TYPE_AUDIO
+        playlistType: allTypes ? MLPlaylistListModel.PLAYLIST_TYPE_ALL
+                    : isMusic ? MLPlaylistListModel.PLAYLIST_TYPE_AUDIO
                               : MLPlaylistListModel.PLAYLIST_TYPE_VIDEO
 
         coverSize: (isMusic) ? Qt.size(512, 512)

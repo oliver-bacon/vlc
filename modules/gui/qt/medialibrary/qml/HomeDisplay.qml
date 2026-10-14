@@ -44,6 +44,9 @@ Widgets.PageLoader {
     }, {
         name: "newMusic",
         component: newMusicComponent
+    }, {
+        name: "listenAgain",
+        component: listenAgainComponent
     }]
 
     property int displayMarginBeginning: 0
@@ -208,6 +211,36 @@ Widgets.PageLoader {
                     sortCriteria: newMusicPage.sort.criteria || "insertion"
                     sortOrder: newMusicPage.sort.order
                     searchPattern: newMusicPage.search.pattern
+                }
+
+                displayMarginBeginning: root.displayMarginBeginning
+                displayMarginEnd: root.displayMarginEnd
+
+                enableBeginningFade: root.enableBeginningFade
+                enableEndFade: root.enableEndFade
+            }
+        }
+    }
+
+    Component {
+        id: listenAgainComponent
+
+        Widgets.PageExt {
+            id: listenAgainPage
+
+            title: qsTr("Listen Again")
+
+            MediaView {
+                focus: true
+
+                anchors.fill: parent
+
+                model: MLRecentAudioModel {
+                    ml: MediaLib
+
+                    sortCriteria: listenAgainPage.sort.criteria
+                    sortOrder: listenAgainPage.sort.order
+                    searchPattern: listenAgainPage.search.pattern
                 }
 
                 displayMarginBeginning: root.displayMarginBeginning

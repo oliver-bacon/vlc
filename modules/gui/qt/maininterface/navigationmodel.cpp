@@ -267,24 +267,30 @@ public:
     {
         m_model.children.emplace_back(qtr("Home"), "home", VLCIcons::home, QStringLiteral(":/icons/ic_fluent_home.svg"));
 
+        // VLC Redesign side navigation: Home, Videos, Music, Network,
+        // Playlists, Recent (pinned items and "Add item" are added below
+        // the list in SideNavigationPane.qml)
         if (m_hasMedialib)
         {
-            ModelEntry videoEntry{ qtr("Video"), "video", VLCIcons::topbar_video, QStringLiteral(":/icons/ic_fluent_filmstrip.svg") };
-            videoEntry.children.emplace_back(qtr("All"), "all", VLCIcons::topbar_video);
-            videoEntry.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::lists);
-            m_model.children.push_back(std::move(videoEntry));
+            m_model.children.emplace_back(qtr("Videos"), "video", VLCIcons::topbar_video, QStringLiteral(":/icons/ic_fluent_filmstrip.svg"));
 
             ModelEntry musicEntry{ qtr("Music"), "music", VLCIcons::topbar_music, QStringLiteral(":/icons/ic_fluent_music_note_2.svg") };
-            musicEntry.children.emplace_back(qtr("Artists"), "artists", VLCIcons::artist);
+            musicEntry.children.emplace_back(qtr("Songs"), "tracks", VLCIcons::songs);
             musicEntry.children.emplace_back(qtr("Albums"), "albums", VLCIcons::album_cover);
-            musicEntry.children.emplace_back(qtr("Tracks"), "tracks", VLCIcons::songs);
+            musicEntry.children.emplace_back(qtr("Artists"), "artists", VLCIcons::artist);
             musicEntry.children.emplace_back(qtr("Genres"), "genres", VLCIcons::genre);
-            musicEntry.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::lists);
             m_model.children.push_back(std::move(musicEntry));
         }
 
-        // Browse and Discover are in the main "…" menu (VLC Redesign: the
-        // side navigation only lists the library)
+        // saved network streams (VLC's URL list); Browse and Discover are
+        // in the main "…" menu
+        m_model.children.emplace_back(qtr("Network"), "streams", VLCIcons::stream);
+
+        if (m_hasMedialib)
+        {
+            m_model.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::lists);
+            m_model.children.emplace_back(qtr("Recent"), "recent", VLCIcons::history);
+        }
 
         m_model.visibleChildren = m_model.children.size();
     }
