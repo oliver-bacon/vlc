@@ -259,10 +259,22 @@ T.Control {
             MetaText { glyph: VLCIcons.artist; text: Player.artist; visible: Player.artist !== "" }
             Item { Layout.fillWidth: true }
             Widgets.IconToolButton {
+                id: queueButton
+
                 text: VLCIcons.playlist
                 description: qsTr("Play Queue")
-                checked: MainCtx.playqueuePanel.visible
-                onClicked: MainCtx.playqueuePanel.visible = !MainCtx.playqueuePanel.visible
+                checked: queuePopover.opened
+                onClicked: queuePopover.opened ? queuePopover.close() : queuePopover.open()
+
+                // Figma "Miniplayer": the queue opens above the card
+                QueuePopover {
+                    id: queuePopover
+
+                    queueOnly: true
+                    width: root.width
+                    x: queueButton.width - width + root.cardPadding
+                    y: -height - (queueButton.mapToItem(root, 0, 0).y) - VLCStyle.margin_small
+                }
             }
         }
     }

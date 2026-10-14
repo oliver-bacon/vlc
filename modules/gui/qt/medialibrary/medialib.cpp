@@ -19,6 +19,9 @@
 #include "medialib.hpp"
 
 #include <QDir>
+#include <QFile>
+#include <QFileDialog>
+#include <QTextStream>
 #include <vlc_url.h>
 #include "mlhelper.hpp"
 #include "playlist/playlist_controller.hpp"
@@ -276,6 +279,102 @@ void MediaLib::queryMediaFavorite(const QUrl& mrl)
     });
 }
 
+void MediaLib::addBookmark(const QUrl& mrl, qint64 timeMs)
+{
+    const QByteArray uri = mrl.toString(QUrl::FullyEncoded).toUtf8();
+    if (uri.isEmpty())
+        return;
+    runOnMLThread(this,
+    //ML thread
+    [uri, timeMs](vlc_medialibrary_t* ml){
+        ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media_by_mrl(ml, uri.constData()) };
+        if (media)
+            vlc_ml_media_add_bookmark(ml, media->i_id, timeMs);
+    });
+}
+
+void MediaLib::reloadFolder(const QUrl& folder)
+{
+    const QByteArray mrl = folder.toString(QUrl::FullyEncoded).toUtf8();
+    if (mrl.isEmpty())
+        return;
+    runOnMLThread(this,
+    //ML thread
+    [mrl](vlc_medialibrary_t* ml){
+        vlc_ml_reload_folder(ml, mrl.constData());
+    });
+}
+
+void MediaLib::mediaMrls(const QVariantList& ids, std::function<void(QStringList)> callback)
+{
+    struct Ctx {
+        QStringList mrls;
+    };
+
+    std::vector<MLItemId> itemIds;
+    for (const QVariant& id : ids)
+        if (id.canConvert<MLItemId>())
+            itemIds.push_back(id.value<MLItemId>());
+
+    runOnMLThread<Ctx>(this,
+    //ML thread
+    [itemIds](vlc_medialibrary_t* ml, Ctx& ctx){
+        const auto addMedia = [&ctx](const vlc_ml_media_t& media) {
+            for (const vlc_ml_file_t& file : ml_range_iterate<vlc_ml_file_t>(media.p_files))
+            {
+                if (file.i_type == VLC_ML_FILE_TYPE_MAIN && file.psz_mrl)
+                {
+                    ctx.mrls.append(qfu(file.psz_mrl));
+                    break;
+                }
+            }
+        };
+        for (const MLItemId& id : itemIds)
+        {
+            if (id.type == VLC_ML_PARENT_UNKNOWN)
+            {
+                ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media(ml, id.id) };
+                if (media)
+                    addMedia(*media);
+                continue;
+            }
+            vlc_ml_query_params_t query = vlc_ml_query_params_create();
+            ml_unique_ptr<vlc_ml_media_list_t> list { vlc_ml_list_media_of(ml, &query, id.type, id.id) };
+            if (!list)
+                continue;
+            for (const vlc_ml_media_t& media : ml_range_iterate<vlc_ml_media_t>(list))
+                addMedia(media);
+        }
+    },
+    //UI thread
+    [callback](quint64, Ctx& ctx){
+        callback(ctx.mrls);
+    });
+}
+
+void MediaLib::exportPlaylists(const QVariantList& ids, const QString& name)
+{
+    mediaMrls(ids, [name](QStringList mrls) {
+        if (mrls.isEmpty())
+            return;
+        QString path = QFileDialog::getSaveFileName(nullptr, qtr("Export Playlist"),
+                                                    QDir::homePath() + QStringLiteral("/") + name + QStringLiteral(".m3u8"),
+                                                    qtr("M3U playlist (*.m3u8 *.m3u)"));
+        if (path.isEmpty())
+            return;
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+            return;
+        QTextStream out(&file);
+        out << "#EXTM3U\n";
+        for (const QString& mrl : mrls)
+        {
+            const QUrl url(mrl);
+            out << (url.isLocalFile() ? QDir::toNativeSeparators(url.toLocalFile()) : mrl) << "\n";
+        }
+    });
+}
+
 void MediaLib::addFolder(const QUrl& folder)
 {
     const QByteArray mrl = folder.toString(QUrl::FullyEncoded).toUtf8();
@@ -290,7 +389,8 @@ void MediaLib::addFolder(const QUrl& folder)
 
 void MediaLib::addExternalSubtitles(const QVariantList& pairs)
 {
-    std::vector<std::pair<QByteArray, QByteArray>> list;
+    struct Pair { QByteArray media; QByteArray file; bool audio; };
+    std::vector<Pair> list;
     for (const QVariant& pair : pairs)
     {
         const QVariantMap map = pair.toMap();
@@ -307,7 +407,7 @@ void MediaLib::addExternalSubtitles(const QVariantList& pairs)
         const QByteArray media = toMrl(map.value("media"));
         const QByteArray subtitle = toMrl(map.value("subtitle"));
         if (!media.isEmpty() && !subtitle.isEmpty())
-            list.emplace_back(media, subtitle);
+            list.push_back({ media, subtitle, map.value("audio").toBool() });
     }
     if (list.empty())
         return;
@@ -315,11 +415,12 @@ void MediaLib::addExternalSubtitles(const QVariantList& pairs)
     runOnMLThread(this,
     //ML thread
     [list](vlc_medialibrary_t* ml){
-        for (const auto& [media, subtitle] : list)
+        for (const Pair& pair : list)
         {
-            ml_unique_ptr<vlc_ml_media_t> item { vlc_ml_get_media_by_mrl(ml, media.constData()) };
+            ml_unique_ptr<vlc_ml_media_t> item { vlc_ml_get_media_by_mrl(ml, pair.media.constData()) };
             if (item)
-                vlc_ml_media_add_external_mrl(ml, item->i_id, subtitle.constData(), VLC_ML_FILE_TYPE_SUBTITLE);
+                vlc_ml_media_add_external_mrl(ml, item->i_id, pair.file.constData(),
+                                              pair.audio ? VLC_ML_FILE_TYPE_SOUNDTRACK : VLC_ML_FILE_TYPE_SUBTITLE);
         }
     });
 }

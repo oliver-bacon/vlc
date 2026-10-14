@@ -36,7 +36,7 @@ import VLC.Dialogs
 FigmaDialog {
     id: root
 
-    title: qsTr("Add Subtitles")
+    title: kind === "audio" ? qsTr("Add Audio Tracks") : qsTr("Add Subtitles")
 
     width: VLCStyle.dp(1048, VLCStyle.scale)
     height: VLCStyle.dp(800, VLCStyle.scale)
@@ -44,7 +44,11 @@ FigmaDialog {
     readonly property var videoExtensions: ["mp4", "mkv", "avi", "mov", "m4v", "webm", "wmv", "flv", "mpg", "mpeg", "ts", "m2ts", "ogv", "3gp"]
     readonly property var subtitleExtensions: ["srt", "ass", "ssa", "sub", "vtt", "idx", "smi", "txt", "usf", "jss", "sbv"]
 
-    property string mode: "folder"      // "folder" or "file"
+    property string kind: "subtitles"   // "subtitles" or "audio"
+    readonly property var audioExtensions: ["mka", "mp3", "aac", "ac3", "eac3", "dts", "flac", "ogg", "opus", "wav", "m4a", "wma"]
+    readonly property var trackExtensions: kind === "audio" ? audioExtensions : subtitleExtensions
+    property var listMedia: []          // "list" mode: URLs of the videos (library playlist)
+    property string mode: "folder"      // "folder", "file" or "list"
     property string mediaUrl: ""        // the video, in file mode
     property string mediaFolder: ""     // folder of the videos
     property string subtitleFolder: ""  // folder the subtitles come from
@@ -54,7 +58,7 @@ FigmaDialog {
     property var _subtitles: []         // file mode: { name, checked }
 
     saveEnabled: MainCtx.mediaLibraryAvailable
-                 && (mode === "folder" ? _rows.some((r) => r.checked && r.subtitle)
+                 && (mode !== "file" ? _rows.some((r) => r.checked && r.subtitle)
                                        : _subtitles.some((s) => s.checked))
 
     function _folderOf(url) {
@@ -73,19 +77,26 @@ FigmaDialog {
     }
 
     // args: { mode: "file", mrl: <video URL> } or { mode: "folder", mrl: <folder URL> }
+    // args: { mode: "file", mrl: <video URL> }, { mode: "folder", mrl: <folder URL> }
+    //       or { mode: "list", mrls: [<video URLs>] }; kind: "subtitles" or "audio"
     function reset(args) {
+        kind = args?.kind ?? "subtitles"
         mode = args?.mode ?? "folder"
         fileAvailable = (mode === "file")
+        listMedia = (mode === "list") ? (args.mrls ?? []).map(String) : []
         mediaUrl = fileAvailable ? String(args.mrl) : ""
-        mediaFolder = fileAvailable ? _folderOf(args.mrl) : String(args?.mrl ?? "")
+        mediaFolder = fileAvailable ? _folderOf(args.mrl)
+                    : mode === "list" ? (listMedia.length > 0 ? _folderOf(listMedia[0]) : "")
+                    : String(args?.mrl ?? "")
         subtitleFolder = mediaFolder
         _refresh()
     }
 
     function _refresh() {
-        const subtitles = VLCConfig.listFiles(subtitleFolder, subtitleExtensions)
-        if (mode === "folder") {
-            const videos = VLCConfig.listFiles(mediaFolder, videoExtensions)
+        const subtitles = VLCConfig.listFiles(subtitleFolder, trackExtensions)
+        if (mode === "folder" || mode === "list") {
+            const videos = mode === "list" ? listMedia.map(_fileName)
+                                           : VLCConfig.listFiles(mediaFolder, videoExtensions)
             _rows = videos.map((video) => {
                 const base = _baseName(video).toLowerCase()
                 const match = subtitles.find((s) => _baseName(s).toLowerCase() === base)
@@ -104,16 +115,19 @@ FigmaDialog {
 
     onAccepted: {
         const pairs = []
-        if (mode === "folder") {
-            for (const r of _rows) {
+        const audio = (kind === "audio")
+        if (mode === "folder" || mode === "list") {
+            for (let i = 0; i < _rows.length; ++i) {
+                const r = _rows[i]
                 if (r.checked && r.subtitle)
-                    pairs.push({ "media": mediaFolder + "/" + encodeURIComponent(r.video),
-                                 "subtitle": subtitleFolder + "/" + encodeURIComponent(r.subtitle) })
+                    pairs.push({ "media": mode === "list" ? listMedia[i] : mediaFolder + "/" + encodeURIComponent(r.video),
+                                 "subtitle": subtitleFolder + "/" + encodeURIComponent(r.subtitle),
+                                 "audio": audio })
             }
         } else {
             for (const s of _subtitles) {
                 if (s.checked)
-                    pairs.push({ "media": mediaUrl, "subtitle": subtitleFolder + "/" + encodeURIComponent(s.name) })
+                    pairs.push({ "media": mediaUrl, "subtitle": subtitleFolder + "/" + encodeURIComponent(s.name), "audio": audio })
             }
         }
         MainCtx.mediaLibrary.addExternalSubtitles(pairs)
@@ -127,9 +141,10 @@ FigmaDialog {
 
         HeaderBox {
             Layout.preferredWidth: VLCStyle.dp(166, VLCStyle.scale)
-            text: root.mode === "folder" ? qsTr("To This Folder") : qsTr("To This File")
+            text: root.mode === "list" ? qsTr("To This Playlist")
+                : root.mode === "folder" ? qsTr("To This Folder") : qsTr("To This File")
             chevron: true
-            onClicked: targetMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)), [
+            onClicked: if (root.mode !== "list") targetMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)), [
                 { "text": qsTr("To This Folder"), "checked": root.mode === "folder" },
                 { "text": qsTr("To This File"), "checked": root.mode === "file", "enabled": root.fileAvailable }
             ])
@@ -168,7 +183,7 @@ FigmaDialog {
 
     ListView {
         anchors.fill: parent
-        visible: root.mode === "folder"
+        visible: root.mode !== "file"
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: root._rows
@@ -222,7 +237,8 @@ FigmaDialog {
                 Layout.preferredWidth: parent.width * 0.45
                 Layout.maximumWidth: parent.width * 0.45
                 Layout.fillWidth: false
-                text: modelData.subtitle !== "" ? modelData.subtitle : qsTr("No subtitle found")
+                text: modelData.subtitle !== "" ? modelData.subtitle
+                    : root.kind === "audio" ? qsTr("No audio track found") : qsTr("No subtitle found")
                 dim: modelData.subtitle === ""
             }
         }
@@ -279,9 +295,10 @@ FigmaDialog {
 
     Text {
         anchors.centerIn: parent
-        visible: (root.mode === "folder" ? root._rows.length : root._subtitles.length) === 0
-        text: root.mode === "folder" ? qsTr("No videos found in this folder.")
-                                     : qsTr("No subtitle files found. Click the folder above to choose where to look.")
+        visible: (root.mode !== "file" ? root._rows.length : root._subtitles.length) === 0
+        text: root.mode !== "file" ? qsTr("No videos found.")
+            : root.kind === "audio" ? qsTr("No audio files found. Click the folder above to choose where to look.")
+                                    : qsTr("No subtitle files found. Click the folder above to choose where to look.")
         color: root.placeholderColor
         font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
     }
@@ -338,7 +355,7 @@ FigmaDialog {
             visible: !parent.dim
             font.family: VLCIcons.fontFamily
             font.pixelSize: VLCStyle.icon_small
-            text: VLCIcons.subtitle
+            text: root.kind === "audio" ? VLCIcons.visualization : VLCIcons.subtitle
             color: root.textColor
         }
         Text {

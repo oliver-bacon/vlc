@@ -66,9 +66,19 @@ public:
     /// Looks up the favorite state of the media with this MRL; the answer
     /// comes back through mediaFavoriteState()
     Q_INVOKABLE void queryMediaFavorite(const QUrl& mrl);
-    /// Attaches subtitle files to library media, so that they are loaded
-    /// every time; pairs is a list of { media: MRL, subtitle: URL }
+    /// Attaches subtitle (or audio) files to library media, so that they are
+    /// loaded every time; pairs is a list of { media: MRL, subtitle: URL,
+    /// audio: bool }
     Q_INVOKABLE void addExternalSubtitles(const QVariantList& pairs);
+    /// Adds a bookmark at this time (ms) to the library media with this MRL
+    Q_INVOKABLE void addBookmark(const QUrl& mrl, qint64 timeMs);
+    /// Rescans a folder of the media library
+    Q_INVOKABLE void reloadFolder(const QUrl& folder);
+    /// Asks where to save, then writes the media of these library playlists
+    /// (or other collections) as an M3U playlist
+    Q_INVOKABLE void exportPlaylists(const QVariantList& ids, const QString& name);
+    /// MRLs of the media of these library items (collections are expanded)
+    void mediaMrls(const QVariantList& ids, std::function<void(QStringList)> callback);
     /// Adds a folder to the media library (indexed in the background)
     Q_INVOKABLE void addFolder(const QUrl& folder);
     /// Adds the media with this MRL to the favorites (or removes it)

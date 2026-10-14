@@ -92,6 +92,10 @@ public:
     /// sorted naturally
     Q_INVOKABLE QStringList listFiles(const QString& folderUrl, const QStringList& extensions) const;
 
+    /// Browse view node of a local folder, to open it in the Browse view
+    /// ("Go to Source")
+    Q_INVOKABLE QVariant browseNode(const QString& folderUrl) const;
+
 signals:
     void valueChanged(const QString& name);
 

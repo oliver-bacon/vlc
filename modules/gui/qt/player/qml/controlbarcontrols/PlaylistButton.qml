@@ -22,19 +22,29 @@ import VLC.MainInterface
 import VLC.Widgets as Widgets
 import VLC.Style
 import VLC.Util
+import VLC.Player
 
 
 Widgets.IconToolButton {
     id: playlistBtn
 
     text: VLCIcons.playlist
-    onClicked: {
-        MainCtx.playqueuePanel.visible = !MainCtx.playqueuePanel.visible
-        if (MainCtx.playqueuePanel.visible && MainCtx.playqueuePanel.docked) {
-            playlistWidget.gainFocus(playlistBtn)
-        }
+    signal requestLockUnlockAutoHide(bool lock)
+
+    // Figma Queue / Bookmarks / Chapters popover; the side play queue panel
+    // stays available through the "Right Sidebar" item
+    onClicked: popover.opened ? popover.close() : popover.open()
+    checked: popover.opened
+
+    QueuePopover {
+        id: popover
+
+        x: playlistBtn.width - width
+        y: -height - VLCStyle.margin_small
+
+        onOpened: playlistBtn.requestLockUnlockAutoHide(true)
+        onClosed: playlistBtn.requestLockUnlockAutoHide(false)
     }
-    checked: MainCtx.playqueuePanel.visible
 
     description: qsTr("Play Queue")
 

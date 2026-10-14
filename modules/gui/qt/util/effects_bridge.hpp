@@ -37,6 +37,9 @@ class EffectsBridge : public QObject
 {
     Q_OBJECT
 
+    /// sleep timer of the player settings panel: minutes, 0 when off
+    Q_PROPERTY(int sleepMinutes READ sleepMinutes NOTIFY sleepTimerChanged FINAL)
+
 public:
     explicit EffectsBridge(qt_intf_t* intf, QObject* parent = nullptr);
 
@@ -61,11 +64,16 @@ public:
     Q_INVOKABLE QVariantList equalizerBands() const;
     Q_INVOKABLE void setEqualizerBand(int band, double gain);
 
+    int sleepMinutes() const { return m_sleepMinutes; }
+    /// pauses playback after this many minutes (0 turns the timer off)
+    Q_INVOKABLE void setSleepTimer(int minutes);
+
     /// crop in pixels of the current video (not saved, like VLC's dialog)
     Q_INVOKABLE void setCrop(int top, int bottom, int left, int right);
 
 signals:
     void changed();
+    void sleepTimerChanged();
 
 private:
     void putConfig(const QString& option, const QVariant& value);
@@ -73,6 +81,8 @@ private:
 
     qt_intf_t* m_intf;
     QTimer m_saveTimer;
+    QTimer m_sleepTimer;
+    int m_sleepMinutes = 0;
 };
 
 #endif // VLC_QT_EFFECTS_BRIDGE_HPP

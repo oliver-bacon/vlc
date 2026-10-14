@@ -1256,6 +1256,7 @@ libqml_module_player_a_QML = \
 	player/qml/TracksMenu.qml \
 	player/qml/PlayerSettingsPanel.qml \
 	player/qml/TracksPopover.qml \
+	player/qml/QueuePopover.qml \
 	player/qml/TracksPage.qml \
 	player/qml/TracksPageAudio.qml \
 	player/qml/TracksPageSpeed.qml \
@@ -1284,6 +1285,11 @@ libqml_module_playercontrols_a_QML = \
 	player/qml/controlbarcontrols/BookmarkButton.qml \
 	player/qml/controlbarcontrols/FavoriteButton.qml \
 	player/qml/controlbarcontrols/PipButton.qml \
+	player/qml/controlbarcontrols/JumpButton.qml \
+	player/qml/controlbarcontrols/Backward15Button.qml \
+	player/qml/controlbarcontrols/Forward15Button.qml \
+	player/qml/controlbarcontrols/ChaptersButton.qml \
+	player/qml/controlbarcontrols/BookmarkAddButton.qml \
 	player/qml/controlbarcontrols/GoHomeButton.qml \
 	player/qml/controlbarcontrols/SettingsButton.qml \
 	player/qml/controlbarcontrols/PropertiesButton.qml \

@@ -155,10 +155,33 @@ NativeMenu {
             "action": openContainingFolder,
             "visible": _openContainingFolder
         }, {
+            "text": qsTr("Go to Source"),
+            "icon": "file_go_to_source",
+            "action": function(dataList, options, indexes) {
+                const mrl = String(dataList[0]["mrl"])
+                const folder = mrl.substring(0, mrl.lastIndexOf("/"))
+                MainCtx.playerView = false
+                History.push(["network", "browse"], { "tree": VLCConfig.browseNode(folder) })
+            },
+            "visible": function(dataList, options, indexes) {
+                return !root._folderMenu && dataList.length === 1 && _openContainingFolder(dataList)
+                        && String(dataList[0]["mrl"] ?? "").startsWith("file://")
+            }
+        }, {
             "text": qsTr("Add Subtitle Tracks"),
             "icon": "file_add_subtitle_tracks",
             "action": function(dataList, options, indexes) {
                 DialogsProvider.addSubtitlesDialog({ "mode": "file", "mrl": dataList[0]["mrl"] })
+            },
+            "visible": function(dataList, options, indexes) {
+                return !root._folderMenu && dataList.length === 1
+                        && ("isNew" in dataList[0]) && _hasMrl(dataList) && _openContainingFolder(dataList)
+            }
+        }, {
+            "text": qsTr("Add Audio Tracks"),
+            "icon": "file_add_audio_tracks",
+            "action": function(dataList, options, indexes) {
+                DialogsProvider.addSubtitlesDialog({ "mode": "file", "kind": "audio", "mrl": dataList[0]["mrl"] })
             },
             "visible": function(dataList, options, indexes) {
                 return !root._folderMenu && dataList.length === 1
@@ -176,6 +199,22 @@ NativeMenu {
                         && !(dataList[0][idDataRole].hasParent())
             }
         }, {
+            "text": qsTr("Add File"),
+            "icon": "folder_add_file",
+            "action": function(dataList, options, indexes) {
+                DialogsProvider.PLAppendDialog()
+            },
+            "visible": root._folderMenu
+        }, {
+            "text": qsTr("Add Folder"),
+            "icon": "folder_add_folder",
+            "action": function(dataList, options, indexes) {
+                const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
+                if (folder !== "")
+                    MainCtx.mediaLibrary.addFolder(folder)
+            },
+            "visible": root._folderMenu
+        }, {
             "text": qsTr("Edit Subtitle Tracks"),
             "icon": "folder_edit_subtitle_tracks",
             "action": function(dataList, options, indexes) {
@@ -184,6 +223,25 @@ NativeMenu {
             "visible": function(dataList, options, indexes) {
                 return root._folderMenu && dataList.length === 1
                         && String(dataList[0]["mrl"] ?? "").startsWith("file://")
+            }
+        }, {
+            "text": qsTr("Edit Audio Tracks"),
+            "icon": "folder_edit_audio_tracks",
+            "action": function(dataList, options, indexes) {
+                DialogsProvider.addSubtitlesDialog({ "mode": "folder", "kind": "audio", "mrl": dataList[0]["mrl"] })
+            },
+            "visible": function(dataList, options, indexes) {
+                return root._folderMenu && dataList.length === 1
+                        && String(dataList[0]["mrl"] ?? "").startsWith("file://")
+            }
+        }, {
+            "text": qsTr("Resync"),
+            "icon": "folder_resync",
+            "action": function(dataList, options, indexes) {
+                MainCtx.mediaLibrary.reloadFolder(dataList[0]["mrl"])
+            },
+            "visible": function(dataList, options, indexes) {
+                return root._folderMenu && dataList.length === 1 && !!dataList[0]["mrl"]
             }
         }, {
             "text": qsTr("Info"),

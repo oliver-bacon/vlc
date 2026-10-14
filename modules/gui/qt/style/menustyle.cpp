@@ -28,6 +28,8 @@
 #include <QPointer>
 #include <QStyleOptionMenuItem>
 
+#include <algorithm>
+
 namespace {
 
 // Figma "VLC Redesign": context menu / option components

@@ -568,16 +568,18 @@ input_item_t* MediaToInputItem( const medialibrary::IMedia* media )
                 &input_item_Release );
     if ( inputItem == nullptr )
         return nullptr;
-    /* external subtitles attached to the media (e.g. from the Qt "Add
-     * Subtitles" dialog) are loaded as slaves */
+    /* external subtitles and audio tracks attached to the media (e.g. from
+     * the Qt "Add Subtitles" dialog) are loaded as slaves */
     for ( const auto& file : files )
     {
-        if ( file->type() != medialibrary::IFile::Type::Subtitles )
+        const auto type = file->type();
+        if ( type != medialibrary::IFile::Type::Subtitles && type != medialibrary::IFile::Type::Soundtrack )
             continue;
         try
         {
-            input_item_slave_t* slave = input_item_slave_New( file->mrl().c_str(), SLAVE_TYPE_SPU,
-                                                              SLAVE_PRIORITY_USER );
+            input_item_slave_t* slave = input_item_slave_New( file->mrl().c_str(),
+                type == medialibrary::IFile::Type::Subtitles ? SLAVE_TYPE_SPU : SLAVE_TYPE_GENERIC,
+                SLAVE_PRIORITY_USER );
             if ( slave != nullptr && input_item_AddSlave( inputItem.get(), slave ) != VLC_SUCCESS )
                 input_item_slave_Delete( slave );
         }

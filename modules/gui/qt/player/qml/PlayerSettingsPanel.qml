@@ -202,6 +202,18 @@ T.Popup {
 
     component PlaybackPage: Page {
         Row2 {
+            label: qsTr("Reverse")
+            visible: Player.ratechangable
+            Switch {
+                checked: Player.rate < 0
+                onToggled: Player.reverse()
+            }
+        }
+        Row2 {
+            label: qsTr("Sleep Timer")
+            SleepTimer { Layout.preferredWidth: 216 * root.dp1 }
+        }
+        Row2 {
             label: qsTr("Audio Visualizer")
             visible: VLCConfig.exists("audio-visual")
             Dropdown {
@@ -783,6 +795,34 @@ T.Popup {
                 else VLCConfig.setValue(dd.option, value)
                 dd.current = value
             }
+        }
+    }
+
+    // pauses playback after a delay (VLCEffects keeps the timer running)
+    component SleepTimer: T.Button {
+        id: st
+        readonly property var minutes: [0, 15, 30, 45, 60, 90, 120]
+        function label(m) { return m === 0 ? qsTr("Off") : qsTr("%1 min").arg(m) }
+
+        implicitHeight: 34 * root.dp1
+        background: Rectangle { radius: 4 * root.dp1; color: st.hovered ? root.cardColor : root.tabsColor }
+        contentItem: RowLayout {
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: 4 * root.dp1
+                text: st.label(VLCEffects.sleepMinutes)
+                color: root.titleColor
+                font.pixelSize: 12 * root.dp1
+            }
+            Text { font.family: VLCIcons.fontFamily; font.pixelSize: 13 * root.dp1; text: VLCIcons.chevron_down; color: root.textColor }
+        }
+        onClicked: sleepMenu.popup(mapToGlobal(0, height + 4 * root.dp1),
+                                   minutes.map((m) => ({ "text": label(m), "checked": m === VLCEffects.sleepMinutes })))
+
+        StringListMenu {
+            id: sleepMenu
+            ctx: MainCtx
+            onSelected: (index, _) => VLCEffects.setSleepTimer(st.minutes[index])
         }
     }
 

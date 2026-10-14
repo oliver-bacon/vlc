@@ -32,6 +32,8 @@
 
 #include <cfloat>
 #include <cstdint>
+#include <cstring>
+#include <algorithm>
 
 #include <vlc_common.h>
 #include <vlc_configuration.h>
@@ -40,6 +42,10 @@
 #include <vlc_actions.h>
 
 #include "util/vlchotkeyconverter.hpp"
+#include "network/networkmediamodel.hpp"
+
+#include <vlc_media_source.h>
+#include <vlc_input_item.h>
 
 namespace {
 
@@ -416,6 +422,25 @@ QStringList ConfigBridge::listFiles(const QString& folderUrl, const QStringList&
     collator.setNumericMode(true);
     std::sort(files.begin(), files.end(), collator);
     return files;
+}
+
+QVariant ConfigBridge::browseNode(const QString& folderUrl) const
+{
+    // same construction as the "Folders" of the Browse view (StandardPathModel)
+    const QUrl url(folderUrl);
+    if (!url.isValid())
+        return {};
+    const QString name = url.fileName().isEmpty() ? url.toString() : url.fileName();
+    input_item_t* inputItem = input_item_NewDirectory(qtu(url.toString()), qtu(name), ITEM_LOCAL);
+    if (!inputItem)
+        return {};
+    SharedInputItem item(inputItem, false);
+    MediaTreePtr tree(vlc_media_tree_New(), false);
+    {
+        MediaTreeLocker lock{tree};
+        vlc_media_tree_Add(tree.get(), &(tree->root), inputItem);
+    }
+    return QVariant::fromValue(NetworkTreeItem(tree, item));
 }
 
 void ConfigBridge::save()

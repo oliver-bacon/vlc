@@ -85,6 +85,8 @@ MainViewLoader {
     emptyLabel: emptylabel
 
     sortModel: [
+        { text: qsTr("Watched"),    criteria: "playcount" },
+        { text: qsTr("Date Added"), criteria: "insertion" },
         { text: qsTr("Alphabetic"), criteria: "title"    },
         { text: qsTr("Duration"),   criteria: "duration" }
     ]

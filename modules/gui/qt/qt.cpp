@@ -94,8 +94,8 @@ extern "C" char **environ;
 #include "util/csdmenu_win32.h"
 #else
 # include "maininterface/mainctx.hpp"   /* MainCtx creation */
-# include "style/menustyle.hpp"
 #endif
+#include "style/menustyle.hpp"
 #include "style/defaultthemeproviders.hpp"
 #include "dialogs/extensions/extensions_manager.hpp" /* Extensions manager */
 #include "dialogs/help/help.hpp"     /* Launch Update */

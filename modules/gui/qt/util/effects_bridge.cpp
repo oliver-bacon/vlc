@@ -23,6 +23,8 @@
 
 #include <QStringList>
 
+#include <algorithm>
+
 #include <vlc_common.h>
 #include <vlc_aout.h>
 #include <vlc_configuration.h>
@@ -30,6 +32,7 @@
 #include <vlc_vout.h>
 
 #include "player/player_controller.hpp"
+#include "playlist/playlist_controller.hpp"
 #include "../../../audio_filter/equalizer_presets.h"
 
 namespace {
@@ -106,6 +109,23 @@ EffectsBridge::EffectsBridge(qt_intf_t* intf, QObject* parent)
     connect(&m_saveTimer, &QTimer::timeout, this, [this]() {
         config_SaveConfigFile(m_intf);
     });
+
+    m_sleepTimer.setSingleShot(true);
+    connect(&m_sleepTimer, &QTimer::timeout, this, [this]() {
+        m_intf->p_mainPlaylistController->pause();
+        m_sleepMinutes = 0;
+        emit sleepTimerChanged();
+    });
+}
+
+void EffectsBridge::setSleepTimer(int minutes)
+{
+    m_sleepMinutes = std::max(0, minutes);
+    if (m_sleepMinutes == 0)
+        m_sleepTimer.stop();
+    else
+        m_sleepTimer.start(m_sleepMinutes * 60 * 1000);
+    emit sleepTimerChanged();
 }
 
 void EffectsBridge::scheduleSave()

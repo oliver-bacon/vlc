@@ -964,11 +964,41 @@ void PlaylistListContextMenu::popup(const QModelIndexList & selected, QPoint pos
         ml->addAndPlay(ids);
     });
 
+    action = menu->addAction(figmaIcon("playlist_shuffle"), qtr("Shuffle"));
+
+    connect(action, &QAction::triggered, [this, ml, ids]() {
+        ml->addAndPlay(ids);
+        m_ctx->getIntf()->p_mainPlaylistController->setRandom(true);
+    });
+
+    QString name;
+    if (ids.count() == 1)
+        name = m_model->data(selected.first(), MLPlaylistListModel::PLAYLIST_NAME).toString();
+    action = menu->addAction(figmaIcon("playlist_export_playlist"), qtr("Export Playlist"));
+
+    connect(action, &QAction::triggered, [ml, ids, name]() {
+        ml->exportPlaylists(ids, name.isEmpty() ? qtr("Playlist") : name);
+    });
+
     action = menu->addAction(figmaIcon("playlist_add_to_queue"), qtr("Add to Queue"));
 
     connect(action, &QAction::triggered, [ml, ids]() {
         ml->addToPlaylist(ids);
     });
+
+    const auto addTracks = [ml, ids](bool audio) {
+        ml->mediaMrls(ids, [audio](QStringList mrls) {
+            DialogsProvider::getInstance()->addSubtitlesDialog(QVariantMap {
+                { QStringLiteral("mode"), QStringLiteral("list") },
+                { QStringLiteral("kind"), audio ? QStringLiteral("audio") : QStringLiteral("subtitles") },
+                { QStringLiteral("mrls"), mrls },
+            });
+        });
+    };
+    action = menu->addAction(figmaIcon("playlist_add_subtitle_tracks"), qtr("Add Subtitle Tracks"));
+    connect(action, &QAction::triggered, [addTracks]() { addTracks(false); });
+    action = menu->addAction(figmaIcon("playlist_add_audio_tracks"), qtr("Add Audio Tracks"));
+    connect(action, &QAction::triggered, [addTracks]() { addTracks(true); });
 
     QMenu *more = menu->addMenu(qtr("More"));
 

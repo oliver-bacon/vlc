@@ -110,7 +110,11 @@ Widgets.IconToolButton {
         for (let i = 0; i < root.model.length; ++i) {
             const modelData = root.model[i]
             const key = modelData.criteria
-            if (_dateKeys.includes(key)) {
+            if (key === "playcount") {
+                // Figma "Sorting Options": Unwatched First / Watched First
+                entries.push({ criteria: key, order: Qt.AscendingOrder, text: qsTr("Unwatched First") })
+                entries.push({ criteria: key, order: Qt.DescendingOrder, text: qsTr("Watched First") })
+            } else if (_dateKeys.includes(key)) {
                 const prefix = (dateCount > 1) ? modelData.text + ": " : ""
                 entries.push({ criteria: key, order: Qt.DescendingOrder, text: prefix + qsTr("Newest First") })
                 entries.push({ criteria: key, order: Qt.AscendingOrder, text: prefix + qsTr("Oldest First") })
