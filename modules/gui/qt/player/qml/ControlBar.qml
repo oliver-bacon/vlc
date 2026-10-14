@@ -67,6 +67,13 @@ T.Pane {
 
     property var menu: undefined
 
+    // "00:06:00*": a time of the subtitle timeline window (VLC Redesign)
+    function _windowTime(ms) {
+        const total = Math.max(0, Math.round(ms / 1000))
+        const pad = (n) => String(n).padStart(2, "0")
+        return pad(Math.floor(total / 3600)) + ":" + pad(Math.floor(total / 60) % 60) + ":" + pad(total % 60) + "*"
+    }
+
     signal requestLockUnlockAutoHide(bool lock)
 
     ///incomming signal to request all menu and popup to close
@@ -154,6 +161,9 @@ T.Pane {
                 Layout.preferredWidth: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider || root._inline) ? timeTextMetrics.width : -1
 
                 text: {
+                    // subtitle timeline: start of the shown window, marked with "*"
+                    if (trackPositionSlider.timelineActive)
+                        return root._windowTime(trackPositionSlider.timelineStart)
                     const length = Player.length
                     return Player.time.formatHMS(length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
                 }
@@ -181,9 +191,11 @@ T.Pane {
 
                 readonly property bool showRemainingTime: (MainCtx.showRemainingTime && Player.remainingTime.valid())
 
-                text: showRemainingTime
-                      ? "-" + Player.remainingTime.formatHMS()
-                      : Player.length.formatHMS()
+                text: trackPositionSlider.timelineActive
+                      ? root._windowTime(trackPositionSlider.timelineEnd)
+                      : showRemainingTime
+                        ? "-" + Player.remainingTime.formatHMS()
+                        : Player.length.formatHMS()
                 color: mediaTime.color
                 font: timeTextMetrics.font
                 horizontalAlignment: Text.AlignHCenter

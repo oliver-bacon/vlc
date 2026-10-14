@@ -293,6 +293,10 @@ libqt_plugin_la_SOURCES = \
 	player/input_models.cpp player/input_models.hpp \
 	player/delay_estimator.cpp \
 	player/delay_estimator.hpp \
+	player/seek_preview.cpp \
+	player/seek_preview.hpp \
+	player/subtitle_cues.cpp \
+	player/subtitle_cues.hpp \
 	player/player_controller.cpp player/player_controller.hpp player/player_controller_p.hpp \
 	player/player_controlbar_model.cpp player/player_controlbar_model.hpp \
 	player/control_list_model.cpp player/control_list_model.hpp \
@@ -499,6 +503,8 @@ nodist_libqt_plugin_la_SOURCES = \
 	style/menustyle.moc.cpp \
 	style/vlcicons.moc.cpp \
 	player/delay_estimator.moc.cpp \
+	player/seek_preview.moc.cpp \
+	player/subtitle_cues.moc.cpp \
 	player/input_models.moc.cpp \
 	player/player_controller.moc.cpp \
 	player/player_controlbar_model.moc.cpp \
@@ -1270,6 +1276,7 @@ libqml_module_player_a_QML = \
 	player/qml/PlayerSideTabs.qml \
 	player/qml/PlayerMarksView.qml \
 	player/qml/SliderBar.qml \
+	player/qml/SubtitleTimeline.qml \
 	player/qml/TopBar.qml \
 	player/qml/TracksMenu.qml \
 	player/qml/PlayerSettingsPanel.qml \

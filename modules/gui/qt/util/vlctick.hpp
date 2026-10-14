@@ -82,7 +82,7 @@ public:
     Q_INVOKABLE int toMinutes() const;
     Q_INVOKABLE int toSeconds() const;
     Q_INVOKABLE int toHours()   const;
-    int toMilliseconds() const;
+    Q_INVOKABLE int toMilliseconds() const;
 
 protected:
     VLCTick(vlc_tick_t ticks);

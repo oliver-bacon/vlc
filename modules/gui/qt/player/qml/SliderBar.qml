@@ -57,6 +57,84 @@ T.ProgressBar {
     property color backgroundColor: theme.bg.primary
     property real touchHandlerMargin: VLCStyle.touchHandlerMargin
 
+    // VLC Redesign subtitle timeline (Playback tab switch), shown in track
+    // style when the subtitle file of the selected track could be read
+    property bool subtitleTimelineEnabled: false
+    property var subtitleCues: []
+    readonly property bool timelineActive: trackStyle && subtitleTimelineEnabled && subtitleCues.length > 0
+    readonly property real timelineStart: timelineLoader.item?.windowStart ?? 0
+    readonly property real timelineEnd: timelineLoader.item?.windowEnd ?? 0
+
+    function _readTimelineSetting() {
+        subtitleTimelineEnabled = String(VLCConfig.uiValue("Player/SubtitleTimeline", false)) === "true"
+    }
+
+    Component.onCompleted: {
+        value = Player.position
+        _readTimelineSetting()
+    }
+
+    Connections {
+        target: VLCConfig
+        function onUiValueChanged(key) {
+            if (key === "Player/SubtitleTimeline")
+                control._readTimelineSetting()
+        }
+    }
+
+    onSubtitleTimelineEnabledChanged: cueReload.restart()
+
+    // the cues are read again when the media or the subtitle track changes
+    Timer {
+        id: cueReload
+        interval: 300
+        onTriggered: {
+            if (!control.trackStyle || !control.subtitleTimelineEnabled) {
+                control.subtitleCues = []
+                return
+            }
+            control.subtitleCues = SubtitleCues.load().cues ?? []
+        }
+    }
+
+    Connections {
+        target: Player.subtitleTracks
+        enabled: control.subtitleTimelineEnabled
+        function onDataChanged() { cueReload.restart() }
+        function onModelReset() { cueReload.restart() }
+        function onRowsInserted() { cueReload.restart() }
+        function onRowsRemoved() { cueReload.restart() }
+    }
+
+    // seek preview thumbnails (VLC Redesign): video files only
+    readonly property bool _previewEnabled: trackStyle && !timelineActive && Player.hasVideoOutput
+                                            && String(Player.url).startsWith("file:")
+    readonly property real _hoverMs: {
+        if (!hoverHandler.hovered || !Player.length.valid())
+            return -1
+        const x = Helpers.clamp(hoverHandler.point.position.x, 0, control.availableWidth)
+        return Player.length.toMilliseconds() * x / Math.max(1, control.availableWidth)
+    }
+
+    // one frame per second at most, fewer for long media
+    readonly property real _previewStep: Math.max(1000, Math.round(Player.length.toMilliseconds() / 400 / 1000) * 1000)
+
+    Timer {
+        id: previewRequest
+        interval: 120
+        onTriggered: {
+            if (control._hoverMs < 0)
+                return
+            const step = control._previewStep
+            SeekPreview.request(String(Player.url), Math.round(control._hoverMs / step) * step)
+        }
+    }
+
+    on_HoverMsChanged: {
+        if (_previewEnabled && _hoverMs >= 0)
+            previewRequest.restart()
+    }
+
     Keys.onRightPressed: Player.jumpFwd()
     Keys.onLeftPressed: Player.jumpBwd()
 
@@ -85,6 +163,7 @@ T.ProgressBar {
     }
 
     Widgets.PointingToolTipAttached.visible: (hoverHandler.hovered || control.visualFocus || dragHandler.active)
+                                             && !control.timelineActive && !previewCard.visible
 
     Widgets.PointingToolTipAttached.text: {
         if (!Widgets.PointingToolTipAttached.instance?.visible)
@@ -204,10 +283,12 @@ T.ProgressBar {
     Connections {
         target: Player
         function onPositionChanged() {  fsm.playerUpdatePosition(Player.position) }
-        function onInputChanged() {  fsm.inputChanged() }
+        function onInputChanged() {
+            fsm.inputChanged()
+            SeekPreview.clear()
+            cueReload.restart()
+        }
     }
-
-    Component.onCompleted: value = Player.position
 
     implicitHeight: control.barHeight
     height: implicitHeight
@@ -676,6 +757,66 @@ T.ProgressBar {
             when: (trackPlayhead.mutabilityGroup !== undefined)
             value: (Player.playingState === Player.PLAYING_STATE_PLAYING) ? Item.DynamicMutabilityGroup
                                                                           : Item.StaticMutabilityGroup
+        }
+    }
+
+    // subtitle timeline over the bar
+    Loader {
+        id: timelineLoader
+
+        anchors.fill: parent
+        z: 10
+        active: control.timelineActive
+
+        sourceComponent: SubtitleTimeline {
+            cues: control.subtitleCues
+            radius: control.trackRadius
+            trackColor: control.backgroundColor
+            playedColor: control._progressColor
+            accentColor: theme.fg.primary
+            playedCueColor: Qt.alpha(theme.fg.primary, 0.45)
+            cueColor: (theme.palette?.isDark ?? true) ? "#2E2E2E" : "#C8C8C8"
+        }
+    }
+
+    // seek preview (Figma "thumbnail": 272 x 189 card, 252 x 142 frame)
+    Rectangle {
+        id: previewCard
+
+        readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
+
+        visible: control._previewEnabled && hoverHandler.hovered && SeekPreview.source !== ""
+        z: 11
+
+        width: 272 * dp1
+        height: 189 * dp1
+        radius: 14 * dp1
+        color: Qt.alpha((theme.palette?.isDark ?? true) ? "#191919" : "#F0F0F0", 0.95)
+
+        x: Helpers.clamp((hoverHandler.point.position.x) - width / 2, 0, Math.max(0, control.width - width))
+        y: -height - 12 * dp1
+
+        Image {
+            x: 10 * previewCard.dp1
+            y: 10 * previewCard.dp1
+            width: 252 * previewCard.dp1
+            height: 142 * previewCard.dp1
+            fillMode: Image.PreserveAspectFit
+            asynchronous: false
+            cache: false
+            source: SeekPreview.source
+            // dimmed while the frame of the hovered time is on its way
+            opacity: Math.abs(SeekPreview.time - control._hoverMs) <= 1.5 * control._previewStep ? 1.0 : 0.5
+        }
+
+        Text {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10 * previewCard.dp1
+            text: Player.length.scale(Math.max(0, control._hoverMs) / Math.max(1, Player.length.toMilliseconds()))
+                  .formatHMS(Player.length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
+            color: "#8F8F8F"
+            font.pixelSize: 15 * previewCard.dp1
         }
     }
 }

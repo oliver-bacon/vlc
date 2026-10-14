@@ -226,6 +226,15 @@ T.Popup {
             }
         }
         Row2 {
+            // VLC Redesign: subtitle lines on the seek bar (read by
+            // SliderBar.qml); works with subtitle files, not embedded tracks
+            label: qsTr("Show Subtitle Timeline on Seekbar")
+            Switch {
+                checked: String(VLCConfig.uiValue("Player/SubtitleTimeline", false)) === "true"
+                onToggled: VLCConfig.setUiValue("Player/SubtitleTimeline", checked)
+            }
+        }
+        Row2 {
             label: qsTr("Speed")
             ValueBox { text: (Math.round(Player.rate * 100) / 100) + "x" }
         }
