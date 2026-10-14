@@ -215,12 +215,14 @@ T.Popup {
             SleepTimer { Layout.preferredWidth: 216 * root.dp1 }
         }
         Row2 {
+            // Applies to the current playback only, like VLC's Audio >
+            // Visualizations menu. The saved default is in Settings > Audio.
             label: qsTr("Audio Visualizer")
-            visible: VLCConfig.exists("audio-visual")
-            Dropdown {
+            visible: visualizerDropdown.count > 0
+            VarChoiceDropdown {
+                id: visualizerDropdown
                 Layout.preferredWidth: 216 * root.dp1
-                option: "audio-visual"
-                noneText: qsTr("Disabled")
+                model: Player.audioVisualization
             }
         }
         Row2 {
@@ -751,6 +753,66 @@ T.Popup {
     }
 
     // dropdown bound to an option with choices; "None" entry for modules
+    // Dropdown over a VLC object variable (VLCVarChoiceModel): the choice
+    // applies to the current playback and is not saved in the preferences.
+    component VarChoiceDropdown: T.Button {
+        id: vd
+        property var model: null
+        property int _revision: 0
+        readonly property int count: { _revision; return model ? model.rowCount() : 0 }
+        readonly property int currentIndex: {
+            _revision
+            for (let i = 0; i < count; ++i) {
+                if (model.data(model.index(i, 0), Qt.CheckStateRole))
+                    return i
+            }
+            return -1
+        }
+
+        function itemText(i) {
+            return model.data(model.index(i, 0), Qt.DisplayRole)
+        }
+
+        Connections {
+            target: vd.model
+            function onDataChanged() { vd._revision++ }
+            function onModelReset() { vd._revision++ }
+            function onRowsInserted() { vd._revision++ }
+            function onRowsRemoved() { vd._revision++ }
+        }
+
+        implicitHeight: 34 * root.dp1
+        background: Rectangle { radius: 4 * root.dp1; color: vd.hovered ? root.cardColor : root.tabsColor }
+        contentItem: RowLayout {
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: 4 * root.dp1
+                text: vd.currentIndex >= 0 ? vd.itemText(vd.currentIndex) : ""
+                color: root.titleColor
+                font.pixelSize: 12 * root.dp1
+                elide: Text.ElideRight
+            }
+            Text {
+                font.family: VLCIcons.fontFamily
+                font.pixelSize: 13 * root.dp1
+                text: VLCIcons.chevron_down
+                color: root.textColor
+            }
+        }
+        onClicked: {
+            const items = []
+            for (let i = 0; i < count; ++i)
+                items.push({ "text": itemText(i), "checked": i === currentIndex })
+            varMenu.popup(mapToGlobal(0, height + 4 * root.dp1), items)
+        }
+
+        StringListMenu {
+            id: varMenu
+            ctx: MainCtx
+            onSelected: (index, _) => vd.model.toggleIndex(index)
+        }
+    }
+
     component Dropdown: T.Button {
         id: dd
         property string option

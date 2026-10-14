@@ -85,6 +85,10 @@ public:
 
     Q_INVOKABLE void deleteSelectedProfile();
 
+    // Put back the built-in layout of the selected profile when it is one
+    // of the default profiles (matched by name); returns false otherwise
+    Q_INVOKABLE bool restoreSelectedDefault();
+
     // This is a static method, caller takes the ownership
     // of the profile:
     static ControlbarProfile* generateProfileFromStyle(const Style style);

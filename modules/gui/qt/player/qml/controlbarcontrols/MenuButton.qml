@@ -45,6 +45,11 @@ Widgets.IconToolButton {
 
         onAboutToShow: menuBtn.requestLockUnlockAutoHide(true)
         onAboutToHide: menuBtn.requestLockUnlockAutoHide(false)
+
+        onPageRequested: (uri) => {
+            History.push(uri)
+            MainCtx.playerView = false
+        }
     }
 
     function forceUnlock() {

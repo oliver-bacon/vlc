@@ -381,6 +381,17 @@ void QmlGlobalMenu::popup(QPoint pos)
 
     menu->addSeparator();
 
+    /* VLC's Browse (files, network shares, devices) and Discover (services)
+     * pages: not in the side navigation of the design */
+    menu->addAction(icon("main_open_folder"), qtr("Browse Files and Network"), this, [this]() {
+        emit pageRequested({ QStringLiteral("network") });
+    });
+    menu->addAction(icon("main_open_network_stream"), qtr("Discover"), this, [this]() {
+        emit pageRequested({ QStringLiteral("discover") });
+    });
+
+    menu->addSeparator();
+
     /* VLC's classic menus */
     QMenu *more = menu->addMenu(qtr("More"));
 

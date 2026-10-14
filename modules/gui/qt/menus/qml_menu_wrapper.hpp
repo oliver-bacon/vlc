@@ -175,6 +175,9 @@ signals:
     void aboutToShow();
     void aboutToHide();
     void shownChanged();
+    // a library page was picked ("Browse", "Discover"); the QML side
+    // navigates there
+    void pageRequested(const QStringList& uri);
 
 public slots:
     void popup( QPoint pos );

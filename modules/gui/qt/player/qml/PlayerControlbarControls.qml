@@ -71,6 +71,8 @@ QtObject {
         { id: ControlListModel.FORWARD_15_BUTTON, file: "Forward15Button.qml", label: VLCIcons.forward_15_sec, text: qsTr("Forward 15s") },
         { id: ControlListModel.CHAPTERS_BUTTON, file: "ChaptersButton.qml", label: VLCIcons.chapters, text: qsTr("Chapters") },
         { id: ControlListModel.BOOKMARK_ADD_BUTTON, file: "BookmarkAddButton.qml", label: VLCIcons.bookmark, text: qsTr("Bookmark") },
+        { id: ControlListModel.AUDIO_TRACKS_BUTTON, file: "AudioTracksButton.qml", label: VLCIcons.visualization, text: qsTr("Audio Tracks") },
+        { id: ControlListModel.SUBTITLE_TRACKS_BUTTON, file: "SubtitleTracksButton.qml", label: VLCIcons.subtitle, text: qsTr("Subtitle Tracks") },
         { id: ControlListModel.CHAPTER_PREVIOUS_BUTTON, file: "ChapterPreviousButton.qml", label: VLCIcons.dvd_prev, text: qsTr("Previous chapter") },
         { id: ControlListModel.CHAPTER_NEXT_BUTTON, file: "ChapterNextButton.qml", label: VLCIcons.dvd_next, text: qsTr("Next chapter") },
         { id: ControlListModel.VOLUME, file: "VolumeWidget.qml", label: VLCIcons.volume_high, text: qsTr("Volume Widget") },

@@ -29,6 +29,10 @@ Widgets.IconToolButton {
 
     // Proprerties
 
+    // tab of the track popover to open (0 video, 1 audio, 2 subtitles);
+    // -1 keeps the last one
+    property int tab: -1
+
     readonly property var _parentItem: {
         if ((typeof rootPlayer !== 'undefined') && (rootPlayer !== null))
             return rootPlayer
@@ -53,7 +57,15 @@ Widgets.IconToolButton {
 
     // Events
 
-    onClicked: menuLoader.item.opened ? menuLoader.item.close() : menuLoader.item.open()
+    onClicked: {
+        if (menuLoader.item.opened) {
+            menuLoader.item.close()
+            return
+        }
+        if (root.tab >= 0)
+            menuLoader.item.currentTab = root.tab
+        menuLoader.item.open()
+    }
 
     // Children
 

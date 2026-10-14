@@ -116,9 +116,11 @@ decltype (ControlbarProfileModel::m_defaults)
                                 {
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
-                                    ControlListModel::LANG_BUTTON,
+                                    ControlListModel::AUDIO_TRACKS_BUTTON,
+                                    ControlListModel::SUBTITLE_TRACKS_BUTTON,
                                     ControlListModel::EXTENDED_BUTTON,
                                     ControlListModel::PIP_BUTTON,
+                                    ControlListModel::FULLSCREEN_BUTTON,
                                     ControlListModel::PLAYLIST_BUTTON
                                 }
                             }
@@ -139,7 +141,7 @@ decltype (ControlbarProfileModel::m_defaults)
                                 {
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
-                                    ControlListModel::LANG_BUTTON,
+                                    ControlListModel::AUDIO_TRACKS_BUTTON,
                                     ControlListModel::PLAYLIST_BUTTON
                                 }
                             }
@@ -580,6 +582,22 @@ void ControlbarProfileModel::insertDefaults()
     }
 
     setSelectedProfile(0);
+}
+
+bool ControlbarProfileModel::restoreSelectedDefault()
+{
+    ControlbarProfile* const profile = currentModel();
+    if (!profile)
+        return false;
+
+    for (const auto& i : m_defaults)
+    {
+        if (i.id == Style::EMPTY_STYLE || qfut(i.name) != profile->name())
+            continue;
+        profile->injectModel(i.modelData);
+        return true;
+    }
+    return false;
 }
 
 QString ControlbarProfileModel::generateUniqueName(const QString &name)

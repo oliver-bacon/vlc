@@ -131,6 +131,7 @@ T.ToolBar {
                     Menus.QmlGlobalMenu {
                         id: contextMenu
                         ctx: MainCtx
+                        onPageRequested: (uri) => History.push(uri)
                     }
                 }
 

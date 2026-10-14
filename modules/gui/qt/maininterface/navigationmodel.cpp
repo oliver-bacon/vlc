@@ -283,13 +283,8 @@ public:
             m_model.children.push_back(std::move(musicEntry));
         }
 
-        m_model.children.emplace_back(qtr("Browse"), "network", VLCIcons::topbar_network, QStringLiteral(":/icons/ic_fluent_wifi_1.svg"));
-
-        ModelEntry discoverEntry{ qtr("Discover"), "discover", VLCIcons::topbar_discover, QStringLiteral(":/icons/ic_fluent_globe.svg") };
-        discoverEntry.children.emplace_back(qtr("Services"), "services", VLCIcons::tv);
-
-        discoverEntry.children.emplace_back(qtr("URL"), "url", VLCIcons::link);
-        m_model.children.push_back(std::move(discoverEntry));
+        // Browse and Discover are in the main "…" menu (VLC Redesign: the
+        // side navigation only lists the library)
 
         m_model.visibleChildren = m_model.children.size();
     }

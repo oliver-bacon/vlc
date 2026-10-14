@@ -40,6 +40,11 @@ FigmaDialog {
         MainCtx.controlbarProfileModel.reload()
     }
 
+    // the selected built-in profile (e.g. "Modern Style") back to its
+    // current default layout; applied with "Save"
+    extraText: qsTr("Restore Default")
+    onExtraClicked: MainCtx.controlbarProfileModel.restoreSelectedDefault()
+
     onAccepted: MainCtx.controlbarProfileModel.save()
     onRejected: MainCtx.controlbarProfileModel.reload()
 

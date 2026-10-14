@@ -24,6 +24,7 @@ import QtQuick.Window
 
 import VLC.MainInterface
 import VLC.Style
+import VLC.Player
 import VLC.PlayerControls
 import VLC.Playlist
 import VLC.Widgets as Widgets
@@ -61,21 +62,29 @@ FocusScope{
 
     property bool _showTopBar: (pinControls === false || showToolbar === false)
 
-    property bool _showCenterText: (showToolbar === false && showCSD)
+    // Single row as in the Figma file (cone, menu, side panel, folder; title
+    // centered), also with the system title bar
+    property bool _showCenterText: (showToolbar === false)
 
     readonly property int _sideMargin: VLCStyle.margin_small + sideMargin
 
-    // Aliases
+    // the resume prompt is shown above the control bar (Player.qml); kept
+    // here because the top bar stays visible while it is shown
+    property bool resumeVisible: false
 
-    property alias resumeVisible: resumeDialog.visible
+    property bool playlistVisible: false
 
-    property alias playlistVisible: playlistButton.checked
+    // the compact library on the left of the player is open
+    property bool libraryVisible: false
 
     // Signals
 
     signal togglePlaylistVisibility()
     signal requestLockUnlockAutoHide(bool lock)
-    signal backRequested()
+    // side panel button: show / hide the compact library
+    signal toggleLibraryRequested()
+    // folder button: show the compact library at the folder of the media
+    signal folderRequested()
 
     ///incomming signal to request all menu and popup to close
     signal forceUnlock()
@@ -243,22 +252,9 @@ FocusScope{
         anchors.top: root.top
         anchors.leftMargin:  root._sideMargin
 
-        implicitWidth: resumeVisible ? resumeDialog.implicitWidth
-                                     : logoGroup.implicitWidth
+        implicitWidth: logoGroup.implicitWidth
 
-        implicitHeight: {
-            if (root.resumeVisible) {
-                // Only if there are multiple lines use `resumeDialog`'s implicit height, otherwise the video
-                // window may get resized by few pixels unnecessarily when `resumeDialog` is no longer visible.
-                if (resumeDialog.implicitHeight >= (logoGroup.implicitHeight + resumeDialog.baselineOffset))
-                    return resumeDialog.implicitHeight
-                else
-                    return logoGroup.implicitHeight
-            } else if (_showTopBar)
-                return logoGroup.implicitHeight
-            else
-                return 0
-        }
+        implicitHeight: (_showTopBar || root.resumeVisible) ? logoGroup.implicitHeight : 0
 
         onImplicitHeightChanged: root._layout()
 
@@ -267,7 +263,7 @@ FocusScope{
 
             anchors.fill: parent
 
-            visible: (root._showTopBar && root.resumeVisible === false)
+            visible: (root._showTopBar || root.resumeVisible)
 
             implicitHeight: VLCStyle.globalToolbar_height
             implicitWidth: logoRow.implicitWidth
@@ -309,7 +305,7 @@ FocusScope{
                     checked: contextMenu.shown
 
                     Navigation.parentItem: root
-                    Navigation.rightItem: backBtn
+                    Navigation.rightItem: sidebarBtn
 
                     onClicked: contextMenu.popup(this.mapToGlobal(0, height))
 
@@ -322,6 +318,11 @@ FocusScope{
 
                         onAboutToShow: root.requestLockUnlockAutoHide(true)
                         onAboutToHide: root.requestLockUnlockAutoHide(false)
+
+                        onPageRequested: (uri) => {
+                            History.push(uri)
+                            MainCtx.playerView = false
+                        }
                     }
 
                     Connections {
@@ -334,52 +335,92 @@ FocusScope{
                 }
 
                 Widgets.IconToolButton {
-                    id: backBtn
+                    id: sidebarBtn
 
                     anchors.verticalCenter: parent.verticalCenter
 
                     objectName: "IconToolButton"
                     font.pixelSize: VLCStyle.icon_banner
-                    text: VLCIcons.back
-                    description: qsTr("Back")
+                    text: VLCIcons.panel_left
+                    description: qsTr("Library")
+                    checked: root.libraryVisible
 
-                    AccessibleCompat.id: "topBarBackButton"
+                    AccessibleCompat.id: "topBarSidebarButton"
 
                     focus: true
 
                     Navigation.parentItem: root
                     Navigation.leftItem: menuSelector.visible ? menuSelector : null
-                    Navigation.rightItem: playlistButton
-                    onClicked: root.backRequested()
+                    Navigation.rightItem: folderBtn.visible ? folderBtn : null
+                    onClicked: root.toggleLibraryRequested()
 
                     onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
                 }
-            }
-        }
 
-        ResumeDialog {
-            id: resumeDialog
-
-            anchors.fill: parent
-            //add aditional margin so it align with menubar text when visible (see MenuBar.qml)
-            anchors.leftMargin: VLCStyle.margin_xsmall
-
-            maxWidth: ((root.showCSD && !root.pinControls) ? csdDecorations : playlistGroup).x
-                - VLCStyle.applicationHorizontalMargin
-                - VLCStyle.margin_large
-
-            colorContext.palette: theme.palette
-
-            Navigation.parentItem: rootPlayer
-
-            onHidden: {
-                if (activeFocus) {
-                    backBtn.forceActiveFocus()
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: folderBtn.visible
+                    width: VLCStyle.border
+                    height: VLCStyle.icon_normal
+                    color: theme.border
                 }
-            }
 
-            onVisibleChanged: {
-                root.requestLockUnlockAutoHide(visible)
+                // folder of the current media; opens it in the library
+                T.Button {
+                    id: folderBtn
+
+                    readonly property string folderName: {
+                        const url = decodeURIComponent(String(Player.url))
+                        if (!url.startsWith("file://"))
+                            return ""
+                        const parts = url.split("/").filter((p) => p !== "")
+                        return parts.length > 2 ? parts[parts.length - 2] : ""
+                    }
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: folderName !== ""
+
+                    implicitHeight: VLCStyle.bannerButton_height
+                    implicitWidth: folderRow.implicitWidth + leftPadding + rightPadding
+                    leftPadding: VLCStyle.margin_xsmall
+                    rightPadding: VLCStyle.margin_xsmall
+
+                    Accessible.name: qsTr("Open the folder in the library")
+                    AccessibleCompat.id: "topBarFolderButton"
+
+                    Navigation.parentItem: root
+                    Navigation.leftItem: sidebarBtn
+
+                    background: Rectangle {
+                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        color: folderBtn.hovered ? theme.bg.secondary : "transparent"
+                    }
+
+                    contentItem: Row {
+                        id: folderRow
+                        spacing: VLCStyle.margin_xsmall
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            font.family: VLCIcons.fontFamily
+                            font.pixelSize: VLCStyle.icon_normal
+                            text: VLCIcons.topbar_network
+                            color: theme.fg.secondary
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Math.min(implicitWidth, VLCStyle.dp(220, VLCStyle.scale))
+                            text: folderBtn.folderName
+                            elide: Text.ElideMiddle
+                            color: theme.fg.secondary
+                            font.pixelSize: VLCStyle.fontSize_normal
+                        }
+                    }
+
+                    onClicked: root.folderRequested()
+                    onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
+                }
             }
         }
     }
@@ -395,7 +436,7 @@ FocusScope{
         readonly property bool _alignHCenter: _centerX > _leftLimit
                                               && _centerX + centerTitleText.implicitWidth < _rightLimit
 
-        visible: (_showCenterText && root.resumeVisible === false)
+        visible: _showCenterText
 
         enabled: visible
 
@@ -485,32 +526,8 @@ FocusScope{
 
         visible: root._showTopBar
 
-        PlaylistPane.PlaylistToggleButton {
-            id: playlistButton
-
-            anchors.verticalCenter: parent.verticalCenter
-            objectName: ControlListModel.PLAYLIST_BUTTON
-            font.pixelSize: VLCStyle.icon_banner
-            text: VLCIcons.playlist
-            description: qsTr("Play Queue")
-
-            AccessibleCompat.id: "topBarPlayqueueButton"
-
-            focus: root.showToolbar
-
-            width: VLCStyle.bannerButton_width
-            height: VLCStyle.bannerButton_height
-
-            plListView: root.plListView
-            
-            Navigation.parentItem: root
-            Navigation.leftItem: backBtn
-
-            onClicked: togglePlaylistVisibility()
-
-            Accessible.onToggleAction:togglePlaylistVisibility()
-
-            onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-        }
+        // The Figma player top bar has no Play Queue button: the queue is
+        // toggled from the control bar. The row is kept as the right edge
+        // for the layout above.
     }
 }

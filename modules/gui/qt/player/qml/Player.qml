@@ -62,6 +62,28 @@ FocusScope {
 
     property bool _keyPressed: false
 
+    // compact library on the left of the player (side panel button)
+    property bool libraryVisible: false
+
+    property bool _libraryLoaded: false
+    property string _pendingLibraryFolder: ""
+
+    // top bar folder button: the compact library at the media's folder
+    function showMediaFolderInLibrary() {
+        const url = String(Player.url)
+        const folder = url.substring(0, url.lastIndexOf("/"))
+        libraryVisible = true
+        if (libraryPanelLoader.item)
+            libraryPanelLoader.item.showFolder(folder)
+        else
+            _pendingLibraryFolder = folder
+    }
+
+    onLibraryVisibleChanged: {
+        if (libraryVisible)
+            _libraryLoaded = true
+    }
+
     // Settings
 
     Accessible.role: Accessible.Client
@@ -995,12 +1017,12 @@ FocusScope {
             rootPlayer.lockUnlockAutoHide(lock)
         }
 
-        onBackRequested: {
-            if (MainCtx.hasEmbededVideo && !MainCtx.canShowVideoPIP) {
-               MainPlaylistController.stop()
-            }
-            MainCtx.playerView = false
-        }
+        libraryVisible: rootPlayer.libraryVisible
+        resumeVisible: resumePrompt.visible
+
+        onToggleLibraryRequested: rootPlayer.libraryVisible = !rootPlayer.libraryVisible
+
+        onFolderRequested: rootPlayer.showMediaFolderInLibrary()
 
         FadeControllerStateGroup {
             target: topBar
@@ -1033,6 +1055,32 @@ FocusScope {
             tintColor: windowTheme.bg.primary
 
             visible: _singleLine || MainCtx.pinVideoControls || (MainCtx.hasEmbededVideo && !rootPlayer.displayFadeRectangles)
+        }
+    }
+
+    // compact library on the left (side panel / folder buttons of the top bar)
+    Loader {
+        id: libraryPanelLoader
+
+        anchors {
+            top: topBar.bottom
+            left: parent.left
+            bottom: parent.bottom
+            bottomMargin: parent.height - rootPlayer.positionSliderY
+        }
+
+        z: 1
+        active: rootPlayer._libraryLoaded
+        visible: rootPlayer.libraryVisible && status === Loader.Ready
+        width: item ? item.implicitWidth : 0
+
+        source: "qrc:///qt/qml/VLC/Player/PlayerLibraryPanel.qml"
+
+        onLoaded: {
+            if (rootPlayer._pendingLibraryFolder !== "") {
+                item.showFolder(rootPlayer._pendingLibraryFolder)
+                rootPlayer._pendingLibraryFolder = ""
+            }
         }
     }
 
@@ -1284,6 +1332,22 @@ FocusScope {
             right: parent.right
             margins: VLCStyle.margin_large
         }
+    }
+
+    // "Continue where you left off?", centered just above the control bar
+    ResumeDialog {
+        id: resumePrompt
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: controlBar.top
+        anchors.bottomMargin: VLCStyle.margin_small
+
+        z: 2
+
+        Navigation.parentItem: rootPlayer
+        Navigation.downItem: controlBar
+
+        onVisibleChanged: rootPlayer.lockUnlockAutoHide(visible)
     }
 
     ControlBar {

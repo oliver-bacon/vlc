@@ -1258,6 +1258,8 @@ libqml_module_player_a_QML = \
 	player/qml/PlayerToolbarVisibilityFSM.qml \
 	player/qml/MinimalView.qml \
 	player/qml/ResumeDialog.qml \
+	player/qml/PlayerLibraryPanel.qml \
+	player/qml/PlayerLibraryModels.qml \
 	player/qml/SliderBar.qml \
 	player/qml/TopBar.qml \
 	player/qml/TracksMenu.qml \
@@ -1297,6 +1299,8 @@ libqml_module_playercontrols_a_QML = \
 	player/qml/controlbarcontrols/Forward15Button.qml \
 	player/qml/controlbarcontrols/ChaptersButton.qml \
 	player/qml/controlbarcontrols/BookmarkAddButton.qml \
+	player/qml/controlbarcontrols/AudioTracksButton.qml \
+	player/qml/controlbarcontrols/SubtitleTracksButton.qml \
 	player/qml/controlbarcontrols/GoHomeButton.qml \
 	player/qml/controlbarcontrols/SettingsButton.qml \
 	player/qml/controlbarcontrols/PropertiesButton.qml \

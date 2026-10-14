@@ -40,6 +40,9 @@ Window {
     property string saveText: qsTr("Save")
     property bool saveEnabled: true
     property bool showButtons: true
+    // optional third button next to Cancel (e.g. "Restore Default")
+    property string extraText: ""
+    signal extraClicked()
     property real contentMargins: VLCStyle.dp(20, VLCStyle.scale)
 
     signal accepted()
@@ -167,6 +170,12 @@ Window {
             Button {
                 text: qsTr("Cancel")
                 onClicked: root.reject()
+            }
+
+            Button {
+                visible: root.extraText !== ""
+                text: root.extraText
+                onClicked: root.extraClicked()
             }
 
             Item { Layout.fillWidth: true }

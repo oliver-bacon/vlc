@@ -27,15 +27,14 @@ import VLC.Style
 import VLC.Widgets as Widgets
 import VLC.Util
 
+// "Continue where you left off" prompt. In the VLC Redesign video it is a
+// small bar centered just above the control bar, near the playback
+// controls (VLC's original prompt was a line in the top bar).
 FocusScope {
     id: resumePanel
 
-    property int maxWidth
-
-    implicitHeight: continueBtn.y + continueBtn.implicitHeight
-    implicitWidth: maxWidth
-
-    baselineOffset: label.baselineOffset
+    implicitWidth: pill.implicitWidth
+    implicitHeight: pill.implicitHeight
 
     visible: false
     enabled: visible
@@ -84,7 +83,6 @@ FocusScope {
         colorSet: ColorContext.Window
     }
 
-
     Component.onCompleted: {
         if (Player.canRestorePlayback) {
             showResumePanel()
@@ -95,107 +93,87 @@ FocusScope {
         hideResumePanel()
     }
 
-    TextMetrics {
-        id: textMetrics
+    Rectangle {
+        id: pill
 
-        font: label.font
-        text: label.text
-    }
+        anchors.fill: parent
 
-    //FIXME use the right xxxLabel class
-    T.Label {
-        id: label
+        implicitWidth: row.implicitWidth + 2 * VLCStyle.margin_xsmall
+        implicitHeight: row.implicitHeight + 2 * VLCStyle.margin_xxsmall
 
-        anchors.topMargin: VLCStyle.margin_small
-        anchors.top: parent.top
-        anchors.left: parent.left
+        radius: VLCStyle.dp(6, VLCStyle.scale)
+        color: theme.bg.primary
+        border.width: VLCStyle.border
+        border.color: theme.border
 
-        color: theme.fg.primary
-        font.pixelSize: VLCStyle.fontSize_normal
-        font.bold: true
-        wrapMode: Text.Wrap
+        RowLayout {
+            id: row
 
-        text: qsTr("Do you want to restart the playback where you left off?")
-    }
+            anchors.centerIn: parent
+            spacing: VLCStyle.margin_xsmall
 
-    Widgets.ButtonExt {
-        id: continueBtn
-
-        anchors.verticalCenter: label.verticalCenter
-        anchors.left: label.right
-        anchors.leftMargin: VLCStyle.margin_xsmall
-
-        text: qsTr("Continue")
-
-        AccessibleCompat.id: "resumeContinueButton"
-
-        font.bold: true
-        color: theme.fg.primary
-        focus: true
-        onClicked: {
-            Player.restorePlaybackPos()
-            hideResumePanel()
-        }
-
-        Navigation.parentItem: resumePanel
-        Navigation.rightItem: closeBtn
-        Keys.priority: Keys.AfterItem
-        Keys.onPressed: (event) =>  continueBtn.Navigation.defaultKeyAction(event)
-    }
-
-    Widgets.ButtonExt {
-        id: closeBtn
-
-        anchors.verticalCenter: label.verticalCenter
-        anchors.left: continueBtn.right
-
-        text: qsTr("Dismiss")
-
-        AccessibleCompat.id: "resumeDismissButton"
-
-        font.bold: true
-        color: theme.fg.primary
-        onClicked: hideResumePanel()
-
-        Navigation.parentItem: resumePanel
-        Navigation.leftItem: continueBtn
-        Keys.priority: Keys.AfterItem
-        Keys.onPressed: (event) => closeBtn.Navigation.defaultKeyAction(event)
-    }
-
-    states: [
-        State {
-            name: "small"
-
-            PropertyChanges {
-                target: label
-
-                width: resumePanel.maxWidth
+            T.Label {
+                Layout.leftMargin: VLCStyle.margin_xsmall
+                color: theme.fg.secondary
+                font.pixelSize: VLCStyle.fontSize_normal
+                text: qsTr("Continue where you left off?")
             }
 
-            PropertyChanges {
-                target: continueBtn
+            T.Button {
+                id: continueBtn
 
-                anchors.leftMargin: -VLCStyle.margin_xsmall
+                implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
+                implicitHeight: contentItem.implicitHeight + topPadding + bottomPadding
+                leftPadding: VLCStyle.margin_small
+                rightPadding: VLCStyle.margin_small
+                topPadding: VLCStyle.margin_xxsmall
+                bottomPadding: VLCStyle.margin_xxsmall
+
+                text: qsTr("Continue Watching")
+                focus: true
+
+                AccessibleCompat.id: "resumeContinueButton"
+
+                background: Rectangle {
+                    radius: VLCStyle.dp(4, VLCStyle.scale)
+                    color: continueBtn.hovered || continueBtn.visualFocus ? Qt.lighter(theme.accent, 1.15) : theme.accent
+                }
+                contentItem: Text {
+                    text: continueBtn.text
+                    color: "white"
+                    font.pixelSize: VLCStyle.fontSize_normal
+                    font.weight: Font.DemiBold
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    Player.restorePlaybackPos()
+                    hideResumePanel()
+                }
+
+                Navigation.parentItem: resumePanel
+                Navigation.rightItem: closeBtn
+                Keys.priority: Keys.AfterItem
+                Keys.onPressed: (event) => continueBtn.Navigation.defaultKeyAction(event)
             }
 
-            AnchorChanges {
-                target: continueBtn
+            Widgets.IconToolButton {
+                id: closeBtn
 
-                anchors.top: label.bottom
-                anchors.verticalCenter: undefined
-                anchors.left: parent.left
-            }
+                font.pixelSize: VLCStyle.icon_small
+                text: VLCIcons.close
+                description: qsTr("Dismiss")
 
-            AnchorChanges {
-                target: closeBtn
+                AccessibleCompat.id: "resumeDismissButton"
 
-                anchors.top: label.bottom
-                anchors.verticalCenter: undefined
+                onClicked: hideResumePanel()
+
+                Navigation.parentItem: resumePanel
+                Navigation.leftItem: continueBtn
+                Keys.priority: Keys.AfterItem
+                Keys.onPressed: (event) => closeBtn.Navigation.defaultKeyAction(event)
             }
         }
-    ]
-
-    state: (textMetrics.width + VLCStyle.margin_xsmall + continueBtn.width + closeBtn.width
-            > maxWidth) ? "small" : ""
+    }
 }
