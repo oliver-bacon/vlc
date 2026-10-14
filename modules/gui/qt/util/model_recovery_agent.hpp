@@ -34,9 +34,52 @@
 #include "qt.hpp"
 
 #include "dialogs/dialogs_provider.hpp"
+#include "playlist/media.hpp"
+
+#include <QFile>
+#include <QUrl>
+#include <QVector>
 
 class ModelRecoveryAgent
 {
+    // the recovery file is an M3U8 playlist (see PlaylistController::serialize)
+    static QVector<vlc::playlist::Media> readRecoveryFile(const QString& fileName)
+    {
+        QVector<vlc::playlist::Media> medias;
+        QFile file(fileName);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return medias;
+
+        const QUrl base = QUrl::fromLocalFile(fileName);
+        QString title;
+        QStringList options;
+        while (!file.atEnd())
+        {
+            const QString line = QString::fromUtf8(file.readLine()).trimmed();
+            if (line.isEmpty() || line == QLatin1String("#EXTM3U"))
+                continue;
+            if (line.startsWith(QLatin1String("#EXTINF:")))
+            {
+                title = line.section(QLatin1Char(','), 1);
+                continue;
+            }
+            if (line.startsWith(QLatin1String("#EXTVLCOPT:")))
+            {
+                options.append(QLatin1Char(':') + line.mid(11));
+                continue;
+            }
+            if (line.startsWith(QLatin1Char('#')))
+                continue;
+
+            const QUrl url = QUrl(line, QUrl::StrictMode).isRelative() ? base.resolved(QUrl(line)) : QUrl(line);
+            const QString mrl = url.toString(QUrl::FullyEncoded);
+            medias.append(vlc::playlist::Media(mrl, title.isEmpty() ? url.fileName() : title, options));
+            title.clear();
+            options.clear();
+        }
+        return medias;
+    }
+
     const QPointer<QSettings> m_settings;
     const QString m_key;
     QString m_recoveryFileName;
@@ -76,7 +119,10 @@ public:
                                                                       QMessageBox::Yes,
                                                                       QMessageBox::Question) == QMessageBox::Yes)
                     {
-                        model->append(m_recoveryFileName);
+                        // add the saved media themselves, not the recovery
+                        // file (it would show up as an unknown "vlc.XXXXXX"
+                        // item until it is played)
+                        model->append(readRecoveryFile(m_recoveryFileName));
                         m_conditionDismissInitialDirtiness = true;
                     }
                 }

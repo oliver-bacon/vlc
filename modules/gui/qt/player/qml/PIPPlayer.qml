@@ -130,6 +130,9 @@ T.Control {
     contentItem: ColumnLayout {
         id: cardColumn
 
+        // above the drag / tap handlers, so that the buttons get the clicks
+        z: 1
+
         spacing: VLCStyle.dp(8, VLCStyle.scale)
 
         // video, with the controls on hover

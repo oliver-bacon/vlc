@@ -19,6 +19,7 @@
  *****************************************************************************/
 import QtQuick
 
+import VLC.Dialogs
 import VLC.MainInterface
 import VLC.Player
 import VLC.Widgets as Widgets

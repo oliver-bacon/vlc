@@ -21,6 +21,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Templates as T
 
+import VLC.Dialogs
 import VLC.MainInterface
 import VLC.Player
 import VLC.Playlist
