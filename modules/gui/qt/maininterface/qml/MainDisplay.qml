@@ -992,11 +992,14 @@ FocusScope {
 
         PIPPlayer {
             id: playerPip
+            // VLC Redesign: bottom right of the library, left of the
+            // docked play queue panel when it is open
             anchors {
                 bottom: loaderUpdatePane.top
-                left: parent.left
+                right: parent.right
                 bottomMargin: VLCStyle.margin_normal
-                leftMargin: VLCStyle.margin_normal + VLCStyle.applicationHorizontalMargin
+                rightMargin: VLCStyle.margin_normal + VLCStyle.applicationHorizontalMargin
+                             + (playlistLoader.visible ? playlistLoader.width : 0)
             }
 
             // size of the Figma "Miniplayer" card (see PIPPlayer.qml)
@@ -1060,6 +1063,8 @@ FocusScope {
 
     MiniPlayer {
         id: miniPlayer
+
+        hiddenByCard: g_mainDisplay._showMiniPlayer && MainCtx.hasEmbededVideo && MainCtx.canShowVideoPIP
 
         anchors.left: parent.left
         anchors.right: parent.right

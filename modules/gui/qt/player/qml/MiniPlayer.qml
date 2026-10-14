@@ -36,15 +36,19 @@ ControlBar {
 
     height: _delayedImplicitHeight
 
-    state: Player.isStarted ? "inViewport"
-                            : "outViewport"
+    // VLC Redesign: hidden while the library shows the video card
+    // (PIPPlayer.qml), which has its own controls
+    property bool hiddenByCard: false
+
+    state: (Player.isStarted && !hiddenByCard) ? "inViewport"
+                                               : "outViewport"
 
     Binding on state {
         id: stateBinding
         when: false
         delayed: true
-        value: Player.isStarted ? "inViewport"
-                                : "outViewport"
+        value: (Player.isStarted && !root.hiddenByCard) ? "inViewport"
+                                                        : "outViewport"
     }
 
     Component.onCompleted: {

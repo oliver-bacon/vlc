@@ -19,6 +19,7 @@ import QtQuick
 import QtQuick.Templates as T
 import QtQuick.Layouts
 
+import VLC.Dialogs
 import VLC.MainInterface
 import VLC.Style
 import VLC.Widgets as Widgets
@@ -48,6 +49,20 @@ T.Control {
 
     property int textStyle: Text.Outline
 
+    // VLC Redesign: the play queue opens inside the card, above the video
+    property bool queueOpen: false
+
+    // the card keeps its bottom edge when the queue opens or closes; while
+    // it is anchored the anchors do that, once dragged it is done here
+    property bool _dragged: false
+    property real _previousHeight: 0
+
+    onHeightChanged: {
+        if (_dragged && _previousHeight > 0)
+            y = Math.max(dragYMin || 0, y - (height - _previousHeight))
+        _previousHeight = height
+    }
+
     // `hideControls` being `false` does not necessarily mean that the buttons are shown:
     property bool hideControls: MainCtx.usingTouch // By default controls are hidden with touch
 
@@ -57,7 +72,11 @@ T.Control {
 
     Drag.active: dragHandler.active
 
-    Drag.onActiveChanged: {
+    Drag.onActiveChanged: _detach()
+
+    // the card stops following its anchors once it is dragged
+    function _detach() {
+        root._dragged = true
         root.anchors.left = undefined
         root.anchors.right = undefined
         root.anchors.top = undefined
@@ -151,6 +170,21 @@ T.Control {
         z: 1
 
         spacing: VLCStyle.dp(8, VLCStyle.scale)
+
+        MiniQueue {
+            Layout.fillWidth: true
+            Layout.preferredHeight: implicitHeight
+            visible: root.queueOpen
+
+            dragTarget: root
+            dragXMin: root.dragXMin
+            dragXMax: root.dragXMax
+            dragYMin: root.dragYMin
+            dragYMax: root.dragYMax
+
+            onAddRequested: DialogsProvider.PLAppendDialog()
+            onDragStarted: root._detach()
+        }
 
         // video slot (the video itself is in the background), with the
         // controls on hover
@@ -278,18 +312,8 @@ T.Control {
 
                 text: VLCIcons.playlist
                 description: qsTr("Play Queue")
-                checked: queuePopover.opened
-                onClicked: queuePopover.opened ? queuePopover.close() : queuePopover.open()
-
-                // Figma "Miniplayer": the queue opens above the card
-                QueuePopover {
-                    id: queuePopover
-
-                    queueOnly: true
-                    width: root.width
-                    x: queueButton.width - width + root.cardPadding
-                    y: -height - (queueButton.mapToItem(root, 0, 0).y) - VLCStyle.margin_small
-                }
+                checked: root.queueOpen
+                onClicked: root.queueOpen = !root.queueOpen
             }
         }
     }
