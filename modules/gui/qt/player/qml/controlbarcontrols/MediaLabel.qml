@@ -19,20 +19,26 @@
  *****************************************************************************/
 import QtQuick
 
+import VLC.MainInterface
 import VLC.Player
 import VLC.Style
 
-// "File Name", "Artist Name", "Folder Name": a text of the current media
+// "File Name", "Artist Name", "Folder Name", "Playlist Name": a text of the
+// current media; the playlist name is the library playlist the media was
+// started from
 Item {
     id: root
 
     property bool paintOnly: false
-    // "file", "artist" or "folder"
+    // "file", "artist", "folder" or "playlist"
     property string kind: "file"
 
     readonly property string _text: {
         if (paintOnly)
-            return kind === "artist" ? qsTr("Artist Name") : kind === "folder" ? qsTr("Folder Name") : qsTr("File Name")
+            return kind === "artist" ? qsTr("Artist Name") : kind === "folder" ? qsTr("Folder Name")
+                 : kind === "playlist" ? qsTr("Playlist Name") : qsTr("File Name")
+        if (kind === "playlist")
+            return MainCtx.mediaLibrary?.currentPlaylistName ?? ""
         if (kind === "artist")
             return Player.artist
         const url = decodeURIComponent(String(Player.url))

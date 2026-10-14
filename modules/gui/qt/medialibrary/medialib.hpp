@@ -20,6 +20,9 @@
 
 #include <memory>
 
+#include <QHash>
+#include <QVector>
+
 #include "qt.hpp"
 #include "mlthreadpool.hpp"
 #include "mlqmltypes.hpp"
@@ -32,6 +35,12 @@ class Media;
 
 struct vlc_medialibrary_t;
 
+/// library playlist of each media converted for the play queue
+struct MLPlaylistOrigins {
+    QVector<int64_t> ids;          // per media, 0 when not from a playlist
+    QHash<int64_t, QString> names;
+};
+
 class MediaLib : public QObject
 {
     Q_OBJECT
@@ -41,6 +50,9 @@ public:
     Q_PROPERTY(int  parsingProgress READ parsingProgress NOTIFY parsingProgressChanged FINAL)
     Q_PROPERTY(QString discoveryEntryPoint READ discoveryEntryPoint NOTIFY discoveryEntryPointChanged FINAL)
     Q_PROPERTY(bool idle READ idle NOTIFY idleChanged FINAL)
+    /// Name of the library playlist the current media was started from
+    /// (empty when it was not started from a library playlist)
+    Q_PROPERTY(QString currentPlaylistName READ currentPlaylistName NOTIFY currentPlaylistNameChanged FINAL)
 
 public:
     MediaLib(qt_intf_t* _intf, vlc::playlist::PlaylistController* playlistController, QObject* _parent = nullptr );
@@ -83,6 +95,21 @@ public:
     Q_INVOKABLE void addFolder(const QUrl& folder);
     /// Adds the media with this MRL to the favorites (or removes it)
     Q_INVOKABLE void setMediaFavorite(const QUrl& mrl, bool favorite);
+
+    /// Adds a library playlist to the favorites (or removes it)
+    Q_INVOKABLE void setPlaylistFavorite(const MLItemId& playlistId, bool favorite);
+    /// Renames a library playlist
+    Q_INVOKABLE void renamePlaylist(const MLItemId& playlistId, const QString& name);
+    /// Sets the picture shown for a library playlist; an empty URL removes it
+    /// and the playlist shows the collage of its media again. The media
+    /// library has no field for this, so the picture is stored in VLC's user
+    /// data folder ("playlist-thumbnails")
+    Q_INVOKABLE bool setPlaylistThumbnail(const MLItemId& playlistId, const QUrl& image);
+    /// URL of the picture set for a library playlist, empty if there is none
+    Q_INVOKABLE static QString playlistThumbnail(const MLItemId& playlistId);
+    static QString playlistThumbnail(int64_t playlistId);
+
+    inline QString currentPlaylistName() const { return m_currentPlaylistName; }
 
     inline bool idle() const { return m_idle; }
     inline int discoveryPending() const { return m_discoveryPending; }
@@ -195,9 +222,17 @@ signals:
     void idleChanged();
     /// @param known whether the media is part of the media library
     void mediaFavoriteState(const QUrl& mrl, bool known, bool favorite);
+    /// A library playlist changed outside of the media library database
+    /// (its picture) or its state must be read again
+    void playlistChanged(const MLItemId& playlistId);
+    void currentPlaylistNameChanged();
 
 private:
     static void onMediaLibraryEvent( void* data, const vlc_ml_event_t* event );
+
+    void rememberPlaylistOrigins(const QVector<vlc::playlist::Media>& medias,
+                                 const MLPlaylistOrigins& origins);
+    void updateCurrentPlaylistName();
 
 private:
     qt_intf_t* m_intf;
@@ -214,6 +249,16 @@ private:
     ThreadRunner* m_runner = nullptr;
 
     QMap<QVector<MLItemId>, QVector<QJSValue>> m_inputItemQuery;
+
+    // library playlist each queued media was started from; the media
+    // references are kept so that the pointers stay valid
+    struct QueuedOrigin {
+        std::shared_ptr<vlc::playlist::Media> media;
+        int64_t playlistId;
+    };
+    QHash<const void*, QueuedOrigin> m_queuedOrigins;
+    QHash<int64_t, QString> m_playlistNames;
+    QString m_currentPlaylistName;
 };
 
 template<typename Ctx>

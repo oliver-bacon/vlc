@@ -24,10 +24,10 @@ import VLC.MainInterface
 import VLC.Style
 import VLC.Dialogs
 
-// "New Playlist" from the VLC Redesign Figma file: a name and the files to
-// put in the playlist (drop them on the box or pick them). The playlist
-// thumbnail of the design is not available yet (the media library cannot
-// store a picture for a playlist).
+// "New Playlist" from the VLC Redesign Figma file: a name, a picture and the
+// files to put in the playlist (drop them on the box or pick them). The
+// picture is kept by VLC next to the media library (see
+// MediaLib::setPlaylistThumbnail).
 FigmaDialog {
     id: root
 
@@ -42,6 +42,7 @@ FigmaDialog {
 
     function reset(args) {
         playlistName.text = ""
+        thumbnail.source = ""
         files = Array.isArray(args) ? args.slice() : []
         playlistName.forceActiveFocus()
     }
@@ -64,7 +65,7 @@ FigmaDialog {
     onAccepted: {
         const model = Qt.createQmlObject("import VLC.MediaLibrary; MLPlaylistListModel { }", root)
         model.ml = MainCtx.mediaLibrary
-        model.create(playlistName.text.trim(), root.files)
+        model.create(playlistName.text.trim(), root.files, thumbnail.source)
     }
 
     ColumnLayout {
@@ -72,17 +73,36 @@ FigmaDialog {
         anchors.topMargin: VLCStyle.dp(18, VLCStyle.scale)
         spacing: VLCStyle.dp(16, VLCStyle.scale)
 
-        FigmaDialog.SectionHeader {
-            title: qsTr("Playlist Details")
-            description: qsTr("The playlist will be saved and displayed with this title.")
-        }
-
-        FigmaDialog.TextField {
-            id: playlistName
-
+        RowLayout {
             Layout.fillWidth: true
-            placeholderText: qsTr("e.g., Favorite Videos")
-            onAccepted: if (root.saveEnabled) root.accept()
+            spacing: VLCStyle.dp(22, VLCStyle.scale)
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignTop
+                spacing: VLCStyle.dp(16, VLCStyle.scale)
+
+                FigmaDialog.SectionHeader {
+                    title: qsTr("Playlist Details")
+                    description: qsTr("The playlist will be saved and displayed with this title and thumbnail.")
+                }
+
+                FigmaDialog.TextField {
+                    id: playlistName
+
+                    Layout.fillWidth: true
+                    Layout.topMargin: VLCStyle.dp(8, VLCStyle.scale)
+                    placeholderText: qsTr("e.g., Favorite Videos")
+                    onAccepted: if (root.saveEnabled) root.accept()
+                }
+            }
+
+            PlaylistThumbnailBox {
+                id: thumbnail
+
+                Layout.alignment: Qt.AlignTop
+                dialog: root
+            }
         }
 
         FigmaDialog.Divider {

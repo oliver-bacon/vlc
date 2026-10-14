@@ -98,7 +98,7 @@ public:
         FORWARD_15_BUTTON,
         CHAPTERS_BUTTON,
         BOOKMARK_ADD_BUTTON,
-        RESERVED_0X3B,
+        PLAYLIST_NAME_LABEL,
         RESERVED_0X3C,
         RESERVED_0X3D,
         RESERVED_0X3E,

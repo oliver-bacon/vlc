@@ -44,6 +44,12 @@ public: // Interface
     unsigned int getNbVideo() const;
     unsigned int getNbUnknown() const;
 
+    unsigned int getNbPresent() const { return m_nbPresent; }
+    bool isFavorite() const { return m_favorite; }
+    void setFavorite(bool favorite) { m_favorite = favorite; }
+    // seconds since the epoch
+    qint64 getCreationDate() const { return m_creationDate; }
+
 private:
     QString m_name;
 
@@ -53,6 +59,10 @@ private:
     unsigned int m_nbAudio;
     unsigned int m_nbVideo;
     unsigned int m_nbUnknown;
+
+    unsigned int m_nbPresent;
+    bool m_favorite;
+    qint64 m_creationDate;
 };
 
 #endif

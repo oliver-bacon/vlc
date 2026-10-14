@@ -66,6 +66,7 @@ QtObject {
         { id: ControlListModel.FILE_NAME_LABEL, file: "FileNameLabel.qml", label: VLCIcons.ic_fluent_document_add_24_regular, text: qsTr("File Name") },
         { id: ControlListModel.ARTIST_NAME_LABEL, file: "ArtistNameLabel.qml", label: VLCIcons.artist, text: qsTr("Artist Name") },
         { id: ControlListModel.FOLDER_NAME_LABEL, file: "FolderNameLabel.qml", label: VLCIcons.topbar_network, text: qsTr("Folder Name") },
+        { id: ControlListModel.PLAYLIST_NAME_LABEL, file: "PlaylistNameLabel.qml", label: VLCIcons.playlist, text: qsTr("Playlist Name") },
         { id: ControlListModel.BACKWARD_15_BUTTON, file: "Backward15Button.qml", label: VLCIcons.backward_15_sec, text: qsTr("Backward 15s") },
         { id: ControlListModel.FORWARD_15_BUTTON, file: "Forward15Button.qml", label: VLCIcons.forward_15_sec, text: qsTr("Forward 15s") },
         { id: ControlListModel.CHAPTERS_BUTTON, file: "ChaptersButton.qml", label: VLCIcons.chapters, text: qsTr("Chapters") },

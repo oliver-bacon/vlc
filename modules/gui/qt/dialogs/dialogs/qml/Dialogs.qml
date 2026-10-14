@@ -598,6 +598,7 @@ Item {
     readonly property var _figmaDialogs: ({
         "network": "NetworkStreamDialog.qml",
         "newPlaylist": "NewPlaylistDialog.qml",
+        "playlistProperties": "PlaylistPropertiesDialog.qml",
         "shortcuts": "KeyboardShortcutsDialog.qml",
         "subtitles": "AddSubtitlesDialog.qml",
         "customize": "CustomizePlayerDialog.qml",

@@ -80,11 +80,24 @@ void appendMediaIntoPlaylist(vlc_medialibrary_t* ml, int64_t playlistId, const s
 
 /* explicit */ MLPlaylistListModel::MLPlaylistListModel(QObject * parent)
     : MLBaseModel(parent)
-    , m_coverSize(MLPLAYLISTMODEL_COVER_WIDTH, MLPLAYLISTMODEL_COVER_HEIGHT) {}
+    , m_coverSize(MLPLAYLISTMODEL_COVER_WIDTH, MLPLAYLISTMODEL_COVER_HEIGHT)
+{
+    // favorite and picture changes made by the interface
+    connect(this, &MLBaseModel::mlChanged, this, [this]() {
+        if (m_playlistChangedConnection)
+            disconnect(m_playlistChangedConnection);
+        if (m_mediaLib)
+            m_playlistChangedConnection = connect(m_mediaLib, &MediaLib::playlistChanged,
+                                                  this, [this](const MLItemId& id) {
+                updateItemInCache(id);
+            });
+    });
+}
 
 //-------------------------------------------------------------------------------------------------
 
-/* Q_INVOKABLE */ void MLPlaylistListModel::create(const QString & name, const QVariantList& initialItems)
+/* Q_INVOKABLE */ void MLPlaylistListModel::create(const QString & name, const QVariantList& initialItems,
+                                                   const QUrl& thumbnail)
 {
     assert(m_mediaLib);
 
@@ -105,10 +118,14 @@ void appendMediaIntoPlaylist(vlc_medialibrary_t* ml, int64_t playlistId, const s
             vlc_ml_playlist_release(playlist);
         }
     },
-    [this, initialItems](quint64, const Ctx& ctx) {
+    [this, initialItems, thumbnail](quint64, const Ctx& ctx) {
         endTransaction(); // this is intentionally called here and not after `append()`
 
-        if (ctx.createdPlaylistId.id)
+        if (ctx.createdPlaylistId.id && !thumbnail.isEmpty())
+            m_mediaLib->setPlaylistThumbnail(MLItemId(ctx.createdPlaylistId.id, VLC_ML_PARENT_PLAYLIST),
+                                             thumbnail);
+
+        if (ctx.createdPlaylistId.id && !initialItems.isEmpty())
         {
             append(ctx.createdPlaylistId, initialItems);
         }
@@ -275,7 +292,10 @@ QHash<int, QByteArray> MLPlaylistListModel::roleNames() const /* override */
         { PLAYLIST_COUNT,     QByteArrayLiteral("count")      },
         { PLAYLIST_NB_AUDIO,  QByteArrayLiteral("nb_audio")   },
         { PLAYLIST_NB_VIDEO,  QByteArrayLiteral("nb_video")   },
-        { PLAYLIST_NB_UNKNOWN,QByteArrayLiteral("nb_unknown") }
+        { PLAYLIST_NB_UNKNOWN,QByteArrayLiteral("nb_unknown") },
+        { PLAYLIST_NB_PRESENT,QByteArrayLiteral("nb_present") },
+        { PLAYLIST_FAVORITE,  QByteArrayLiteral("isFavorite") },
+        { PLAYLIST_CREATION_DATE, QByteArrayLiteral("creation_date") }
     };
 }
 
@@ -307,6 +327,12 @@ QVariant MLPlaylistListModel::itemRoleData(const MLItem *item, int role) const /
             return QVariant::fromValue(playlist->getNbVideo());
         case PLAYLIST_NB_UNKNOWN:
             return QVariant::fromValue(playlist->getNbUnknown());
+        case PLAYLIST_NB_PRESENT:
+            return QVariant::fromValue(playlist->getNbPresent());
+        case PLAYLIST_FAVORITE:
+            return playlist->isFavorite();
+        case PLAYLIST_CREATION_DATE:
+            return QVariant::fromValue(playlist->getCreationDate());
         default:
             return QVariant();
     }
@@ -368,6 +394,11 @@ bool MLPlaylistListModel::setTransactionPending(const bool value)
 
 QString MLPlaylistListModel::getCover(const MLPlaylist * playlist) const
 {
+    // picture chosen by the user (New Playlist, Properties & Metadata)
+    const QString custom = MediaLib::playlistThumbnail(playlist->getId());
+    if (!custom.isEmpty())
+        return custom;
+
     return MLCustomCover::url(playlist->getId()
                             , m_coverSize
                             , m_coverDefault

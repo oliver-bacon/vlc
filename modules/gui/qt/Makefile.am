@@ -1109,6 +1109,8 @@ libqml_module_dialogs_a_QML = \
 	dialogs/figma/qml/FigmaDialog.qml \
 	dialogs/figma/qml/NetworkStreamDialog.qml \
 	dialogs/figma/qml/NewPlaylistDialog.qml \
+	dialogs/figma/qml/PlaylistPropertiesDialog.qml \
+	dialogs/figma/qml/PlaylistThumbnailBox.qml \
 	dialogs/figma/qml/KeyboardShortcutsDialog.qml \
 	dialogs/figma/qml/AddSubtitlesDialog.qml \
 	dialogs/figma/qml/CustomizePlayerDialog.qml \
@@ -1300,6 +1302,7 @@ libqml_module_playercontrols_a_QML = \
 	player/qml/controlbarcontrols/FileNameLabel.qml \
 	player/qml/controlbarcontrols/ArtistNameLabel.qml \
 	player/qml/controlbarcontrols/FolderNameLabel.qml \
+	player/qml/controlbarcontrols/PlaylistNameLabel.qml \
 	player/qml/controlbarcontrols/MediaLabel.qml \
 	player/qml/controlbarcontrols/ChapterNextButton.qml \
 	player/qml/controlbarcontrols/ChapterPreviousButton.qml \

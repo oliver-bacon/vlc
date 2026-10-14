@@ -964,6 +964,19 @@ void PlaylistListContextMenu::popup(const QModelIndexList & selected, QPoint pos
         ml->addAndPlay(ids);
     });
 
+    bool allFavorite = !selected.isEmpty();
+    for (const QModelIndex & modelIndex : selected)
+        allFavorite = allFavorite && m_model->data(modelIndex, MLPlaylistListModel::PLAYLIST_FAVORITE).toBool();
+
+    action = menu->addAction(figmaIcon("playlist_favorite"), qtr("Favorite"));
+    action->setCheckable(true);
+    action->setChecked(allFavorite);
+
+    connect(action, &QAction::triggered, [ml, ids, allFavorite]() {
+        for (const QVariant & id : ids)
+            ml->setPlaylistFavorite(id.value<MLItemId>(), !allFavorite);
+    });
+
     action = menu->addAction(figmaIcon("playlist_shuffle"), qtr("Shuffle"));
 
     connect(action, &QAction::triggered, [this, ml, ids]() {
@@ -999,6 +1012,28 @@ void PlaylistListContextMenu::popup(const QModelIndexList & selected, QPoint pos
     connect(action, &QAction::triggered, [addTracks]() { addTracks(false); });
     action = menu->addAction(figmaIcon("playlist_add_audio_tracks"), qtr("Add Audio Tracks"));
     connect(action, &QAction::triggered, [addTracks]() { addTracks(true); });
+
+    if (ids.count() == 1)
+    {
+        const QModelIndex index = selected.first();
+        const QVariantMap args {
+            { QStringLiteral("id"), ids.first() },
+            { QStringLiteral("name"), name },
+            { QStringLiteral("thumbnail"), MediaLib::playlistThumbnail(ids.first().value<MLItemId>()) },
+            { QStringLiteral("count"), m_model->data(index, MLPlaylistListModel::PLAYLIST_COUNT) },
+            { QStringLiteral("video"), m_model->data(index, MLPlaylistListModel::PLAYLIST_NB_VIDEO) },
+            { QStringLiteral("audio"), m_model->data(index, MLPlaylistListModel::PLAYLIST_NB_AUDIO) },
+            { QStringLiteral("unknown"), m_model->data(index, MLPlaylistListModel::PLAYLIST_NB_UNKNOWN) },
+            { QStringLiteral("present"), m_model->data(index, MLPlaylistListModel::PLAYLIST_NB_PRESENT) },
+            { QStringLiteral("duration"), m_model->data(index, MLPlaylistListModel::PLAYLIST_DURATION).value<VLCDuration>().formatLong() },
+            { QStringLiteral("created"), m_model->data(index, MLPlaylistListModel::PLAYLIST_CREATION_DATE) },
+            { QStringLiteral("favorite"), allFavorite },
+        };
+        action = menu->addAction(figmaIcon("playlist_properties_metadata"), qtr("Properties & Metadata"));
+        connect(action, &QAction::triggered, [args]() {
+            DialogsProvider::getInstance()->figmaDialog(QStringLiteral("playlistProperties"), args);
+        });
+    }
 
     QMenu *more = menu->addMenu(qtr("More"));
 

@@ -40,7 +40,10 @@ public:
         PLAYLIST_COUNT,
         PLAYLIST_NB_AUDIO,
         PLAYLIST_NB_VIDEO,
-        PLAYLIST_NB_UNKNOWN
+        PLAYLIST_NB_UNKNOWN,
+        PLAYLIST_NB_PRESENT,
+        PLAYLIST_FAVORITE,
+        PLAYLIST_CREATION_DATE
     };
     Q_ENUM(Roles)
 
@@ -70,7 +73,8 @@ public:
     explicit MLPlaylistListModel(QObject * parent = nullptr);
 
 public: // Interface
-    Q_INVOKABLE void create(const QString & name, const QVariantList& initialItems);
+    Q_INVOKABLE void create(const QString & name, const QVariantList& initialItems,
+                            const QUrl& thumbnail = {});
 
     Q_INVOKABLE void append(const MLItemId & playlistId, const QVariantList & ids);
 
@@ -129,6 +133,7 @@ private: // Variables
     QString m_coverDefault;
     QString m_coverPrefix;
     PlaylistType m_playlistType = PLAYLIST_TYPE_ALL;
+    QMetaObject::Connection m_playlistChangedConnection;
 
     bool m_transactionPending = false;
     bool m_resetAfterTransaction = false;
