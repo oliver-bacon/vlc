@@ -65,6 +65,18 @@ FocusScope {
     // compact library on the left of the player (side panel button)
     property bool libraryVisible: false
 
+    // tab of the right side panel: 0 queue, 1 bookmarks, 2 chapters
+    property int sidePanelTab: 0
+
+    readonly property bool sidePanelVisible: playlistVisibility.isPlaylistVisible
+
+    // queue button of the control bar: the side panel on its Queue tab
+    function toggleSidePanel() {
+        if (!playlistVisibility.isPlaylistVisible)
+            sidePanelTab = 0
+        playlistVisibility.togglePlaylistVisibility()
+    }
+
     property bool _libraryLoaded: false
     property string _pendingLibraryFolder: ""
 
@@ -1162,6 +1174,23 @@ FocusScope {
             focus: true
 
             wheelEnabled: true
+
+            // VLC Redesign side panel: Queue / Bookmarks / Chapters tabs
+            compact: true
+            tabBar: Component {
+                PlayerSideTabs {
+                    currentTab: rootPlayer.sidePanelTab
+                    onTabClicked: (index) => { rootPlayer.sidePanelTab = index }
+                }
+            }
+            alternateView: Component {
+                PlayerMarksView {
+                    mode: rootPlayer.sidePanelTab
+                }
+            }
+            showAlternateView: rootPlayer.sidePanelTab !== 0
+
+            onAddRequested: DialogsProvider.PLAppendDialog()
 
             rightPadding: VLCStyle.applicationHorizontalMargin
             topPadding:  {

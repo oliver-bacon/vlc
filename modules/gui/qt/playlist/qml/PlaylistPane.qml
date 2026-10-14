@@ -54,6 +54,45 @@ T.Pane {
 
     property alias view: listView
 
+    // VLC Redesign player side panel: no big title and no column headers,
+    // a "N items - duration" line with sort, repeat, shuffle, remove and add
+    property bool compact: false
+    // optional tab bar above the queue (Queue / Bookmarks / Chapters)
+    property Component tabBar: null
+    // view shown instead of the queue (another tab is selected)
+    property Component alternateView: null
+    property bool showAlternateView: false
+
+    // "+" of the compact header; the owner opens the file dialog (the
+    // dialogs module cannot be imported from here)
+    signal addRequested()
+
+    readonly property string _countText: {
+        if (listView.count <= 0)
+            return qsTr("No items")
+
+        let duration
+        const model = listView.model
+        if (model instanceof PlaylistListModel) {
+            duration = model.duration
+        } else {
+            // Proxy model, we need to use `QAbstractItemModel` api:
+
+            duration = []
+            for (let i = 0; i < listView.count; ++i) {
+                const itemDuration = model.data(model.index(i, 0), PlaylistListModel.DurationRole)
+                console.assert(itemDuration !== undefined && itemDuration !== null) // typeof `vlcDuration`
+                duration.push(itemDuration)
+            }
+            duration = duration[0].sum(duration)
+        }
+
+        if (root.compact)
+            return listView.count === 1 ? qsTr("1 item - %1").arg(duration.formatHMS())
+                                        : qsTr("%1 items - %2").arg(listView.count).arg(duration.formatHMS())
+        return qsTr("%1 elements, %2").arg(listView.count).arg(duration.formatLong())
+    }
+
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
     implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
@@ -122,8 +161,17 @@ T.Pane {
 
         readonly property ListView listView: listView
 
+        Loader {
+            Layout.fillWidth: true
+            active: !!root.tabBar
+            visible: active
+            sourceComponent: root.tabBar
+        }
+
         Column {
             id: headerColumn
+
+            visible: !root.showAlternateView
 
             Layout.fillHeight: false
             Layout.fillWidth: true
@@ -145,10 +193,10 @@ T.Pane {
 
                     Layout.fillWidth: true
 
-                    text: qsTr("Play Queue")
-                    color: theme.fg.primary
-                    font.weight: Font.Bold
-                    font.pixelSize: VLCStyle.dp(24, VLCStyle.scale)
+                    text: root.compact ? root._countText : qsTr("Play Queue")
+                    color: root.compact ? theme.fg.secondary : theme.fg.primary
+                    font.weight: root.compact ? Font.Normal : Font.Bold
+                    font.pixelSize: root.compact ? VLCStyle.fontSize_small : VLCStyle.dp(24, VLCStyle.scale)
                 }
 
                 Widgets.SortControl {
@@ -197,8 +245,52 @@ T.Pane {
                     Navigation.downItem: listView
                 }
 
+                Widgets.IconToolButton {
+                    visible: root.compact
+                    font.pixelSize: VLCStyle.icon_normal
+                    text: MainPlaylistController.repeatMode === PlaylistController.PLAYBACK_REPEAT_CURRENT
+                          ? VLCIcons.repeat_one : VLCIcons.repeat_all
+                    checked: MainPlaylistController.repeatMode !== PlaylistController.PLAYBACK_REPEAT_NONE
+                    description: qsTr("Repeat")
+                    onClicked: MainPlaylistController.toggleRepeatMode()
+                }
+
+                Widgets.IconToolButton {
+                    visible: root.compact
+                    font.pixelSize: VLCStyle.icon_normal
+                    text: VLCIcons.shuffle
+                    checked: MainPlaylistController.random
+                    description: qsTr("Shuffle")
+                    onClicked: MainPlaylistController.toggleRandom()
+                }
+
+                Widgets.IconToolButton {
+                    visible: root.compact
+                    enabled: (root.selectionModel?.selectedIndexes.length ?? 0) > 0
+                    font.pixelSize: VLCStyle.icon_normal
+                    text: VLCIcons.remove
+                    description: qsTr("Remove the selected items")
+                    // rows of the play queue model (there is no search filter
+                    // in the compact header)
+                    onClicked: {
+                        if (listView.model !== root.model)
+                            return
+                        root.model.removeItems(root.selectionModel.selectedIndexes.map((i) => i.row))
+                    }
+                }
+
+                Widgets.IconToolButton {
+                    visible: root.compact
+                    font.pixelSize: VLCStyle.icon_normal
+                    text: VLCIcons.add
+                    description: qsTr("Add files")
+                    onClicked: root.addRequested()
+                }
+
                 Widgets.SearchBox {
                     id: searchBox
+
+                    visible: !root.compact
 
                     enabled: MainPlaylistController.count > 1
 
@@ -228,29 +320,8 @@ T.Pane {
 
             Widgets.CaptionLabel {
                 color: theme.fg.secondary
-                visible: listView.count !== 0
-                text: {
-                    if (listView.count <= 0)
-                        return "" // Not visible otherwise
-
-                    let duration
-                    const model = listView.model
-                    if (model instanceof PlaylistListModel) {
-                        duration = model.duration
-                    } else {
-                        // Proxy model, we need to use `QAbstractItemModel` api:
-
-                        duration = []
-                        for (let i = 0; i < listView.count; ++i) {
-                            const itemDuration = model.data(model.index(i, 0), PlaylistListModel.DurationRole)
-                            console.assert(itemDuration !== undefined && itemDuration !== null) // typeof `vlcDuration`
-                            duration.push(itemDuration)
-                        }
-                        duration = duration[0].sum(duration)
-                    }
-
-                    return qsTr("%1 elements, %2").arg(listView.count).arg(duration.formatLong())
-                }
+                visible: listView.count !== 0 && !root.compact
+                text: root._countText
             }
         }
 
@@ -261,7 +332,7 @@ T.Pane {
         }
 
         RowLayout {
-            visible: listView.count !== 0
+            visible: listView.count !== 0 && !root.compact && !root.showAlternateView
 
             Layout.fillHeight: false
             Layout.leftMargin: VLCStyle.margin_normal
@@ -324,11 +395,21 @@ T.Pane {
             }
         }
 
+        Loader {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            active: root.showAlternateView && !!root.alternateView
+            visible: active
+            sourceComponent: root.alternateView
+        }
+
         Widgets.ListViewExt {
             id: listView
 
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            visible: !root.showAlternateView
 
             selectionModel: ListSelectionModel {
                 model: listView.model

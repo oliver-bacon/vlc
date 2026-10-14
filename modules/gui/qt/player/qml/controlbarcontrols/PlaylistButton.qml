@@ -31,20 +31,17 @@ Widgets.IconToolButton {
     text: VLCIcons.playlist
     signal requestLockUnlockAutoHide(bool lock)
 
-    // Figma Queue / Bookmarks / Chapters popover; the side play queue panel
-    // stays available through the "Right Sidebar" item
-    onClicked: popover.opened ? popover.close() : popover.open()
-    checked: popover.opened
+    // toggles the player side panel (Queue / Bookmarks / Chapters), on the
+    // Queue tab; the miniplayer card keeps its queue popover
+    readonly property bool _inPlayer: (typeof rootPlayer !== 'undefined') && rootPlayer !== null
 
-    QueuePopover {
-        id: popover
-
-        x: playlistBtn.width - width
-        y: -height - VLCStyle.margin_small
-
-        onOpened: playlistBtn.requestLockUnlockAutoHide(true)
-        onClosed: playlistBtn.requestLockUnlockAutoHide(false)
+    onClicked: {
+        if (_inPlayer)
+            rootPlayer.toggleSidePanel()
+        else
+            MainCtx.playqueuePanel.visible = !MainCtx.playqueuePanel.visible
     }
+    checked: _inPlayer ? rootPlayer.sidePanelVisible : MainCtx.playqueuePanel.visible
 
     description: qsTr("Play Queue")
 

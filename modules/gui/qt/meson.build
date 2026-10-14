@@ -769,6 +769,8 @@ qml_modules += {
        'player/qml/ResumeDialog.qml',
        'player/qml/PlayerLibraryPanel.qml',
        'player/qml/PlayerLibraryModels.qml',
+       'player/qml/PlayerSideTabs.qml',
+       'player/qml/PlayerMarksView.qml',
        'player/qml/SliderBar.qml',
        'player/qml/TopBar.qml',
        'player/qml/TracksMenu.qml',

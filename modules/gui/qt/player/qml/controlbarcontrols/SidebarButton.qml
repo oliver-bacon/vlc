@@ -28,6 +28,14 @@ Widgets.IconToolButton {
     text: VLCIcons.sidebar_right
     description: qsTr("Right Sidebar")
     enabled: !paintOnly
-    checked: MainCtx.playqueuePanel.visible
-    onClicked: MainCtx.playqueuePanel.visible = !MainCtx.playqueuePanel.visible
+    // in the player, through its panel state machine (with video, the
+    // panel can be hidden while playqueuePanel.visible is still true)
+    readonly property bool _inPlayer: (typeof rootPlayer !== 'undefined') && rootPlayer !== null
+    checked: _inPlayer ? rootPlayer.sidePanelVisible : MainCtx.playqueuePanel.visible
+    onClicked: {
+        if (_inPlayer)
+            rootPlayer.toggleSidePanel()
+        else
+            MainCtx.playqueuePanel.visible = !MainCtx.playqueuePanel.visible
+    }
 }
