@@ -17,6 +17,7 @@
  *****************************************************************************/
 import QtQuick
 
+import VLC.MainInterface
 import VLC.MediaLibrary
 
 // Media library models of the compact library in the player
@@ -25,6 +26,8 @@ import VLC.MediaLibrary
 // then.
 Item {
     readonly property MLVideoFoldersModel videoFolders: MLVideoFoldersModel { ml: MediaLib }
+    // folders added to the library (Videos starts there)
+    readonly property MLFolderModel libraryFolders: MLFolderModel { ctx: MainCtx }
     readonly property MLAudioModel tracks: MLAudioModel { ml: MediaLib }
     // tracks of an album, artist or genre (parentId set by the panel)
     readonly property MLAudioModel tracksOf: MLAudioModel { ml: MediaLib }

@@ -45,20 +45,36 @@ T.Pane {
 
     property alias model: navigationModel
 
-    // ---- section panel (VLC Redesign "sidebar" frame): Music opens its
-    // sections in a panel next to the navigation instead of below it
+    // ---- side panel of the rail mode (VLC Redesign "sidebar" frame): while
+    // the navigation shows icons only, an entry opens its content in a panel
+    // next to it (the panel of the compact library); its expand button
+    // switches to the full library (navigation with text)
 
-    readonly property var _musicSections: [
-        { "title": qsTr("Songs"),   "icon": VLCIcons.songs,       "uri": ["music", "tracks"] },
-        { "title": qsTr("Albums"),  "icon": VLCIcons.album_cover, "uri": ["music", "albums"] },
-        { "title": qsTr("Artists"), "icon": VLCIcons.artist,      "uri": ["music", "artists"] },
-        { "title": qsTr("Genres"),  "icon": VLCIcons.genre,       "uri": ["music", "genres"] }
-    ]
+    // "home", "video", "music", "network", "playlists", "recent", "pin<N>"; "" = closed
+    property string panelSection: ""
 
-    readonly property bool sectionShown: MainCtx.mediaLibraryAvailable && History.match(History.viewPath, ["music"])
+    readonly property bool sectionShown: !delegateShowText && panelSection !== ""
 
     // added to the pane's width by MainDisplay.qml
-    readonly property real sectionWidth: sectionShown ? VLCStyle.dp(220, VLCStyle.scale) : 0
+    readonly property real sectionWidth: sectionShown ? VLCStyle.dp(300, VLCStyle.scale) : 0
+
+    function toggleSection(section) {
+        panelSection = (panelSection === section) ? "" : section
+    }
+
+    function _showPanelSection() {
+        const panel = sidePanelLoader.item
+        if (!panel || panelSection === "")
+            return
+        if (panelSection.startsWith("pin"))
+            panel._openPin(parseInt(panelSection.slice(3)))
+        else
+            panel.showSection(panelSection)
+    }
+
+    onPanelSectionChanged: _showPanelSection()
+    // the full library has no side panel
+    onDelegateShowTextChanged: if (delegateShowText) panelSection = ""
 
     // ---- pinned items (VLC Redesign: "Pin whatever you want here")
     // [{ type: "folder" | "playlist", name, url (folder), id (playlist,
@@ -410,7 +426,12 @@ T.Pane {
 
                             showText: root.delegateShowText
 
-                            onClicked: root._openPin(modelData)
+                            onClicked: {
+                                if (root.delegateShowText)
+                                    root._openPin(modelData)
+                                else
+                                    root.toggleSection("pin" + index)
+                            }
 
                             TapHandler {
                                 acceptedButtons: Qt.RightButton
@@ -526,75 +547,32 @@ T.Pane {
 
         }
 
-        // Music sections, in the panel next to the navigation
-        ColumnLayout {
-            visible: root.sectionShown
+        // side panel of the rail mode
+        Loader {
+            id: sidePanelLoader
+
+            active: root.sectionShown
+            visible: active
 
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             anchors.right: parent.right
             anchors.margins: root.panelInset
-            anchors.topMargin: root.panelInset * 2
             width: Math.max(0, root.sectionWidth - 2 * root.panelInset)
 
-            spacing: VLCStyle.margin_xsmall
+            // loaded by URL: importing VLC.Player here makes the QML modules
+            // import each other and the interface hangs at startup
+            source: "qrc:///qt/qml/VLC/Player/PlayerLibraryPanel.qml"
 
-            Text {
-                Layout.fillWidth: true
-                Layout.leftMargin: VLCStyle.margin_small
-                text: qsTr("Music")
-                color: theme.fg.primary
-                font.pixelSize: VLCStyle.fontSize_large
-                font.weight: Font.DemiBold
-                elide: Text.ElideRight
+            onLoaded: {
+                item.showRail = false
+                root._showPanelSection()
             }
 
-            Text {
-                Layout.fillWidth: true
-                Layout.leftMargin: VLCStyle.margin_small
-                Layout.bottomMargin: VLCStyle.margin_xsmall
-                text: qsTr("%1 items").arg(root._musicSections.length)
-                color: theme.fg.secondary
-                font.pixelSize: VLCStyle.fontSize_small
-            }
-
-            SideNavigationDelegate {
-                Layout.fillWidth: true
-                Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
-
-                iconTxt: VLCIcons.add
-                text: qsTr("Add")
-
-                onClicked: {
-                    const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
-                    if (folder !== "")
-                        MainCtx.mediaLibrary.addFolder(folder)
-                }
-            }
-
-            Repeater {
-                model: root._musicSections
-
-                delegate: SideNavigationDelegate {
-                    required property var modelData
-
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
-
-                    iconTxt: modelData.icon
-                    text: modelData.title
-
-                    checked: History.match(History.viewPath, modelData.uri)
-
-                    onClicked: {
-                        if (!History.exactMatch(History.viewPath, modelData.uri))
-                            History.push(modelData.uri)
-                    }
-                }
-            }
-
-            Item {
-                Layout.fillHeight: true
+            Connections {
+                target: sidePanelLoader.item
+                // the expand button opened the full library
+                function onExpandRequested() { root.panelSection = "" }
             }
         }
     }

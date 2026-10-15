@@ -40,12 +40,17 @@ FocusScope {
     // ---- public
 
     signal closeRequested()
+    // the expand button opened the same place in the full library
+    signal expandRequested()
+
+    // the library uses its own navigation as the rail (rail mode)
+    property bool showRail: true
 
     // open the folder of the media being played (top bar folder button)
     function showFolder(folderUrl) {
         const levels = []
         if (_hasML)
-            levels.push({ kind: "videoFolders", title: qsTr("Videos") })
+            levels.push(_videoRootLevel())
         const parts = folderUrl.split("/")
         const name = decodeURIComponent(parts[parts.length - 1])
         const parentUrl = parts.slice(0, -1).join("/")
@@ -100,7 +105,8 @@ FocusScope {
     ] : []
 
     // the levels that start with an "Add" row (add a folder to the library)
-    readonly property bool _showAdd: _hasML && (_kind === "musicRoot" || _kind === "videoFolders")
+    readonly property bool _showAdd: _hasML && (_kind === "musicRoot" || _kind === "libraryFolders"
+                                                || (_section === "video" && _levelIndex === 0))
 
     function _addFolder() {
         const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
@@ -163,6 +169,29 @@ FocusScope {
         return { kind: "browse", title: title, url: url, tree: VLCConfig.browseNode(url) }
     }
 
+    // Videos starts on the folders added to the library, or directly on the
+    // content of the only one (like the Videos page of the library)
+    function _videoRootLevel() {
+        const folders = _ml ? _ml.libraryFolders : null
+        const count = folders ? folders.rowCount() : 0
+        if (count === 1) {
+            const url = String(folders.data(folders.index(0, 0), Qt.UserRole + 3))
+            return { kind: "browse", title: qsTr("Videos"), url: url, tree: VLCConfig.browseNode(url) }
+        }
+        return { kind: "libraryFolders", title: qsTr("Videos") }
+    }
+
+    function _libraryFolderRows() {
+        const folders = _ml ? _ml.libraryFolders : null
+        const rows = []
+        for (let i = 0; folders && i < folders.rowCount(); ++i) {
+            const url = String(folders.data(folders.index(i, 0), Qt.UserRole + 3))
+            const parts = decodeURIComponent(url).split("/").filter((p) => p !== "")
+            rows.push({ title: parts[parts.length - 1] ?? url, url: url })
+        }
+        return rows
+    }
+
     function _rootLevel(section) {
         switch (section) {
         case "home": return { kind: "home", title: qsTr("Home") }
@@ -170,7 +199,7 @@ FocusScope {
         case "music": return { kind: "musicRoot", title: qsTr("Music") }
         case "network": return { kind: "streams", title: qsTr("Network") }
         case "playlists": return { kind: "playlists", title: qsTr("Playlists") }
-        default: return { kind: "videoFolders", title: qsTr("Videos") }
+        default: return _videoRootLevel()
         }
     }
 
@@ -210,7 +239,8 @@ FocusScope {
 
     readonly property var _model: {
         switch (_kind) {
-        case "browse": return browseModel
+        case "browse": return _section === "video" ? videoFilter : browseModel
+        case "libraryFolders": return _libraryFolderRows()
         case "musicRoot": return _musicRoot
         case "videoFolders": return _ml ? _ml.videoFolders : null
         case "tracks": return _ml ? _ml.tracks : null
@@ -267,7 +297,7 @@ FocusScope {
     function _rowGlyph(d) {
         switch (_kind) {
         case "musicRoot": return d.glyph
-        case "videoFolders": return VLCIcons.topbar_network
+        case "videoFolders": case "libraryFolders": return VLCIcons.topbar_network
         case "browse": return _rowIsNav(d) ? VLCIcons.topbar_network : VLCIcons.topbar_video
         case "albums": case "artists": case "genres": case "tracks": case "tracksOf":
         case "listenAgain":
@@ -290,7 +320,7 @@ FocusScope {
             return d.type === NetworkMediaModel.TYPE_DIRECTORY
                 || d.type === NetworkMediaModel.TYPE_NODE
                 || d.type === NetworkMediaModel.TYPE_PLAYLIST
-        case "musicRoot": case "videoFolders": case "albums": case "artists":
+        case "musicRoot": case "videoFolders": case "libraryFolders": case "albums": case "artists":
         case "genres": case "playlists":
             return true
         }
@@ -310,6 +340,9 @@ FocusScope {
         case "musicRoot":
             _push({ kind: d.kind, title: d.title })
             return
+        case "libraryFolders":
+            _push(_browseLevel(d.url, d.title))
+            return
         case "videoFolders":
             _push(_browseLevel(String(d.mrl), d.title))
             return
@@ -327,8 +360,9 @@ FocusScope {
 
     function _play(index, d, enqueue) {
         if (_kind === "browse") {
-            if (enqueue) browseModel.addToPlaylist(index)
-            else browseModel.addAndPlay(index)
+            const row = (_model === videoFilter) ? videoFilter.sourceRow(index) : index
+            if (enqueue) browseModel.addToPlaylist(row)
+            else browseModel.addAndPlay(row)
         } else if (MainCtx.mediaLibrary && d.id !== undefined) {
             if (enqueue) MainCtx.mediaLibrary.addToPlaylist(d.id)
             else MainCtx.mediaLibrary.addAndPlay(d.id)
@@ -346,7 +380,17 @@ FocusScope {
         let path = ["video"]
         let props = undefined
         switch (_kind) {
-        case "browse": path = ["network", "browse"]; props = { "tree": _level.tree }; break
+        case "browse":
+            if (_section === "video") {
+                // the Videos page with the same folder
+                path = ["video", "folders"]
+                const crumbs = _levels.slice(1, _levelIndex + 1).map((l) => l.title)
+                props = crumbs.length > 0 ? { "tree": _level.tree, "crumbs": crumbs } : undefined
+            } else {
+                path = ["network", "browse"]; props = { "tree": _level.tree }
+            }
+            break
+        case "libraryFolders": path = ["video"]; break
         case "home": case "continue": case "listenAgain": path = ["home"]; break
         case "recent": path = ["recent"]; break
         case "musicRoot": case "tracks": case "tracksOf": path = ["music"]; break
@@ -357,6 +401,9 @@ FocusScope {
         case "playlists": case "playlistMedia": path = ["video", "playlists"]; break
         }
         MainCtx.playerView = false
+        // the full library shows the navigation with text
+        MainCtx.navigationPanel.visible = true
+        expandRequested()
         if (props !== undefined)
             History.push(path, props)
         else
@@ -368,7 +415,7 @@ FocusScope {
         showSection("video")
     }
 
-    implicitWidth: rail.width + VLCStyle.dp(260, VLCStyle.scale)
+    implicitWidth: (rail.visible ? rail.width : 0) + VLCStyle.dp(260, VLCStyle.scale)
 
     Loader {
         id: mlLoader
@@ -380,6 +427,20 @@ FocusScope {
     NetworkMediaModel {
         id: browseModel
         ctx: MainCtx
+    }
+
+    VideoFolderFilter {
+        id: videoFilter
+        sourceModel: browseModel
+    }
+
+    // the library folders arrive after the panel opened on Videos
+    Connections {
+        target: root._ml ? root._ml.libraryFolders : null
+        function onModelReset() {
+            if (root._section === "video" && root._levelIndex === 0)
+                root.showSection("video")
+        }
     }
 
     Rectangle {
@@ -394,7 +455,7 @@ FocusScope {
         anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
         width: VLCStyle.dp(40, VLCStyle.scale)
         color: root.railColor
-        visible: root._hasML
+        visible: root._hasML && root.showRail
 
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -780,7 +841,9 @@ FocusScope {
                     enabled: !row.isNav && !root._isArray
                     onActiveChanged: {
                         if (active) {
-                            dragItem.indexes = [root._model.index(row.index, 0)]
+                            dragItem.indexes = [(root._model === videoFilter)
+                                                ? browseModel.index(videoFilter.sourceRow(row.index), 0)
+                                                : root._model.index(row.index, 0)]
                             dragItem.Drag.active = true
                         } else {
                             dragItem.Drag.drop()
@@ -945,7 +1008,8 @@ FocusScope {
         })
 
         onRequestData: (indexes, resolve, reject) => {
-            resolve(indexes.map((i) => root._model.getDataAt(i.row)))
+            const m = (root._model === videoFilter) ? browseModel : root._model
+            resolve(indexes.map((i) => m.getDataAt(i.row)))
         }
 
         onRequestInputItems: (indexes, data, resolve, reject) => {

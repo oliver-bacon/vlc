@@ -33,10 +33,15 @@ Widgets.PageLoader {
     Accessible.name: qsTr("Music view")
     AccessibleCompat.id: "musicDisplay"
 
+    // VLC Redesign: Music opens on its sections (Songs, Albums, Artists, Genres)
     pageModel: [{
+            displayText: qsTr("Music"),
+            name: "sections",
+            default: true,
+            url: "qrc:///qt/qml/VLC/MediaLibrary/MusicSectionsDisplay.qml"
+        }, {
             displayText: qsTr("Artists"),
             name: "artists",
-            default: true,
             url: "qrc:///qt/qml/VLC/MediaLibrary/MusicArtistsDisplay.qml"
         }, {
             displayText: qsTr("Albums"),

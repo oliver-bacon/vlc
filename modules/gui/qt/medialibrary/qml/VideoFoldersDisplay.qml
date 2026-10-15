@@ -37,7 +37,16 @@ Widgets.PageExt {
     // names of the folders opened so far, below "Videos"
     property var crumbs: []
 
-    readonly property bool _atRoot: tree === undefined || tree === null
+    // with a single library folder, Videos opens directly on its content
+    readonly property var _singleFolderTree: (libraryFolders.count === 1)
+                                             ? VLCConfig.browseNode(String(libraryFolders.data(libraryFolders.index(0, 0), Qt.UserRole + 3)))
+                                             : undefined
+    readonly property var _tree: (tree !== undefined && tree !== null) ? tree : _singleFolderTree
+
+    // the list of library folders (more than one folder in the library)
+    readonly property bool _atRoot: _tree === undefined || _tree === null
+    // first page of Videos ("Add" is shown there)
+    readonly property bool _topLevel: crumbs.length === 0
 
     title: [qsTr("Videos")].concat(crumbs).join("  ›  ")
 
@@ -89,7 +98,7 @@ Widgets.PageExt {
         id: folderModel
 
         ctx: MainCtx
-        tree: root._atRoot ? undefined : root.tree
+        tree: root._atRoot ? undefined : root._tree
         // A-Z until a sort order is chosen (VLC's default order is descending)
         sortCriteria: root.sort.criteria !== "" ? root.sort.criteria : "name"
         sortOrder: root.sort.criteria !== "" ? root.sort.order : Qt.AscendingOrder
@@ -130,7 +139,7 @@ Widgets.PageExt {
 
                 Layout.fillWidth: true
                 Layout.preferredHeight: VLCStyle.dp(40, VLCStyle.scale)
-                visible: root._atRoot
+                visible: root._topLevel
                 leftPadding: VLCStyle.margin_xsmall
 
                 Accessible.name: qsTr("Add a Folder to the Library")

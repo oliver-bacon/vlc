@@ -615,6 +615,18 @@ FocusScope {
                 console.assert(modelUri)
 
                 console.assert(item)
+
+                // VLC Redesign rail mode: the entry opens its side panel
+                if (sidebar.state !== 'expanded') {
+                    const sections = { "home": "home", "video": "video", "music": "music",
+                                       "streams": "network", "playlists": "playlists", "recent": "recent" }
+                    const section = sections[modelUri[0]]
+                    if (section !== undefined && MainCtx.mediaLibraryAvailable) {
+                        sidebar.toggleSection(section)
+                        return
+                    }
+                }
+
                 if ((sidebar.state !== 'expanded') && item.expandable) {
                     // TODO: Investigate opening the menu on hover, if
                     //       we switch to `Popup.Item` type of menus.
@@ -922,7 +934,20 @@ FocusScope {
         property bool showNavigation: false
         property bool showPlayqueue: false
 
+        // VLC Redesign: a narrow window goes back to the rail mode by itself
+        readonly property bool narrow: VLCStyle.appWidth <= MainCtx.dp(1000, VLCStyle.scale)
+
+        onNarrowChanged: {
+            if (VLCStyle.isScreenSmall)
+                return
+            showNavigation = narrow ? false : MainCtx.navigationPanel.visible
+        }
+
         Component.onCompleted: {
+            // VLC Redesign: the library opens in rail mode (navigation with
+            // icons only); the side panel's expand button shows the full
+            // navigation until the window is closed
+            MainCtx.navigationPanel.visible = false
             onIsScreenSmallChanged()
         }
 
@@ -964,7 +989,7 @@ FocusScope {
                 pannelVisiblity.showPlayqueue = MainCtx.playqueuePanel.visible
             } else {
                 //reshow the navigation panels to original state
-                pannelVisiblity.showNavigation = MainCtx.navigationPanel.visible
+                pannelVisiblity.showNavigation = MainCtx.navigationPanel.visible && !pannelVisiblity.narrow
                 pannelVisiblity.showPlayqueue =  MainCtx.playqueuePanel.visible
             }
         }
