@@ -55,6 +55,11 @@ T.Pane {
 
     readonly property bool sectionShown: !delegateShowText && panelSection !== ""
 
+    // width of the rail (icons only): the panel inset on both sides, the
+    // delegate's left padding, the icon and a margin after it
+    readonly property real railWidth: 2 * panelInset + safeAreaLeftMargin + safeAreaRightMargin
+                                      + 2 * VLCStyle.margin_xsmall + VLCStyle.icon_banner + rightPadding
+
     // added to the pane's width by MainDisplay.qml
     readonly property real sectionWidth: sectionShown ? VLCStyle.dp(300, VLCStyle.scale) : 0
 

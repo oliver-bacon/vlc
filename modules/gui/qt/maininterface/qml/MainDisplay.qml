@@ -574,7 +574,8 @@ FocusScope {
 
             width: VLCStyle.isScreenReallySmall ? 0.0 : collapsedWidth + sectionWidth
 
-            property real collapsedWidth: VLCStyle.icon_normal + VLCStyle.margin_small + VLCStyle.margin_xsmall + VLCStyle.applicationHorizontalMargin
+            // VLC Redesign: wide enough for the rail icons inside the inset panel
+            property real collapsedWidth: railWidth
 
             delegateShowText: (state === "expanded")
 
