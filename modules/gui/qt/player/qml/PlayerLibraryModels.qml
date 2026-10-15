@@ -35,4 +35,11 @@ Item {
     readonly property MLPlaylistListModel playlists: MLPlaylistListModel { ml: MediaLib }
     // media of a playlist (parentId set by the panel)
     readonly property MLPlaylistModel playlistMedia: MLPlaylistModel { ml: MediaLib }
+    // Home and Recent
+    readonly property MLRecentVideoModel recentVideos: MLRecentVideoModel { ml: MediaLib }
+    readonly property MLRecentAudioModel recentAudio: MLRecentAudioModel { ml: MediaLib }
+    readonly property MLRecentMediaModel recentMedia: MLRecentMediaModel { ml: MediaLib }
+    // the first items of each Home section
+    readonly property MLRecentVideoModel recentVideosPreview: MLRecentVideoModel { ml: MediaLib; limit: 3 }
+    readonly property MLRecentAudioModel recentAudioPreview: MLRecentAudioModel { ml: MediaLib; limit: 3 }
 }

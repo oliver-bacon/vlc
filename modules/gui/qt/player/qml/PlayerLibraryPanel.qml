@@ -87,11 +87,77 @@ FocusScope {
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     readonly property var _musicRoot: [
-        { kind: "tracks", title: qsTr("Tracks"), glyph: VLCIcons.topbar_music },
-        { kind: "albums", title: qsTr("Albums"), glyph: VLCIcons.topbar_music },
-        { kind: "artists", title: qsTr("Artists"), glyph: VLCIcons.topbar_music },
-        { kind: "genres", title: qsTr("Genres"), glyph: VLCIcons.topbar_music }
+        { kind: "tracks", title: qsTr("Songs"), glyph: VLCIcons.songs },
+        { kind: "albums", title: qsTr("Albums"), glyph: VLCIcons.album_cover },
+        { kind: "artists", title: qsTr("Artists"), glyph: VLCIcons.artist },
+        { kind: "genres", title: qsTr("Genres"), glyph: VLCIcons.genre }
     ]
+
+    // Home sections (Figma "sidebar" frame): a header and the first items
+    readonly property var _homeSections: _ml ? [
+        { kind: "continue", title: qsTr("Continue Watching"), model: _ml.recentVideosPreview },
+        { kind: "listenAgain", title: qsTr("Listen Again"), model: _ml.recentAudioPreview }
+    ] : []
+
+    // the levels that start with an "Add" row (add a folder to the library)
+    readonly property bool _showAdd: _hasML && (_kind === "musicRoot" || _kind === "videoFolders")
+
+    function _addFolder() {
+        const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
+        if (folder !== "")
+            MainCtx.mediaLibrary.addFolder(folder)
+    }
+
+    // ---- pinned items, shared with the library side navigation
+    // (SideNavigationPane.qml, interface setting "Library/Pins")
+
+    readonly property string _pinsKey: "Library/Pins"
+    property var _pins: []
+
+    function _loadPins() {
+        try {
+            const list = JSON.parse(VLCConfig.uiValue(_pinsKey, "[]"))
+            _pins = Array.isArray(list) ? list : []
+        } catch (e) {
+            _pins = []
+        }
+    }
+
+    function _pin(item) {
+        const list = _pins.filter((p) => !(p.type === item.type && p.url === item.url && p.id === item.id))
+        list.push(item)
+        VLCConfig.setUiValue(_pinsKey, JSON.stringify(list))
+    }
+
+    function _openPin(index) {
+        const pin = _pins[index]
+        _section = "pin" + index
+        if (pin.type === "folder")
+            _setLevels([_browseLevel(pin.url, pin.name)], 0)
+        else if (pin.type === "playlist" && MainCtx.mediaLibrary)
+            _setLevels([{ kind: "playlistMedia", title: pin.name,
+                          parentId: MainCtx.mediaLibrary.deserializeMlItemIdFromString(pin.id) }], 0)
+    }
+
+    function _addItemMenu() {
+        const items = [{ "text": qsTr("Pin a Folder…") }]
+        const playlists = _ml ? _ml.playlists : null
+        if (playlists && playlists.count > 0) {
+            const children = []
+            for (let i = 0; i < Math.min(playlists.count, 50); ++i)
+                children.push({ "text": playlists.getDataAt(i).name })
+            items.push({ "text": qsTr("Pin a Playlist"), "children": children })
+        }
+        return items
+    }
+
+    Connections {
+        target: VLCConfig
+        function onUiValueChanged(key) {
+            if (key === root._pinsKey)
+                root._loadPins()
+        }
+    }
 
     function _browseLevel(url, title) {
         return { kind: "browse", title: title, url: url, tree: VLCConfig.browseNode(url) }
@@ -99,6 +165,8 @@ FocusScope {
 
     function _rootLevel(section) {
         switch (section) {
+        case "home": return { kind: "home", title: qsTr("Home") }
+        case "recent": return { kind: "recent", title: qsTr("Recent") }
         case "music": return { kind: "musicRoot", title: qsTr("Music") }
         case "network": return { kind: "streams", title: qsTr("Network") }
         case "playlists": return { kind: "playlists", title: qsTr("Playlists") }
@@ -153,6 +221,9 @@ FocusScope {
         case "streams": return _ml ? _ml.streams : null
         case "playlists": return _ml ? _ml.playlists : null
         case "playlistMedia": return _ml ? _ml.playlistMedia : null
+        case "continue": return _ml ? _ml.recentVideos : null
+        case "listenAgain": return _ml ? _ml.recentAudio : null
+        case "recent": return _ml ? _ml.recentMedia : null
         }
         return null
     }
@@ -198,7 +269,9 @@ FocusScope {
         case "musicRoot": return d.glyph
         case "videoFolders": return VLCIcons.topbar_network
         case "browse": return _rowIsNav(d) ? VLCIcons.topbar_network : VLCIcons.topbar_video
-        case "albums": case "artists": case "genres": case "tracks": case "tracksOf": return VLCIcons.topbar_music
+        case "albums": case "artists": case "genres": case "tracks": case "tracksOf":
+        case "listenAgain":
+            return VLCIcons.topbar_music
         case "streams": return VLCIcons.stream
         case "playlists": return VLCIcons.lists
         }
@@ -274,6 +347,8 @@ FocusScope {
         let props = undefined
         switch (_kind) {
         case "browse": path = ["network", "browse"]; props = { "tree": _level.tree }; break
+        case "home": case "continue": case "listenAgain": path = ["home"]; break
+        case "recent": path = ["recent"]; break
         case "musicRoot": case "tracks": case "tracksOf": path = ["music"]; break
         case "albums": path = ["music", "albums"]; break
         case "artists": path = ["music", "artists"]; break
@@ -288,7 +363,10 @@ FocusScope {
             History.push(path)
     }
 
-    Component.onCompleted: showSection("video")
+    Component.onCompleted: {
+        _loadPins()
+        showSection("video")
+    }
 
     implicitWidth: rail.width + VLCStyle.dp(260, VLCStyle.scale)
 
@@ -324,12 +402,21 @@ FocusScope {
             spacing: VLCStyle.margin_xxsmall
 
             Repeater {
+                // Figma "sidebar" frame: Home, Videos, Music, Network,
+                // Playlists, Recent, then the pins and "+"
                 model: [
+                    { section: "home", glyph: VLCIcons.home, text: qsTr("Home") },
                     { section: "video", glyph: VLCIcons.topbar_video, text: qsTr("Videos") },
                     { section: "music", glyph: VLCIcons.topbar_music, text: qsTr("Music") },
                     { section: "network", glyph: VLCIcons.stream, text: qsTr("Network") },
-                    { section: "playlists", glyph: VLCIcons.lists, text: qsTr("Playlists") }
-                ]
+                    { section: "playlists", glyph: VLCIcons.lists, text: qsTr("Playlists") },
+                    { section: "recent", glyph: VLCIcons.history, text: qsTr("Recent") }
+                ].concat(root._pins.map((p, i) => ({
+                    section: "pin" + i,
+                    glyph: p.type === "folder" ? VLCIcons.topbar_network : VLCIcons.lists,
+                    text: p.name,
+                    pin: i
+                }))).concat([{ section: "", glyph: VLCIcons.add, text: qsTr("Add item"), add: true }])
 
                 T.Button {
                     id: railButton
@@ -355,8 +442,33 @@ FocusScope {
                         text: railButton.modelData.glyph
                         color: railButton.current ? root.accentColor : root.textColor
                     }
-                    onClicked: root.showSection(modelData.section)
+                    onClicked: {
+                        if (modelData.add)
+                            addItemMenu.popup(railButton.mapToGlobal(railButton.width, 0), root._addItemMenu())
+                        else if (modelData.pin !== undefined)
+                            root._openPin(modelData.pin)
+                        else
+                            root.showSection(modelData.section)
+                    }
                 }
+            }
+        }
+    }
+
+    StringListMenu {
+        id: addItemMenu
+        ctx: MainCtx
+        onSelected: (index, text) => {
+            if (index === 0) {
+                const folder = VLCConfig.browseFolder(qsTr("Pin a Folder to the Sidebar"))
+                if (folder !== "") {
+                    const parts = decodeURIComponent(folder).split("/").filter((p) => p !== "")
+                    root._pin({ "type": "folder", "name": parts[parts.length - 1] ?? folder, "url": folder })
+                }
+            } else if (root._ml) {
+                // playlist entries follow "Pin a Folder…"
+                const data = root._ml.playlists.getDataAt(index - 1)
+                root._pin({ "type": "playlist", "name": data.name, "id": data.id.toString() })
             }
         }
     }
@@ -446,9 +558,11 @@ FocusScope {
             }
         }
 
-        // count, sort, search
+        // count, sort, search (none of them on Home: an empty row layout
+        // would take all the height)
         RowLayout {
             Layout.fillWidth: true
+            visible: root._kind !== "home"
             spacing: 0
 
             Text {
@@ -491,7 +605,7 @@ FocusScope {
                 Layout.preferredWidth: VLCStyle.dp(28, VLCStyle.scale)
                 Layout.preferredHeight: VLCStyle.dp(28, VLCStyle.scale)
                 checked: root._searchVisible
-                visible: !root._isArray
+                visible: !root._isArray && root._model !== null
                 onClicked: {
                     root._searchVisible = !root._searchVisible
                     if (root._searchVisible)
@@ -538,6 +652,41 @@ FocusScope {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: root._model
+
+            // "Add" row of the Videos and Music roots (Figma "sidebar" frame)
+            header: T.ItemDelegate {
+                id: addRow
+
+                width: ListView.view.width
+                height: root._showAdd ? VLCStyle.dp(32, VLCStyle.scale) : 0
+                visible: root._showAdd
+                leftPadding: VLCStyle.margin_xxsmall
+
+                Accessible.name: qsTr("Add a Folder to the Library")
+
+                background: Rectangle {
+                    radius: 4 * root.dp1
+                    color: addRow.hovered ? root.hoverColor : "transparent"
+                }
+                contentItem: RowLayout {
+                    spacing: VLCStyle.margin_xsmall
+                    Text {
+                        Layout.preferredWidth: VLCStyle.dp(24, VLCStyle.scale)
+                        horizontalAlignment: Text.AlignHCenter
+                        font.family: VLCIcons.fontFamily
+                        font.pixelSize: VLCStyle.icon_normal
+                        text: VLCIcons.add
+                        color: root.textColor
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: qsTr("Add")
+                        font.pixelSize: VLCStyle.fontSize_normal
+                        color: root.titleColor
+                    }
+                }
+                onClicked: root._addFolder()
+            }
 
             T.ScrollBar.vertical: Widgets.ScrollBarExt { }
 
@@ -645,8 +794,138 @@ FocusScope {
             Text {
                 parent: listView
                 anchors.centerIn: parent
-                visible: listView.count === 0
+                visible: listView.count === 0 && root._kind !== "home"
                 text: root._kind === "browse" && browseModel.loading ? qsTr("Loading…") : qsTr("Nothing here")
+                color: root.dimColor
+                font.pixelSize: VLCStyle.fontSize_normal
+            }
+        }
+
+        // Home: a header per section (opens the whole list) and its first
+        // items, over the (empty) list
+        Flickable {
+            id: homeView
+
+            parent: listView
+            anchors.fill: parent
+            z: 1
+            visible: root._kind === "home"
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            contentWidth: width
+            contentHeight: homeColumn.implicitHeight
+
+            T.ScrollBar.vertical: Widgets.ScrollBarExt { }
+
+            Column {
+                id: homeColumn
+
+                width: homeView.width
+
+                Repeater {
+                    model: root._homeSections
+
+                    delegate: Column {
+                        id: section
+
+                        required property var modelData
+
+                        width: homeColumn.width
+                        visible: modelData.model.count > 0
+
+                        T.ItemDelegate {
+                            id: sectionHeader
+
+                            width: section.width
+                            height: VLCStyle.dp(36, VLCStyle.scale)
+                            leftPadding: VLCStyle.margin_xxsmall
+                            rightPadding: VLCStyle.margin_xxsmall
+
+                            Accessible.name: section.modelData.title
+
+                            background: Rectangle {
+                                radius: 4 * root.dp1
+                                color: sectionHeader.hovered ? root.hoverColor : "transparent"
+                            }
+                            contentItem: RowLayout {
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: section.modelData.title
+                                    elide: Text.ElideRight
+                                    font.pixelSize: VLCStyle.fontSize_large
+                                    color: root.titleColor
+                                }
+                                Text {
+                                    text: "\u203A"
+                                    font.pixelSize: VLCStyle.fontSize_xlarge
+                                    color: root.textColor
+                                }
+                            }
+                            onClicked: root._push({ kind: section.modelData.kind, title: section.modelData.title })
+                        }
+
+                        Repeater {
+                            model: section.modelData.model
+
+                            delegate: T.ItemDelegate {
+                                id: homeRow
+
+                                required property var model
+
+                                width: section.width
+                                height: VLCStyle.dp(32, VLCStyle.scale)
+                                leftPadding: VLCStyle.margin_xxsmall
+                                rightPadding: VLCStyle.margin_xxsmall
+
+                                Accessible.name: model.title ?? ""
+
+                                background: Rectangle {
+                                    radius: 4 * root.dp1
+                                    color: homeRow.hovered ? root.hoverColor : "transparent"
+                                }
+                                contentItem: RowLayout {
+                                    spacing: VLCStyle.margin_xsmall
+                                    Item {
+                                        Layout.preferredWidth: VLCStyle.dp(24, VLCStyle.scale)
+                                        Layout.preferredHeight: VLCStyle.dp(24, VLCStyle.scale)
+                                        Image {
+                                            id: homeThumb
+                                            anchors.fill: parent
+                                            source: homeRow.model.thumbnail || homeRow.model.cover || ""
+                                            sourceSize: Qt.size(width * 2, height * 2)
+                                            fillMode: Image.PreserveAspectCrop
+                                            visible: status === Image.Ready
+                                            asynchronous: true
+                                        }
+                                        Text {
+                                            anchors.centerIn: parent
+                                            visible: !homeThumb.visible
+                                            font.family: VLCIcons.fontFamily
+                                            font.pixelSize: VLCStyle.icon_normal
+                                            text: section.modelData.kind === "listenAgain" ? VLCIcons.topbar_music : VLCIcons.topbar_video
+                                            color: root.textColor
+                                        }
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: homeRow.model.title ?? ""
+                                        elide: Text.ElideMiddle
+                                        font.pixelSize: VLCStyle.fontSize_normal
+                                        color: root.titleColor
+                                    }
+                                }
+                                onDoubleClicked: MainCtx.mediaLibrary.addAndPlay(homeRow.model.id)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                parent: homeView
+                anchors.centerIn: parent
+                visible: homeColumn.implicitHeight === 0
+                text: qsTr("Nothing here")
                 color: root.dimColor
                 font.pixelSize: VLCStyle.fontSize_normal
             }
