@@ -526,8 +526,18 @@ FocusScope{
 
         visible: root._showTopBar
 
-        // The Figma player top bar has no Play Queue button: the queue is
-        // toggled from the control bar. The row is kept as the right edge
-        // for the layout above.
+        // VLC Redesign video: picture-in-picture and fullscreen up here
+        // (user's choice); the queue stays on the control bar
+        PipButton {
+            anchors.verticalCenter: parent.verticalCenter
+            font.pixelSize: VLCStyle.icon_banner
+            onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
+        }
+
+        FullscreenButton {
+            anchors.verticalCenter: parent.verticalCenter
+            font.pixelSize: VLCStyle.icon_banner
+            onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
+        }
     }
 }
