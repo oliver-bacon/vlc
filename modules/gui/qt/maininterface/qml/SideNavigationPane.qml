@@ -193,223 +193,248 @@ T.Pane {
             anchors.topMargin: root.panelInset * 2
             spacing: VLCStyle.margin_xsmall
 
-            Widgets.ListViewExt {
-                id: listView
+            // entries, pins and "Add item" scroll when the window is too short;
+            // Preferences stays at the bottom
+            Flickable {
+                id: entriesFlickable
 
                 Layout.fillWidth: true
-                // as high as its entries: the pinned items follow it
-                Layout.preferredHeight: contentHeight
-                Layout.maximumHeight: contentHeight
+                Layout.fillHeight: true
+                Layout.minimumHeight: 0
 
-                clip: !fadingEdge.implicitClipping && (height < contentHeight)
-                focus: true
+                contentWidth: width
+                contentHeight: entriesColumn.implicitHeight
+                clip: contentHeight > height
+                boundsBehavior: Flickable.StopAtBounds
+                flickableDirection: Flickable.VerticalFlick
 
-                model: navigationModel
-
-                Binding {
-                    target: listView.T.ScrollBar.vertical
-                    property: "policy"
-                    when: listView.T.ScrollBar.vertical?.size > (1.0 - Number.EPSILON)
-                    value: T.ScrollBar.AlwaysOff
+                // no scroll bar in the narrow icon-only pane: it would cover the icons
+                T.ScrollBar.vertical: Widgets.ScrollBarExt {
+                    visible: root.delegateShowText && entriesFlickable.contentHeight > entriesFlickable.height
                 }
 
-                colorContext.colorSet: ColorContext.Window
+                ColumnLayout {
+                    id: entriesColumn
 
-                fadingEdge.backgroundColor:  (root.background && (root.background.color.a >= 1.0)) ? root.background.color
-                                                                                                   : "transparent"
+                    width: entriesFlickable.width
+                    spacing: VLCStyle.margin_xsmall
 
-                component DelegateAnimation : NumberAnimation {
-                    easing.type: Easing.InOutSine
-                    duration: VLCStyle.duration_long
-                }
+                    Widgets.ListViewExt {
+                        id: listView
 
-                reuseItems: false // Not relevant here, we disable it because of QTBUG-131106 when transition is involved.
+                        Layout.fillWidth: true
+                        // as high as its entries: the pinned items follow it
+                        Layout.preferredHeight: contentHeight
+                        Layout.maximumHeight: contentHeight
 
-                // As the docs note, `ListView` transitions do not seem to handle height animation. For that reason,
-                // we animate the height directly in the delegate (Qt's recommended workaround). Because of this, we
-                // do not need to have `addDisplaced` transition here, but we can have `removeDisplaced` here:
-                removeDisplaced: Transition {
-                    DelegateAnimation { property: "y" }
-                }
+                        // the surrounding Flickable scrolls
+                        interactive: false
 
-                onCurrentIndexChanged: {
-                    const rowIndex = navigationModel.index(currentIndex, 0)
+                        clip: !fadingEdge.implicitClipping && (height < contentHeight)
+                        focus: true
 
-                    if (rowIndex.valid && !navigationModel.data(rowIndex, NavigationModel.EXPANDED)
-                            && History.match(History.viewPath, navigationModel.data(rowIndex, NavigationModel.URI)))
-                        navigationModel.setData(rowIndex, true, NavigationModel.EXPANDED)
-                }
+                        model: navigationModel
 
-                property bool readyForAnimations: false
+                        Binding {
+                            target: listView.T.ScrollBar.vertical
+                            property: "policy"
+                            when: listView.T.ScrollBar.vertical?.size > (1.0 - Number.EPSILON)
+                            value: T.ScrollBar.AlwaysOff
+                        }
 
-                onModelChanged: {
-                    if (!listView.readyForAnimations)
-                        Qt.callLater(() => { listView.readyForAnimations = true })
-                }
+                        colorContext.colorSet: ColorContext.Window
 
-                Navigation.parentItem: root
-                Navigation.downItem: preferenceButton
+                        fadingEdge.backgroundColor:  (root.background && (root.background.color.a >= 1.0)) ? root.background.color
+                                                                                                           : "transparent"
 
-                delegate: SideNavigationDelegate {
-                    id: delegate
+                        component DelegateAnimation : NumberAnimation {
+                            easing.type: Easing.InOutSine
+                            duration: VLCStyle.duration_long
+                        }
 
-                    width: ListView.view.contentWidth
-                    height: preferredHeight
+                        reuseItems: false // Not relevant here, we disable it because of QTBUG-131106 when transition is involved.
 
-                    property real preferredHeight: shouldShow ? VLCStyle.buttonHeightNavigationPane : 0.0
+                        // As the docs note, `ListView` transitions do not seem to handle height animation. For that reason,
+                        // we animate the height directly in the delegate (Qt's recommended workaround). Because of this, we
+                        // do not need to have `addDisplaced` transition here, but we can have `removeDisplaced` here:
+                        removeDisplaced: Transition {
+                            DelegateAnimation { property: "y" }
+                        }
 
-                    leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
-                    rightPadding: root.safeAreaRightMargin
+                        onCurrentIndexChanged: {
+                            const rowIndex = navigationModel.index(currentIndex, 0)
 
-                    leftInset: root.safeAreaLeftMargin + implicitLeftInset
-                    rightInset: root.safeAreaRightMargin + implicitRightInset
+                            if (rowIndex.valid && !navigationModel.data(rowIndex, NavigationModel.EXPANDED)
+                                    && History.match(History.viewPath, navigationModel.data(rowIndex, NavigationModel.URI)))
+                                navigationModel.setData(rowIndex, true, NavigationModel.EXPANDED)
+                        }
 
-                    iconTxt: icon_alias
-                    text: title
+                        property bool readyForAnimations: false
 
-                    showText: root.delegateShowText
+                        onModelChanged: {
+                            if (!listView.readyForAnimations)
+                                Qt.callLater(() => { listView.readyForAnimations = true })
+                        }
 
-                    required property string title
-                    required property var uri
-                    required property int depth
-                    // TODO: Qt 6.2 has property `icon` marked final, so we can't override it:
-                    required property string icon_alias
-                    required property bool expandable
-                    required property bool expanded
+                        Navigation.parentItem: root
+                        Navigation.downItem: preferenceButton
 
-                    required property int index
+                        delegate: SideNavigationDelegate {
+                            id: delegate
 
-                    visible: (height > 0.0)
+                            width: ListView.view.contentWidth
+                            height: preferredHeight
 
-                    property bool shouldShow: showText || (iconTxt.length > 0)
+                            property real preferredHeight: shouldShow ? VLCStyle.buttonHeightNavigationPane : 0.0
 
-                    onShouldShowChanged: {
-                        if (listView.readyForAnimations)
-                            heightBehavior.enabled = true // At this point, it can keep being enabled for good.
-                    }
+                            leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                            rightPadding: root.safeAreaRightMargin
 
-                    Binding on highlighted {
-                        when: !!uri && History.match(History.viewPath, uri)
-                        value: true
-                    }
-                    checked: (!showText || !expanded) && highlighted
+                            leftInset: root.safeAreaLeftMargin + implicitLeftInset
+                            rightInset: root.safeAreaRightMargin + implicitRightInset
 
-                    onClicked: {
-                        itemClicked(uri, this)
-                        listView.currentIndex = index
-                        listView.forceActiveFocus(focusReason)
-                    }
+                            iconTxt: icon_alias
+                            text: title
 
-                    Behavior on height {
-                        id: heightBehavior
+                            showText: root.delegateShowText
 
-                        enabled: false
+                            required property string title
+                            required property var uri
+                            required property int depth
+                            // TODO: Qt 6.2 has property `icon` marked final, so we can't override it:
+                            required property string icon_alias
+                            required property bool expandable
+                            required property bool expanded
 
-                        DelegateAnimation {
-                            onRunningChanged: {
-                                if (running) {
-                                    delegate.clip = true
-                                } else {
-                                    delegate.clip = false
+                            required property int index
+
+                            visible: (height > 0.0)
+
+                            property bool shouldShow: showText || (iconTxt.length > 0)
+
+                            onShouldShowChanged: {
+                                if (listView.readyForAnimations)
+                                    heightBehavior.enabled = true // At this point, it can keep being enabled for good.
+                            }
+
+                            Binding on highlighted {
+                                when: !!uri && History.match(History.viewPath, uri)
+                                value: true
+                            }
+                            checked: (!showText || !expanded) && highlighted
+
+                            onClicked: {
+                                itemClicked(uri, this)
+                                listView.currentIndex = index
+                                listView.forceActiveFocus(focusReason)
+                            }
+
+                            Behavior on height {
+                                id: heightBehavior
+
+                                enabled: false
+
+                                DelegateAnimation {
+                                    onRunningChanged: {
+                                        if (running) {
+                                            delegate.clip = true
+                                        } else {
+                                            delegate.clip = false
+                                        }
+                                    }
+                                }
+                            }
+
+                            ListView.onAdd: {
+                                if (listView.readyForAnimations && delegate.showText) {
+                                    heightBehavior.enabled = false
+                                    delegate.height = 0.0
+                                    heightBehavior.enabled = true
+                                    delegate.height = Qt.binding(() => delegate.preferredHeight)
+                                    heightBehavior.enabled = false
                                 }
                             }
                         }
                     }
 
-                    ListView.onAdd: {
-                        if (listView.readyForAnimations && delegate.showText) {
-                            heightBehavior.enabled = false
-                            delegate.height = 0.0
-                            heightBehavior.enabled = true
-                            delegate.height = Qt.binding(() => delegate.preferredHeight)
-                            heightBehavior.enabled = false
-                        }
-                    }
-                }
-            }
+                    // pinned folders and playlists
+                    Repeater {
+                        model: root._pins
 
-            // pinned folders and playlists
-            Repeater {
-                model: root._pins
+                        delegate: SideNavigationDelegate {
+                            id: pinDelegate
 
-                delegate: SideNavigationDelegate {
-                    id: pinDelegate
+                            required property var modelData
+                            required property int index
 
-                    required property var modelData
-                    required property int index
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
 
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+                            leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                            rightPadding: root.safeAreaRightMargin
 
-                    leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
-                    rightPadding: root.safeAreaRightMargin
+                            leftInset: root.safeAreaLeftMargin + implicitLeftInset
+                            rightInset: root.safeAreaRightMargin + implicitRightInset
 
-                    leftInset: root.safeAreaLeftMargin + implicitLeftInset
-                    rightInset: root.safeAreaRightMargin + implicitRightInset
+                            iconTxt: modelData.type === "folder" ? VLCIcons.topbar_network : VLCIcons.lists
+                            text: modelData.name
 
-                    iconTxt: modelData.type === "folder" ? VLCIcons.topbar_network : VLCIcons.lists
-                    text: modelData.name
+                            showText: root.delegateShowText
 
-                    showText: root.delegateShowText
+                            onClicked: root._openPin(modelData)
 
-                    onClicked: root._openPin(modelData)
-
-                    TapHandler {
-                        acceptedButtons: Qt.RightButton
-                        onTapped: unpinMenu.popup(pinDelegate.mapToGlobal(point.position.x, point.position.y),
-                                                  [{ "text": qsTr("Unpin from the Sidebar") }])
-                    }
-
-                    StringListMenu {
-                        id: unpinMenu
-                        ctx: MainCtx
-                        onSelected: root._unpin(pinDelegate.index)
-                    }
-                }
-            }
-
-            SideNavigationDelegate {
-                id: addItemButton
-
-                Layout.fillWidth: true
-                Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
-
-                leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
-                rightPadding: root.safeAreaRightMargin
-
-                leftInset: root.safeAreaLeftMargin + implicitLeftInset
-                rightInset: root.safeAreaRightMargin + implicitRightInset
-
-                iconTxt: VLCIcons.add
-                text: qsTr("Add item")
-
-                showText: root.delegateShowText
-
-                onClicked: addItemMenu.popup(addItemButton.mapToGlobal(0, addItemButton.height), root._addItemMenu())
-
-                StringListMenu {
-                    id: addItemMenu
-                    ctx: MainCtx
-                    onSelected: (index, text) => {
-                        if (index === 0) {
-                            const folder = VLCConfig.browseFolder(qsTr("Pin a Folder to the Sidebar"))
-                            if (folder !== "") {
-                                const parts = decodeURIComponent(folder).split("/").filter((p) => p !== "")
-                                root._pin({ "type": "folder", "name": parts[parts.length - 1] ?? folder, "url": folder })
+                            TapHandler {
+                                acceptedButtons: Qt.RightButton
+                                onTapped: unpinMenu.popup(pinDelegate.mapToGlobal(point.position.x, point.position.y),
+                                                          [{ "text": qsTr("Unpin from the Sidebar") }])
                             }
-                        } else if (root._playlists) {
-                            // playlist entries follow "Pin a Folder…"
-                            const data = root._playlists.getDataAt(index - 1)
-                            root._pin({ "type": "playlist", "name": data.name, "id": data.id.toString() })
+
+                            StringListMenu {
+                                id: unpinMenu
+                                ctx: MainCtx
+                                onSelected: root._unpin(pinDelegate.index)
+                            }
+                        }
+                    }
+
+                    SideNavigationDelegate {
+                        id: addItemButton
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+
+                        leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                        rightPadding: root.safeAreaRightMargin
+
+                        leftInset: root.safeAreaLeftMargin + implicitLeftInset
+                        rightInset: root.safeAreaRightMargin + implicitRightInset
+
+                        iconTxt: VLCIcons.add
+                        text: qsTr("Add item")
+
+                        showText: root.delegateShowText
+
+                        onClicked: addItemMenu.popup(addItemButton.mapToGlobal(0, addItemButton.height), root._addItemMenu())
+
+                        StringListMenu {
+                            id: addItemMenu
+                            ctx: MainCtx
+                            onSelected: (index, text) => {
+                                if (index === 0) {
+                                    const folder = VLCConfig.browseFolder(qsTr("Pin a Folder to the Sidebar"))
+                                    if (folder !== "") {
+                                        const parts = decodeURIComponent(folder).split("/").filter((p) => p !== "")
+                                        root._pin({ "type": "folder", "name": parts[parts.length - 1] ?? folder, "url": folder })
+                                    }
+                                } else if (root._playlists) {
+                                    // playlist entries follow "Pin a Folder…"
+                                    const data = root._playlists.getDataAt(index - 1)
+                                    root._pin({ "type": "playlist", "name": data.name, "id": data.id.toString() })
+                                }
+                            }
                         }
                     }
                 }
-            }
-
-            Item {
-                // pushes the progress bar and Preferences to the bottom
-                Layout.fillWidth: true
-                Layout.fillHeight: true
             }
 
             Loader {

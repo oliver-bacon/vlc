@@ -71,6 +71,8 @@ Widgets.PageExt {
             newVideoRow.setCurrentItemFocus(reason)
         else if (newMusicRow.focus)
             newMusicRow.setCurrentItemFocus(reason)
+        else if (flickable._hasMedias)
+            mediaRows.forceActiveFocus(reason)
         else
             coneNButtons.forceActiveFocus(reason)
     }
@@ -78,11 +80,11 @@ Widgets.PageExt {
     contentItem: Flickable {
         id: flickable
 
-        implicitWidth: Math.max(coneNButtons.implicitWidth, mediaRows.implicitWidth)
-        implicitHeight: coneNButtons.implicitHeight + (_hasMedias ? mediaRows.implicitHeight : 0)
+        implicitWidth: _hasMedias ? mediaRows.implicitWidth : coneNButtons.implicitWidth
+        implicitHeight: _hasMedias ? mediaRows.implicitHeight : coneNButtons.implicitHeight
 
         contentWidth: width
-        contentHeight: _hasMedias ? coneNButtons.implicitHeight + mediaRows.implicitHeight
+        contentHeight: _hasMedias ? mediaRows.implicitHeight
                                   : height - topMargin - bottomMargin
 
         flickableDirection: Flickable.AutoFlickIfNeeded
@@ -155,17 +157,17 @@ Widgets.PageExt {
             // jumps when it is enabled again later on.
         }
 
+        // VLC Redesign: the cone with Open File / Open Disc only shows in an
+        // empty library; with media, Home starts with its rows
         NoMedialibHome.ConeNButtons {
             id: coneNButtons
 
-            focus: true
+            visible: !flickable._hasMedias
+            focus: !flickable._hasMedias
 
-            orientation: flickable._hasMedias ? Qt.Horizontal : Qt.Vertical
+            orientation: Qt.Vertical
 
-            anchors.centerIn: flickable._hasMedias ? undefined : parent
-            anchors.top: flickable._hasMedias ? parent.top : undefined
-            anchors.left: flickable._hasMedias ? parent.left : undefined
-            anchors.leftMargin: flickable._hasMedias ? newVideoRow.contentLeftMargin : 0
+            anchors.centerIn: parent
 
             Navigation.parentItem: root
             Navigation.upItem: root.header
@@ -181,14 +183,16 @@ Widgets.PageExt {
         Widgets.NavigableCol {
             id: mediaRows
 
-            anchors.top: coneNButtons.bottom
+            anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
+
+            focus: flickable._hasMedias
 
             spacing: 0 // NOTE: We depend on the top padding of view header currently.
 
             Navigation.parentItem: root
-            Navigation.upItem: coneNButtons
+            Navigation.upItem: root.header
 
             Widgets.ViewHeader {
                 visible: continueWatchingRow.visible

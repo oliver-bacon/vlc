@@ -331,7 +331,7 @@ MainCtx::~MainCtx()
         settings->setValue( "artist-albums-width", QString::number( m_artistAlbumsWidth ) );
 
         settings->setValue( "grid-view", m_gridView );
-        settings->setValue( "grouping", m_grouping );
+        settings->setValue( "video-grouping", m_grouping );
 
         settings->setValue( "color-scheme-index", m_colorScheme->currentIndex() );
 
@@ -486,7 +486,8 @@ void MainCtx::loadFromSettingsImpl(const bool callSignals)
 
     loadFromSettings(m_gridView, "MainWindow/grid-view", true, this, &MainCtx::gridViewChanged);
 
-    loadFromSettings(m_grouping, "MainWindow/grouping", GROUPING_NONE, this, &MainCtx::groupingChanged);
+    // VLC Redesign: new key, so profiles saved with "no grouping" start by folder
+    loadFromSettings(m_grouping, "MainWindow/video-grouping", GROUPING_FOLDER, this, &MainCtx::groupingChanged);
 
     loadFromSettings(m_showRemainingTime, "MainWindow/ShowRemainingTime", false, this, &MainCtx::showRemainingTimeChanged);
 

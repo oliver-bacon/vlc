@@ -449,7 +449,7 @@ protected:
     MediaLib*            m_medialib = nullptr;
     bool                 m_gridView = false;
     bool                 m_hasGridListMode = false;
-    Grouping             m_grouping = GROUPING_NONE;
+    Grouping             m_grouping = GROUPING_FOLDER; // VLC Redesign: videos by folder
     ColorSchemeModel*    m_colorScheme = nullptr;
     bool                 m_windowTitlebar = true;
     // NOTE: Ideally this should be a QVLCBool.

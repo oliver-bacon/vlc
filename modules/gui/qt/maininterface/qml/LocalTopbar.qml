@@ -234,6 +234,10 @@ T.ToolBar {
                 PlaylistPane.PlaylistToggleButton {
                     id: playlistBtn
 
+                    // VLC Redesign: no queue button in the top bar; the queue is in the
+                    // library video card and behind the player bar's queue button
+                    visible: false
+
                     plListView: root.plListView
 
                     Navigation.parentItem: playqueueButtonsTop
