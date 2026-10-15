@@ -31,17 +31,21 @@ Widgets.IconToolButton {
     text: VLCIcons.playlist
     signal requestLockUnlockAutoHide(bool lock)
 
-    // toggles the player side panel (Queue / Bookmarks / Chapters), on the
-    // Queue tab; the miniplayer card keeps its queue popover
-    readonly property bool _inPlayer: (typeof rootPlayer !== 'undefined') && rootPlayer !== null
+    // Queue / Bookmarks / Chapters popover, like the audio / subtitles popover
+    // (user's choice); the docked side panel stays available
+    // through the "Right Sidebar" item
+    onClicked: popover.opened ? popover.close() : popover.open()
+    checked: popover.opened
 
-    onClicked: {
-        if (_inPlayer)
-            rootPlayer.toggleSidePanel()
-        else
-            MainCtx.playqueuePanel.visible = !MainCtx.playqueuePanel.visible
+    QueuePopover {
+        id: popover
+
+        x: playlistBtn.width - width
+        y: -height - VLCStyle.margin_small
+
+        onOpened: playlistBtn.requestLockUnlockAutoHide(true)
+        onClosed: playlistBtn.requestLockUnlockAutoHide(false)
     }
-    checked: _inPlayer ? rootPlayer.sidePanelVisible : MainCtx.playqueuePanel.visible
 
     description: qsTr("Play Queue")
 
