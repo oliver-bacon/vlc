@@ -27,9 +27,9 @@ import VLC.Player
 Widgets.IconToolButton {
     id: extdSettingsBtn
 
-    text: VLCIcons.settings
+    text: VLCIcons.playback_settings
 
-    description: qsTr("Player settings")
+    description: qsTr("Playback settings")
     checked: panel.opened
 
     AccessibleCompat.id: "extendedSettingsButton"
