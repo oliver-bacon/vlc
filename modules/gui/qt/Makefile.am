@@ -277,6 +277,8 @@ libqt_plugin_la_SOURCES = \
 	network/networksourcesmodel.hpp \
 	network/networkmediamodel.cpp \
 	network/networkmediamodel.hpp \
+	network/videofolderfilter.cpp \
+	network/videofolderfilter.hpp \
 	network/standardpathmodel.cpp \
 	network/standardpathmodel.hpp \
 	network/vlcmediasourcewrapper.hpp \
@@ -497,6 +499,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	network/networkbasemodel.moc.cpp \
 	network/networksourcesmodel.moc.cpp \
 	network/networkmediamodel.moc.cpp \
+	network/videofolderfilter.moc.cpp \
 	network/standardpathmodel.moc.cpp \
 	style/colorcontext.moc.cpp \
 	style/systempalette.moc.cpp \
@@ -1201,6 +1204,8 @@ libqml_module_medialibrary_a_QML = \
 	medialibrary/qml/VideoPlaylistsDisplay.qml \
 	medialibrary/qml/PlaylistsDisplay.qml \
 	medialibrary/qml/RecentDisplay.qml \
+	medialibrary/qml/VideoFoldersDisplay.qml \
+	medialibrary/qml/MusicSectionsDisplay.qml \
 	medialibrary/qml/VideoGridItem.qml \
 	medialibrary/qml/VideoInfoExpandPanel.qml \
 	medialibrary/qml/VideoListDisplay.qml \
@@ -1281,6 +1286,7 @@ libqml_module_player_a_QML = \
 	player/qml/TracksMenu.qml \
 	player/qml/PlayerSettingsPanel.qml \
 	player/qml/TracksPopover.qml \
+	player/qml/QueuePopover.qml \
 	player/qml/MiniQueue.qml \
 	player/qml/TracksPage.qml \
 	player/qml/TracksPageAudio.qml \
