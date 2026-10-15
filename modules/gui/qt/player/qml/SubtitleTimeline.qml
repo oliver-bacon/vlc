@@ -37,8 +37,8 @@ Item {
     property color trackColor: "#0D0D0D"
     property color playedColor: "#371F06"
     property color accentColor: "#D37918"
-    property color cueColor: "#2E2E2E"
-    property color playedCueColor: "#5A3F2A"
+    // drawn over the track and the played part (Figma: white at 14 %)
+    property color cueColor: Qt.rgba(1, 1, 1, 0.14)
     property real radius: VLCStyle.dp(6, VLCStyle.scale)
 
     // milliseconds
@@ -106,7 +106,7 @@ Item {
             color: root.playedColor
         }
 
-        // subtitle lines, then the played part of them on top
+        // subtitle lines
         Repeater {
             model: root._blocks
             Rectangle {
@@ -115,23 +115,6 @@ Item {
                 width: modelData[1]
                 height: band.height
                 color: root.cueColor
-            }
-        }
-
-        Item {
-            width: band.playheadX
-            height: band.height
-            clip: true
-
-            Repeater {
-                model: root._blocks
-                Rectangle {
-                    required property var modelData
-                    x: modelData[0]
-                    width: modelData[1]
-                    height: band.height
-                    color: root.playedCueColor
-                }
             }
         }
 

@@ -774,8 +774,8 @@ T.ProgressBar {
             trackColor: control.backgroundColor
             playedColor: control._progressColor
             accentColor: theme.fg.primary
-            playedCueColor: Qt.alpha(theme.fg.primary, 0.45)
-            cueColor: (theme.palette?.isDark ?? true) ? "#2E2E2E" : "#C8C8C8"
+            // Figma: white at 14 % (dark); no light frame, so black at 14 % (user's choice)
+            cueColor: (theme.palette?.isDark ?? true) ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.14)
         }
     }
 

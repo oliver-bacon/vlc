@@ -117,8 +117,9 @@ T.Pane {
 
                 Image {
                     anchors.fill: parent
-                    source: (VLCStyle.palette?.isDark ?? true) ? "qrc:///misc/volume_track_dark.svg"
-                                                               : "qrc:///misc/volume_track_light.svg"
+                    // the bar's palette: over video the player bar is dark in both themes
+                    source: (volControl.colorContext.palette?.isDark ?? true) ? "qrc:///misc/volume_track_dark.svg"
+                                                                              : "qrc:///misc/volume_track_light.svg"
                     sourceSize: Qt.size(width, height)
                     smooth: true
                 }

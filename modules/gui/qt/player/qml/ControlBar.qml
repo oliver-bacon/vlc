@@ -127,6 +127,9 @@ T.Pane {
             // Length might not be reported in some cases, for that reason we should check both and use the bigger one.
 
             // Some extra space to compensate non-monospaced fonts ("-" takes more space than ":", double "-" for guarantee)
+            // The subtitle timeline always shows "HH:MM:SS*" (see _windowTime).
+            if (root.contentItem?.trackPositionSlider?.timelineActive ?? false)
+                return "00--00--00*"
             return (Player.time.isSubHour() && Player.length.isSubHour()) ? "00--00" : "00--00--00"
         }
     }
