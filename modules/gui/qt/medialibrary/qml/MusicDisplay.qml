@@ -43,7 +43,7 @@ Widgets.PageLoader {
             name: "albums",
             url: "qrc:///qt/qml/VLC/MediaLibrary/MusicAlbumsDisplay.qml"
         }, {
-            displayText: qsTr("Tracks"),
+            displayText: qsTr("Songs"), // VLC Redesign name
             name: "tracks" ,
             url: "qrc:///qt/qml/VLC/MediaLibrary/MusicTracksDisplay.qml"
         }, {

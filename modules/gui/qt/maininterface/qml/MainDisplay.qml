@@ -572,7 +572,7 @@ FocusScope {
                 left: parent.left
             }
 
-            width: VLCStyle.isScreenReallySmall ? 0.0 : collapsedWidth
+            width: VLCStyle.isScreenReallySmall ? 0.0 : collapsedWidth + sectionWidth
 
             property real collapsedWidth: VLCStyle.icon_normal + VLCStyle.margin_small + VLCStyle.margin_xsmall + VLCStyle.applicationHorizontalMargin
 
@@ -656,7 +656,7 @@ FocusScope {
                 name: "expanded"
                 PropertyChanges {
                     target: sidebar
-                    width: sidebar.implicitWidth
+                    width: sidebar.implicitWidth + sidebar.sectionWidth
                 }
             }
 
@@ -682,6 +682,8 @@ FocusScope {
 
                 panelObject: MainCtx.navigationPanel
                 atRight: true
+                // the section panel (Music) is not part of the resizable width
+                extraWidth: sidebar.sectionWidth
 
                 resizeHandle.visible: (sidebar.state === "expanded") && !VLCStyle.isScreenSmall
                 visualBorder.visible: !topLeftCornerBackground.visible
@@ -1109,6 +1111,9 @@ FocusScope {
         property alias minimumWidth: resizeHandle.minimumWidth
         property alias maximumWidth: resizeHandle.maximumWidth
 
+        // part of the target's width the handle does not resize
+        property real extraWidth: 0
+
         implicitWidth: resizeHandle.width
 
         Rectangle {
@@ -1138,7 +1143,7 @@ FocusScope {
             }
 
             atRight: false
-            currentWidth: target.width
+            currentWidth: target.width - paneResizeHandle.extraWidth
 
             visible: !VLCStyle.isScreenSmall
 

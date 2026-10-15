@@ -274,12 +274,9 @@ public:
         {
             m_model.children.emplace_back(qtr("Videos"), "video", VLCIcons::topbar_video, QStringLiteral(":/icons/ic_fluent_filmstrip.svg"));
 
-            ModelEntry musicEntry{ qtr("Music"), "music", VLCIcons::topbar_music, QStringLiteral(":/icons/ic_fluent_music_note_2.svg") };
-            musicEntry.children.emplace_back(qtr("Songs"), "tracks", VLCIcons::songs);
-            musicEntry.children.emplace_back(qtr("Albums"), "albums", VLCIcons::album_cover);
-            musicEntry.children.emplace_back(qtr("Artists"), "artists", VLCIcons::artist);
-            musicEntry.children.emplace_back(qtr("Genres"), "genres", VLCIcons::genre);
-            m_model.children.push_back(std::move(musicEntry));
+            // Songs / Albums / Artists / Genres are in the panel that opens
+            // next to the navigation (SideNavigationPane.qml), not below Music
+            m_model.children.emplace_back(qtr("Music"), "music", VLCIcons::topbar_music, QStringLiteral(":/icons/ic_fluent_music_note_2.svg"));
         }
 
         // saved network streams (VLC's URL list); Browse and Discover are

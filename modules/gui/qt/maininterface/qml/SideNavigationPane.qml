@@ -45,6 +45,21 @@ T.Pane {
 
     property alias model: navigationModel
 
+    // ---- section panel (VLC Redesign "sidebar" frame): Music opens its
+    // sections in a panel next to the navigation instead of below it
+
+    readonly property var _musicSections: [
+        { "title": qsTr("Songs"),   "icon": VLCIcons.songs,       "uri": ["music", "tracks"] },
+        { "title": qsTr("Albums"),  "icon": VLCIcons.album_cover, "uri": ["music", "albums"] },
+        { "title": qsTr("Artists"), "icon": VLCIcons.artist,      "uri": ["music", "artists"] },
+        { "title": qsTr("Genres"),  "icon": VLCIcons.genre,       "uri": ["music", "genres"] }
+    ]
+
+    readonly property bool sectionShown: MainCtx.mediaLibraryAvailable && History.match(History.viewPath, ["music"])
+
+    // added to the pane's width by MainDisplay.qml
+    readonly property real sectionWidth: sectionShown ? VLCStyle.dp(220, VLCStyle.scale) : 0
+
     // ---- pinned items (VLC Redesign: "Pin whatever you want here")
     // [{ type: "folder" | "playlist", name, url (folder), id (playlist,
     // serialized media library id) }], kept in the interface settings
@@ -177,6 +192,19 @@ T.Pane {
         Rectangle {
             anchors.fill: parent
             anchors.margins: root.panelInset
+            anchors.rightMargin: root.panelInset + root.sectionWidth
+            radius: VLCStyle.dp(6, VLCStyle.scale)
+            color: theme.bg.primary
+        }
+
+        Rectangle {
+            visible: root.sectionShown
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.margins: root.panelInset
+            anchors.rightMargin: root.panelInset + root.rightPadding
+            width: Math.max(0, root.sectionWidth - root.panelInset - root.rightPadding)
             radius: VLCStyle.dp(6, VLCStyle.scale)
             color: theme.bg.primary
         }
@@ -191,6 +219,7 @@ T.Pane {
             anchors.fill: parent
             anchors.margins: root.panelInset
             anchors.topMargin: root.panelInset * 2
+            anchors.rightMargin: root.panelInset + root.sectionWidth
             spacing: VLCStyle.margin_xsmall
 
             // entries, pins and "Add item" scroll when the window is too short;
@@ -495,6 +524,78 @@ T.Pane {
                 Keys.onReleased: (e) => Navigation.defaultKeyReleaseAction(e)
             }
 
+        }
+
+        // Music sections, in the panel next to the navigation
+        ColumnLayout {
+            visible: root.sectionShown
+
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.margins: root.panelInset
+            anchors.topMargin: root.panelInset * 2
+            width: Math.max(0, root.sectionWidth - 2 * root.panelInset)
+
+            spacing: VLCStyle.margin_xsmall
+
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: VLCStyle.margin_small
+                text: qsTr("Music")
+                color: theme.fg.primary
+                font.pixelSize: VLCStyle.fontSize_large
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+            }
+
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: VLCStyle.margin_small
+                Layout.bottomMargin: VLCStyle.margin_xsmall
+                text: qsTr("%1 items").arg(root._musicSections.length)
+                color: theme.fg.secondary
+                font.pixelSize: VLCStyle.fontSize_small
+            }
+
+            SideNavigationDelegate {
+                Layout.fillWidth: true
+                Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+
+                iconTxt: VLCIcons.add
+                text: qsTr("Add")
+
+                onClicked: {
+                    const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
+                    if (folder !== "")
+                        MainCtx.mediaLibrary.addFolder(folder)
+                }
+            }
+
+            Repeater {
+                model: root._musicSections
+
+                delegate: SideNavigationDelegate {
+                    required property var modelData
+
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+
+                    iconTxt: modelData.icon
+                    text: modelData.title
+
+                    checked: History.match(History.viewPath, modelData.uri)
+
+                    onClicked: {
+                        if (!History.exactMatch(History.viewPath, modelData.uri))
+                            History.push(modelData.uri)
+                    }
+                }
+            }
+
+            Item {
+                Layout.fillHeight: true
+            }
         }
     }
 }
