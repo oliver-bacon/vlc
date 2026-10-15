@@ -43,9 +43,14 @@ Widgets.PageLoader {
     // Settings
     //---------------------------------------------------------------------------------------------
 
+    // VLC Redesign: Videos opens on the library folders
     pageModel: [{
-            name: "all",
+            name: "folders",
             default: true,
+            displayText: qsTr("Folders"),
+            url: "qrc:///qt/qml/VLC/MediaLibrary/VideoFoldersDisplay.qml"
+        },{
+            name: "all",
             displayText: qsTr("All"),
             url: "qrc:///qt/qml/VLC/MediaLibrary/VideoAllDisplay.qml"
         },{

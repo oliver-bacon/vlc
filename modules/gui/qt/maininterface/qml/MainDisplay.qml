@@ -624,8 +624,13 @@ FocusScope {
                     return
                 }
 
-                if (stackView.isDefaulLoadedForPath([...modelUri]) ||
-                    !!modelUri.length && History.exactMatch(History.viewPath, modelUri)) {
+                // VLC Redesign: in a Videos subfolder (the same page with a
+                // folder "tree"), the entry goes back to the library folders
+                const inVideoSubfolder = History.match(History.viewPath, ["video", "folders"])
+                                         && History.viewProp?.tree !== undefined
+
+                if (!inVideoSubfolder && (stackView.isDefaulLoadedForPath([...modelUri]) ||
+                    !!modelUri.length && History.exactMatch(History.viewPath, modelUri))) {
                     stackView.positionContentAtBeginning()
                     return
                 }
