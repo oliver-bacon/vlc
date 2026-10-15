@@ -339,6 +339,28 @@ void MediaLib::queryMediaFavorite(const QUrl& mrl)
     });
 }
 
+void MediaLib::queryMediaProgress(const QUrl& mrl)
+{
+    if (mrl.isEmpty())
+        return;
+
+    struct Ctx {
+        double progress = -1;
+    };
+
+    runOnMLThread<Ctx>(this,
+    //ML thread
+    [mrl = mrl.toString(QUrl::FullyEncoded).toUtf8()](vlc_medialibrary_t* ml, Ctx& ctx){
+        ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media_by_mrl(ml, mrl.constData()) };
+        if (media && media->f_progress > 0)
+            ctx.progress = media->f_progress;
+    },
+    //UI thread
+    [this, mrl](quint64, Ctx& ctx){
+        emit mediaProgressState(mrl, ctx.progress);
+    });
+}
+
 void MediaLib::addBookmark(const QUrl& mrl, qint64 timeMs)
 {
     const QByteArray uri = mrl.toString(QUrl::FullyEncoded).toUtf8();

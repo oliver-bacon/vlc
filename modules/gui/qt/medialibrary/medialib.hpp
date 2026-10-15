@@ -78,6 +78,9 @@ public:
     /// Looks up the favorite state of the media with this MRL; the answer
     /// comes back through mediaFavoriteState()
     Q_INVOKABLE void queryMediaFavorite(const QUrl& mrl);
+    /// saved progress of a media (resume prompt), 0..1; comes back through
+    /// mediaProgressState() (-1 if the media is not in the library)
+    Q_INVOKABLE void queryMediaProgress(const QUrl& mrl);
     /// Attaches subtitle (or audio) files to library media, so that they are
     /// loaded every time; pairs is a list of { media: MRL, subtitle: URL,
     /// audio: bool }
@@ -222,6 +225,7 @@ signals:
     void idleChanged();
     /// @param known whether the media is part of the media library
     void mediaFavoriteState(const QUrl& mrl, bool known, bool favorite);
+    void mediaProgressState(const QUrl& mrl, double progress);
     /// A library playlist changed outside of the media library database
     /// (its picture) or its state must be read again
     void playlistChanged(const MLItemId& playlistId);
