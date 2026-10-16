@@ -826,11 +826,15 @@ FocusScope {
                     }
                 }
 
-                onClicked: listView.currentIndex = index
-                onDoubleClicked: {
+                // folders and sections open with one click, media play on
+                // double-click (like the Videos page of the library)
+                onClicked: {
+                    listView.currentIndex = index
                     if (isNav)
                         root._open(index, rowData)
-                    else
+                }
+                onDoubleClicked: {
+                    if (!isNav)
                         root._play(index, rowData, false)
                 }
 
