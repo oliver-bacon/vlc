@@ -446,6 +446,14 @@ FocusScope {
     Rectangle {
         anchors.fill: parent
         color: root.panelColor
+
+        // takes the clicks on empty parts of the panel: in the player they
+        // would reach the video below and pause it
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onWheel: (wheel) => wheel.accepted = true
+        }
     }
 
     // ---- rail
