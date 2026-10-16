@@ -156,8 +156,11 @@ Item {
 
         readonly property url defaultSource: visible ? root.fallbackImageSource : ""
 
-        sourceSize: Qt.size(root.pictureWidth * root.eDPR,
-                            root.pictureHeight * root.eDPR)
+        // VLC Redesign: the placeholder (an SVG) is rendered at the size it is
+        // shown, the cards of some rows are wider than pictureWidth and it got
+        // scaled up (blurry)
+        sourceSize: Qt.size(Math.max(root.pictureWidth, width) * root.eDPR,
+                            Math.max(root.pictureHeight, height) * root.eDPR)
 
         cache: true
     }
