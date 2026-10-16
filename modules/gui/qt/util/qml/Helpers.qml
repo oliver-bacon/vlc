@@ -218,4 +218,12 @@ QtObject {
     }
 
     /// </flickable-extents>
+
+    // VLC Redesign: the radio countries' flags come from flags.videolan.org,
+    // which only has 64 px images; use the bundled SVG flag of the country
+    // instead (pixmaps/flags, flag-icons, MIT). Returns "" for other urls.
+    function bundledFlag(url) : string {
+        const m = /^https?:\/\/flags\.videolan\.org\/([a-zA-Z]{2})\//.exec(String(url))
+        return m ? "qrc:///flags/" + m[1].toLowerCase() + ".svg" : ""
+    }
 }

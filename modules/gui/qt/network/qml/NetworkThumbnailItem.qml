@@ -87,7 +87,8 @@ Widgets.TableRowDelegate {
 
             source: {
                 if (root.rowModel?.artwork && root.rowModel.artwork.length > 0)
-                    return VLCAccessImage.uri(root.rowModel.artwork)
+                    return Helpers.bundledFlag(root.rowModel.artwork)
+                        || VLCAccessImage.uri(root.rowModel.artwork)
 
                 return ""
             }
