@@ -163,7 +163,10 @@ Item {
         anchors {
             bottom: parent.bottom
             horizontalCenter: parent.horizontalCenter
-            bottomMargin: VLCStyle.margin_small
+            // VLC Redesign: in the player, above the control bar (Figma: 54px)
+            // like the resume prompt, not on top of it
+            bottomMargin: MainCtx.playerView ? VLCStyle.dp(54, VLCStyle.scale) + VLCStyle.margin_small
+                                             : VLCStyle.margin_small
         }
 
         edge: Widgets.DrawerExt.Edges.Bottom
@@ -177,13 +180,16 @@ Item {
             colorSet: ColorContext.Window
         }
 
+        // VLC Redesign: the style of the resume prompt (ResumeDialog.qml):
+        // #161616 bar, grey text, accent button, dark close square; the
+        // icon stays red to mark an error
         component: Rectangle {
-            color: errorMsgTheme.bg.negative
+            color: errorMsgTheme.palette.isDark ? "#161616" : "#E7E7E7"
 
-            height: messageText.implicitHeight + VLCStyle.margin_normal
-            radius: VLCStyle.fontHeight_normal / 2
+            height: Math.max(VLCStyle.dp(52, VLCStyle.scale), messageText.implicitHeight + VLCStyle.margin_normal)
+            radius: VLCStyle.dp(8, VLCStyle.scale)
 
-            property real layoutWidth: layout.width
+            property real layoutWidth: layout.width + VLCStyle.dp(20 + 10, VLCStyle.scale)
 
             Accessible.role: Accessible.AlertMessage
             Accessible.name: qsTr("error popup")
@@ -191,38 +197,54 @@ Item {
             RowLayout {
                 id: layout
 
-                spacing: VLCStyle.margin_xsmall
+                spacing: VLCStyle.dp(8, VLCStyle.scale)
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.leftMargin: VLCStyle.dp(20, VLCStyle.scale)
 
                 Widgets.IconLabel {
                     text: VLCIcons.info
-                    color: errorMsgTheme.fg.primary
-                    Layout.leftMargin: VLCStyle.margin_xxsmall
+                    color: errorMsgTheme.fg.negative
                 }
 
                 T.Label {
                     id: messageText
 
                     Layout.maximumWidth: root.width * 0.5
-                    Layout.leftMargin: VLCStyle.margin_xxsmall
-                    Layout.rightMargin: VLCStyle.margin_xxsmall
+                    Layout.rightMargin: VLCStyle.dp(24, VLCStyle.scale)
 
                     text: (DialogErrorModel.repeatedMessageCount > 1 ? '[' + DialogErrorModel.repeatedMessageCount + '] ' : '')
                           + DialogErrorModel.notificationText
 
                     wrapMode: Text.WrapAnywhere
-                    font.pixelSize: VLCStyle.fontSize_normal
-                    font.bold: true
-                    color: errorMsgTheme.fg.primary
+                    font.pixelSize: VLCStyle.dp(15, VLCStyle.scale)
+                    color: errorMsgTheme.fg.secondary
                 }
 
-                Widgets.TextToolButton {
+                T.Button {
                     id: detailsBtn
 
                     text: qsTr("Show Details")
 
-                    colorContext.colorSet: ColorContext.ButtonAccent
+                    implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
+                    implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+                    leftPadding: VLCStyle.dp(12, VLCStyle.scale)
+                    rightPadding: VLCStyle.dp(12, VLCStyle.scale)
+
+                    background: Rectangle {
+                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        color: detailsBtn.hovered || detailsBtn.visualFocus ? Qt.lighter(errorMsgTheme.accent, 1.15)
+                                                                           : errorMsgTheme.accent
+                    }
+                    contentItem: Text {
+                        text: detailsBtn.text
+                        color: "#161616"
+                        font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
+                        font.weight: Font.DemiBold
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
 
                     onClicked: {
                         hideErrorPopupTimer.stop()
@@ -234,13 +256,18 @@ Item {
 
                 Widgets.IconToolButton {
                     id: closeBtn
-                    font.pixelSize: VLCStyle.icon_normal
-                    text: VLCIcons.clear
+                    font.pixelSize: VLCStyle.icon_small
+                    text: VLCIcons.close
                     description: qsTr("Dismiss")
-                    Layout.rightMargin: VLCStyle.margin_xxsmall
 
-                    color: closeBtn.colorContext.fg.primary
-                    backgroundColor: closeBtn.colorContext.bg.negative
+                    // Figma: a 32px square, #1E1E1E
+                    implicitWidth: VLCStyle.dp(32, VLCStyle.scale)
+                    implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+                    background: Rectangle {
+                        readonly property color closeColor: errorMsgTheme.palette.isDark ? "#1E1E1E" : "#D5D5D5"
+                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        color: closeBtn.hovered ? Qt.lighter(closeColor, 1.3) : closeColor
+                    }
 
                     onClicked: {
                         hideErrorPopupTimer.stop()
