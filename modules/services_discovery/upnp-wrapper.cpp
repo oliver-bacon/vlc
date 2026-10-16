@@ -105,12 +105,17 @@ UpnpInstanceWrapper *UpnpInstanceWrapper::get(vlc_object_t *p_obj)
 void UpnpInstanceWrapper::release()
 {
     UpnpInstanceWrapper *p_delete = NULL;
-    vlc::threads::mutex_locker lock( s_lock );
-    if (--s_instance->m_refcount == 0)
     {
-        p_delete = s_instance;
-        s_instance = NULL;
+        vlc::threads::mutex_locker lock( s_lock );
+        if (--s_instance->m_refcount == 0)
+        {
+            p_delete = s_instance;
+            s_instance = NULL;
+        }
     }
+    /* Delete outside of s_lock: the destructor calls UpnpFinish(), which
+     * waits for the libupnp worker threads, and a worker running Callback()
+     * needs s_lock, so deleting under the lock deadlocks at shutdown. */
     delete p_delete;
 }
 
