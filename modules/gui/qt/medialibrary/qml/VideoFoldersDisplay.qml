@@ -75,6 +75,16 @@ Widgets.PageExt {
         return parts.length > 0 ? parts[parts.length - 1] : String(url)
     }
 
+    // folder previews (MediaLib.folderCover), read again when they change
+    property int _coversRevision: 0
+
+    Connections {
+        target: MainCtx.mediaLibrary
+        function onFolderCoversChanged() { root._coversRevision++ }
+    }
+
+    Component.onCompleted: MainCtx.mediaLibrary.loadFolderCovers()
+
     function _addFolder() {
         const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
         if (folder !== "")
@@ -288,7 +298,12 @@ Widgets.PageExt {
                                          || model.type === NetworkMediaModel.TYPE_NODE
         readonly property string name: root._atRoot ? root._lastSegment(model.display_url ?? model.url)
                                                     : (model.name ?? "")
-        readonly property string artwork: isFolder ? "" : (model.artwork ?? "")
+        readonly property string artwork: {
+            if (!isFolder)
+                return model.artwork ?? ""
+            void root._coversRevision
+            return MainCtx.mediaLibrary.folderCover(root._atRoot ? model.url : model.mrl)
+        }
         readonly property real progress: isFolder ? 0 : (model.progress ?? 0)
 
         padding: VLCStyle.margin_xxsmall
@@ -337,6 +352,22 @@ Widgets.PageExt {
                     text: entry.isFolder ? VLCIcons.topbar_network : VLCIcons.topbar_video
                     color: theme.fg.secondary
                     font.pixelSize: entry.grid ? VLCStyle.icon_large : VLCStyle.icon_normal
+                }
+                // folder badge on a folder preview
+                Rectangle {
+                    anchors { left: parent.left; bottom: parent.bottom; margins: VLCStyle.margin_xxsmall }
+                    visible: entry.isFolder && cover.visible && entry.grid
+                    width: VLCStyle.dp(28, VLCStyle.scale)
+                    height: width
+                    radius: VLCStyle.dp(4, VLCStyle.scale)
+                    color: Qt.rgba(0, 0, 0, 0.6)
+
+                    Widgets.IconLabel {
+                        anchors.centerIn: parent
+                        text: VLCIcons.topbar_network
+                        color: "white"
+                        font.pixelSize: VLCStyle.icon_small
+                    }
                 }
                 // watched part
                 Rectangle {

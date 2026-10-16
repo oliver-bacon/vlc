@@ -81,6 +81,13 @@ public:
     /// saved progress of a media (resume prompt), 0..1; comes back through
     /// mediaProgressState() (-1 if the media is not in the library)
     Q_INVOKABLE void queryMediaProgress(const QUrl& mrl);
+    /// reads the library folders with media again, folderCoversChanged()
+    /// when done (VLC Redesign folder previews)
+    Q_INVOKABLE void loadFolderCovers();
+    /// image of a folder: a mosaic of its video thumbnails, or the cover of
+    /// its music; for a folder without media of its own, the image of its
+    /// first subfolder that has some. Empty when there is none.
+    Q_INVOKABLE QString folderCover(const QUrl& mrl) const;
     /// Attaches subtitle (or audio) files to library media, so that they are
     /// loaded every time; pairs is a list of { media: MRL, subtitle: URL,
     /// audio: bool }
@@ -226,6 +233,7 @@ signals:
     /// @param known whether the media is part of the media library
     void mediaFavoriteState(const QUrl& mrl, bool known, bool favorite);
     void mediaProgressState(const QUrl& mrl, double progress);
+    void folderCoversChanged();
     /// A library playlist changed outside of the media library database
     /// (its picture) or its state must be read again
     void playlistChanged(const MLItemId& playlistId);
@@ -253,6 +261,9 @@ private:
     ThreadRunner* m_runner = nullptr;
 
     QMap<QVector<MLItemId>, QVector<QJSValue>> m_inputItemQuery;
+
+    // folder mrl (fully encoded, no trailing slash) -> image url
+    QMap<QString, QString> m_folderCovers;
 
     // library playlist each queued media was started from; the media
     // references are kept so that the pointers stay valid

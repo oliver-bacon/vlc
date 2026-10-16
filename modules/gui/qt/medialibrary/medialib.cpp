@@ -28,6 +28,7 @@
 #include <vlc_url.h>
 #include <vlc_configuration.h>
 #include "mlhelper.hpp"
+#include "mlcustomcover.hpp"
 #include "playlist/playlist_controller.hpp"
 #include "util/shared_input_item.hpp"
 
@@ -359,6 +360,99 @@ void MediaLib::queryMediaProgress(const QUrl& mrl)
     [this, mrl](quint64, Ctx& ctx){
         emit mediaProgressState(mrl, ctx.progress);
     });
+}
+
+namespace {
+QString folderCoverKey(const QUrl& mrl)
+{
+    return mrl.adjusted(QUrl::StripTrailingSlash | QUrl::NormalizePathSegments)
+              .toString(QUrl::FullyEncoded);
+}
+}
+
+void MediaLib::loadFolderCovers()
+{
+    struct Folder {
+        int64_t id;
+        QString mrl;
+        unsigned videoCount;
+        QString audioCover; // first music cover of an audio-only folder
+    };
+    struct Ctx {
+        QVector<Folder> folders;
+    };
+
+    runOnMLThread<Ctx>(this,
+    //ML thread
+    [](vlc_medialibrary_t* ml, Ctx& ctx){
+        vlc_ml_query_params_t params = vlc_ml_query_params_create();
+        ml_unique_ptr<vlc_ml_folder_list_t> list { vlc_ml_list_folders(ml, &params) };
+        if (!list)
+            return;
+        for (const vlc_ml_folder_t& f : ml_range_iterate<vlc_ml_folder_t>(list))
+        {
+            if (!f.psz_mrl || f.b_banned || (f.i_nb_video == 0 && f.i_nb_audio == 0))
+                continue;
+            Folder folder { f.i_id, QString::fromUtf8(f.psz_mrl), f.i_nb_video, {} };
+            if (folder.videoCount == 0)
+            {
+                vlc_ml_query_params_t mediaParams = vlc_ml_query_params_create();
+                mediaParams.i_nbResults = 10;
+                ml_unique_ptr<vlc_ml_media_list_t> media {
+                    vlc_ml_list_folder_media(ml, &mediaParams, f.i_id) };
+                if (media)
+                {
+                    for (const vlc_ml_media_t& m : ml_range_iterate<vlc_ml_media_t>(media))
+                    {
+                        const vlc_ml_thumbnail_t& t = m.thumbnails[VLC_ML_THUMBNAIL_SMALL];
+                        if (t.i_status == VLC_ML_THUMBNAIL_STATUS_AVAILABLE && t.psz_mrl)
+                        {
+                            folder.audioCover = QString::fromUtf8(t.psz_mrl);
+                            break;
+                        }
+                    }
+                }
+                if (folder.audioCover.isEmpty())
+                    continue;
+            }
+            ctx.folders.push_back(std::move(folder));
+        }
+    },
+    //UI thread
+    [this](quint64, Ctx& ctx){
+        // same size as the video folders of the library (MLVideoFoldersModel)
+        const QSize size(260 * 3, 162 * 3);
+        m_folderCovers.clear();
+        for (const Folder& f : ctx.folders)
+        {
+            // 2x2 mosaic from 4 videos on, else one thumbnail (a smaller
+            // mosaic leaves empty tiles)
+            const int count = f.videoCount >= 4 ? 2 : 1;
+            m_folderCovers.insert(folderCoverKey(QUrl(f.mrl)),
+                                  f.videoCount > 0
+                                  ? MLCustomCover::url(MLItemId(f.id, VLC_ML_PARENT_FOLDER), size,
+                                                       QStringLiteral(":/placeholder/noart_videoCover.svg"),
+                                                       count, count)
+                                  : f.audioCover);
+        }
+        emit folderCoversChanged();
+    });
+}
+
+QString MediaLib::folderCover(const QUrl& mrl) const
+{
+    const QString key = folderCoverKey(mrl);
+    if (key.isEmpty())
+        return {};
+    const auto it = m_folderCovers.constFind(key);
+    if (it != m_folderCovers.cend())
+        return it.value();
+    // first subfolder with media (keys are sorted)
+    const QString prefix = key + QLatin1Char('/');
+    const auto sub = m_folderCovers.lowerBound(prefix);
+    if (sub != m_folderCovers.cend() && sub.key().startsWith(prefix))
+        return sub.value();
+    return {};
 }
 
 void MediaLib::addBookmark(const QUrl& mrl, qint64 timeMs)
