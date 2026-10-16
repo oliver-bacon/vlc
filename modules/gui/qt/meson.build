@@ -719,6 +719,7 @@ qml_modules += {
         'medialibrary/qml/RecentDisplay.qml',
         'medialibrary/qml/VideoFoldersDisplay.qml',
         'medialibrary/qml/MusicSectionsDisplay.qml',
+        'medialibrary/qml/FolderContentMenu.qml',
         'medialibrary/qml/VideoGridItem.qml',
         'medialibrary/qml/VideoInfoExpandPanel.qml',
         'medialibrary/qml/VideoListDisplay.qml',

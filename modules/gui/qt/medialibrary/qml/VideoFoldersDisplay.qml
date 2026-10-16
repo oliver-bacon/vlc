@@ -110,6 +110,50 @@ Widgets.PageExt {
         sourceModel: root._atRoot ? null : folderModel
     }
 
+    // entry given to the right-click menu; -1 is the folder that is shown
+    function _entryData(index) {
+        if (index < 0) {
+            if (root._atRoot)
+                return null
+            return {
+                "name": root.crumbs.length > 0 ? root.crumbs[root.crumbs.length - 1] : folderModel.name,
+                "mrl": String(folderModel.url),
+                "isFolder": true,
+                // Videos opened directly on the only library folder
+                "isLibraryRoot": root._topLevel && root.tree === undefined
+            }
+        }
+        if (root._atRoot) {
+            const url = String(libraryFolders.data(libraryFolders.index(index, 0), Qt.UserRole + 3))
+            return { "name": root._lastSegment(url), "mrl": url, "isFolder": true, "isLibraryRoot": true }
+        }
+        const d = videoFilter.getDataAt(index)
+        return {
+            "name": d.name,
+            "mrl": String(d.mrl),
+            "isFolder": d.type === NetworkMediaModel.TYPE_DIRECTORY || d.type === NetworkMediaModel.TYPE_NODE,
+            "isLibraryRoot": false
+        }
+    }
+
+    FolderContentMenu {
+        id: contextMenu
+
+        dataAt: root._entryData
+        playAt: (i) => folderModel.addAndPlay(videoFilter.sourceRow(i))
+        enqueueAt: (i) => folderModel.addToPlaylist(videoFilter.sourceRow(i))
+        libraryFolders: libraryFolders
+    }
+
+    // right-click on an entry or on the empty part of the page
+    function _contextMenu(point) {
+        const view = MainCtx.gridView ? gridView : listView
+        const p = view.mapFromItem(null, point.scenePosition)
+        const inView = p.x >= 0 && p.y >= 0 && p.x < view.width && p.y < view.height
+        const index = inView ? view.indexAt(p.x + view.contentX, p.y + view.contentY) : -1
+        contextMenu.popup([index], view.mapToGlobal(p.x, p.y))
+    }
+
     Item {
         id: content
 
@@ -118,6 +162,12 @@ Widgets.PageExt {
 
         function setCurrentItemFocus(reason) {
             (MainCtx.gridView ? gridView : listView).forceActiveFocus(reason)
+        }
+
+        // the entries only take the left button
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            onTapped: (point) => root._contextMenu(point)
         }
 
         ColumnLayout {

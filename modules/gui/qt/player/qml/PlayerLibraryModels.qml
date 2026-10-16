@@ -25,6 +25,14 @@ import VLC.MediaLibrary
 // exist when VLC runs with a media library, and this file is loaded only
 // then.
 Item {
+    id: root
+
+    // right-click menu of library folders and videos (the panel sets dataAt,
+    // playAt and enqueueAt before each popup)
+    readonly property FolderContentMenu folderMenu: FolderContentMenu {
+        libraryFolders: root.libraryFolders
+    }
+
     readonly property MLVideoFoldersModel videoFolders: MLVideoFoldersModel { ml: MediaLib }
     // folders added to the library (Videos starts there)
     readonly property MLFolderModel libraryFolders: MLFolderModel { ctx: MainCtx }

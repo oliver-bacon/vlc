@@ -414,6 +414,42 @@ FocusScope {
         return _model.getDataAt(index)
     }
 
+    // ---- right-click menu of library folders and videos (Videos section);
+    // index -1 is the folder that is shown
+    function _menuEntry(index) {
+        if (_kind === "libraryFolders") {
+            const f = index >= 0 ? _model[index] : null
+            return f ? { "name": f.title, "mrl": f.url, "isFolder": true, "isLibraryRoot": true } : null
+        }
+        if (_kind !== "browse" || _section !== "video")
+            return null
+        if (index < 0) {
+            if (!_level || !_level.url)
+                return null
+            // the first level is the only library folder (_videoRootLevel)
+            return { "name": _level.title, "mrl": String(_level.url), "isFolder": true,
+                     "isLibraryRoot": _levelIndex === 0 }
+        }
+        const d = _rowData(index)
+        return {
+            "name": d.name ?? "",
+            "mrl": String(d.mrl),
+            "isFolder": _rowIsNav(d),
+            "isLibraryRoot": false
+        }
+    }
+
+    // the menu is in PlayerLibraryModels (VLC.MediaLibrary needs a media library)
+    function _contextMenu(index, globalPos) {
+        const menu = _ml ? _ml.folderMenu : null
+        if (!menu)
+            return
+        menu.dataAt = (i) => root._menuEntry(i)
+        menu.playAt = (i) => root._play(i, root._rowData(i), false)
+        menu.enqueueAt = (i) => root._play(i, root._rowData(i), true)
+        menu.popup([index], globalPos)
+    }
+
     // the same place in the full library
     function _popOut() {
         let path = ["video"]
@@ -863,6 +899,16 @@ FocusScope {
             }
 
             T.ScrollBar.vertical: Widgets.ScrollBarExt { }
+
+            // right-click on a row or on the empty part of the list
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: (point) => {
+                    const p = listView.mapFromItem(null, point.scenePosition)
+                    root._contextMenu(listView.indexAt(p.x + listView.contentX, p.y + listView.contentY),
+                                      listView.mapToGlobal(p.x, p.y))
+                }
+            }
 
             delegate: T.ItemDelegate {
                 id: row
