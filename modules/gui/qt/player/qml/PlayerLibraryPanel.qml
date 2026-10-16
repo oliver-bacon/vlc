@@ -340,7 +340,10 @@ FocusScope {
     function _rowArtwork(d) {
         if (_isArray)
             return ""
-        return d.thumbnail || d.small_cover || d.cover || d.artwork || ""
+        const art = d.thumbnail || d.small_cover || d.cover || d.artwork || ""
+        // remote artwork (radio flags, station icons) through VLC's network
+        // access: Qt's own loader may have no TLS support (https)
+        return art ? VLCAccessImage.uri(String(art), true) : ""
     }
 
     function _rowIsNav(d) {

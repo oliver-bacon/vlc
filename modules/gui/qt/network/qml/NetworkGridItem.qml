@@ -45,7 +45,10 @@ Widgets.GridItem {
 
     image: {
         if (model.artwork && model.artwork.toString() !== "") {
-            return model.artwork
+            // VLC Redesign: remote artwork (radio flags, station icons) goes
+            // through VLC's own network access, like NetworkThumbnailItem;
+            // Qt's loader may have no TLS support (https)
+            return VLCAccessImage.uri(model.artwork.toString(), true)
         }
         return ""
     }
