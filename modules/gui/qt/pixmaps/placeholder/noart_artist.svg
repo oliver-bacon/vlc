@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
-  <!-- VLC Redesign: empty thumbnail (Figma #303030) with the Figma "artist" icon -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="384" height="384">
+  <!-- VLC Redesign (4x size so it stays sharp when scaled): empty thumbnail (Figma #303030) with the Figma "artist" icon -->
   <rect width="96" height="96" rx="4" fill="#303030"/>
   <g transform="translate(32 32) scale(1.33333)">
     <path fill="#8F8F8F" d="M13,6 Q13,10 9,10 Q5,10 5,6 Q5,2 9,2 Q13,2 13,6 Z M11.5,6 Q11.5,3.5 9,3.5 Q6.5,3.5 6.5,6 Q6.5,8.5 9,8.5 Q11.5,8.5 11.5,6 Z"/>
