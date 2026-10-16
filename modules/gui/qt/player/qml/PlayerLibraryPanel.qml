@@ -223,9 +223,11 @@ FocusScope {
     }
 
     function _setLevels(levels, index) {
+        const dropped = _levels.filter((l) => !levels.includes(l))
         _levels = levels
         _levelIndex = index
         _applyLevel()
+        _releaseLevels(dropped)
     }
 
     function _push(level) {
@@ -249,7 +251,7 @@ FocusScope {
         if (!_level)
             return
         if (_level.kind === "browse")
-            browseModel.tree = _level.tree
+            _showBrowseModel(_level)
         else if (_ml && _level.kind === "tracksOf")
             _ml.tracksOf.parentId = _level.parentId
         else if (_ml && _level.kind === "playlistMedia")
@@ -260,7 +262,7 @@ FocusScope {
 
     readonly property var _model: {
         switch (_kind) {
-        case "browse": return _section === "video" ? videoFilter : browseModel
+        case "browse": return _section === "video" ? videoFilter : _browse
         case "libraryFolders": return _libraryFolderRows()
         case "musicRoot": return _musicRoot
         case "networkRoot": return _networkRoot
@@ -395,8 +397,8 @@ FocusScope {
     function _play(index, d, enqueue) {
         if (_kind === "browse") {
             const row = (_model === videoFilter) ? videoFilter.sourceRow(index) : index
-            if (enqueue) browseModel.addToPlaylist(row)
-            else browseModel.addAndPlay(row)
+            if (enqueue) _browse.addToPlaylist(row)
+            else _browse.addAndPlay(row)
         } else if (MainCtx.mediaLibrary && d.id !== undefined) {
             if (enqueue) MainCtx.mediaLibrary.addToPlaylist(d.id)
             else MainCtx.mediaLibrary.addAndPlay(d.id)
@@ -467,9 +469,43 @@ FocusScope {
         onLoaded: root._applyLevel()
     }
 
-    NetworkMediaModel {
-        id: browseModel
-        ctx: MainCtx
+    // ---- folder levels: one NetworkMediaModel per level, created when the
+    // level is first shown and kept while it is in the back / forward
+    // history. Changing the tree of one shared model made the interface
+    // wait (NetworkMediaModel::initializeModel) for the previous folder's
+    // preparse to end, which never happened for a running network one: the
+    // second "forward" froze VLC.
+
+    property NetworkMediaModel _browse: null
+
+    Component {
+        id: browseModelComponent
+        NetworkMediaModel { ctx: MainCtx }
+    }
+
+    function _showBrowseModel(level) {
+        if (!level.model)
+            level.model = browseModelComponent.createObject(root, { "tree": level.tree })
+        _browse = level.model
+    }
+
+    // the model's destructor also waits for a running preparse: destroy
+    // dropped models only once they are not loading
+    function _releaseLevels(levels) {
+        for (const level of levels) {
+            const m = level.model
+            if (!m || m === _browse)
+                continue
+            level.model = null
+            if (!m.loading) {
+                m.destroy()
+            } else {
+                m.loadingChanged.connect(function() {
+                    if (!m.loading)
+                        m.destroy()
+                })
+            }
+        }
     }
 
     // root of a services discovery source (Podcasts, Radio)
@@ -481,7 +517,7 @@ FocusScope {
 
     VideoFolderFilter {
         id: videoFilter
-        sourceModel: browseModel
+        sourceModel: root._browse
     }
 
     // the library folders arrive after the panel opened on Videos
@@ -904,7 +940,7 @@ FocusScope {
                     onActiveChanged: {
                         if (active) {
                             dragItem.indexes = [(root._model === videoFilter)
-                                                ? browseModel.index(videoFilter.sourceRow(row.index), 0)
+                                                ? root._browse.index(videoFilter.sourceRow(row.index), 0)
                                                 : root._model.index(row.index, 0)]
                             dragItem.Drag.active = true
                         } else {
@@ -920,7 +956,7 @@ FocusScope {
                 parent: listView
                 anchors.centerIn: parent
                 visible: listView.count === 0 && root._kind !== "home"
-                text: root._kind === "browse" && browseModel.loading ? qsTr("Loading…") : qsTr("Nothing here")
+                text: root._kind === "browse" && (root._browse?.loading ?? false) ? qsTr("Loading…") : qsTr("Nothing here")
                 color: root.dimColor
                 font.pixelSize: VLCStyle.fontSize_normal
             }
@@ -1070,13 +1106,13 @@ FocusScope {
         })
 
         onRequestData: (indexes, resolve, reject) => {
-            const m = (root._model === videoFilter) ? browseModel : root._model
+            const m = (root._model === videoFilter) ? root._browse : root._model
             resolve(indexes.map((i) => m.getDataAt(i.row)))
         }
 
         onRequestInputItems: (indexes, data, resolve, reject) => {
             if (root._kind === "browse")
-                browseModel.getItemsForIndexes(indexes, resolve)
+                root._browse.getItemsForIndexes(indexes, resolve)
             else
                 MainCtx.mediaLibrary.mlInputItem(data.map((o) => o.id), resolve)
         }
