@@ -46,7 +46,8 @@ bool VLCTick::isSubHour() const
 
 QString VLCTick::formatHMS(int formatFlags) const
 {
-    if (!valid())
+    // the media library stores an unknown duration as -1 ms: no "-1 ms"
+    if (!valid() || asMilliseconds() < 0)
         return "--:--";
 
     if (!isSubSecond() || !(formatFlags & SubSecondFormattedAsMS))

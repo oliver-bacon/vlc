@@ -20,6 +20,8 @@
 #include "mlhelper.hpp"
 #include "mlaudio.hpp"
 
+#include <cstring>
+
 // Ctor / dtor
 
 MLRecentAudioModel::MLRecentAudioModel(QObject * parent) : MLAudioModel(parent) {}
@@ -51,27 +53,60 @@ void MLRecentAudioModel::onVlcMlEvent(const MLEvent & event) /* override */
 
 // Loader
 
+namespace {
+
+// "Listen Again" lists local audio files only: played radio stations and
+// other streams are in the history too, named after their stream URL
+bool isLocalFile(const vlc_ml_media_t &media)
+{
+    if (media.p_files == nullptr || media.p_files->i_nb_items == 0)
+        return false;
+    const char *mrl = media.p_files->p_items[0].psz_mrl;
+    return mrl != nullptr && strncmp(mrl, "file://", 7) == 0;
+}
+
+// the whole audio history, without paging (the filter comes first)
+std::vector<const vlc_ml_media_t *> localMedia(const vlc_ml_media_list_t *list)
+{
+    std::vector<const vlc_ml_media_t *> res;
+    for (size_t i = 0; list != nullptr && i < list->i_nb_items; ++i)
+        if (isLocalFile(list->p_items[i]))
+            res.push_back(&list->p_items[i]);
+    return res;
+}
+
+vlc_ml_query_params_t withoutPaging(const vlc_ml_query_params_t *queryParams)
+{
+    vlc_ml_query_params_t params = queryParams ? *queryParams : vlc_ml_query_params_create();
+    params.i_nbResults = 0;
+    params.i_offset = 0;
+    return params;
+}
+
+} // namespace
+
 size_t MLRecentAudioModel::Loader::count(vlc_medialibrary_t* ml, const vlc_ml_query_params_t* queryParams) const /* override */
 {
-    return vlc_ml_count_audio_history(ml, queryParams);
+    const vlc_ml_query_params_t params = withoutPaging(queryParams);
+    ml_unique_ptr<vlc_ml_media_list_t> media_list { vlc_ml_list_audio_history(ml, &params) };
+    // like vlc_ml_count_audio_history(): the model applies its limit itself
+    return localMedia(media_list.get()).size();
 }
 
 std::vector<std::unique_ptr<MLItem>>
 MLRecentAudioModel::Loader::load(vlc_medialibrary_t* ml, const vlc_ml_query_params_t* queryParams) const /* override */
 {
-    ml_unique_ptr<vlc_ml_media_list_t> media_list {
-        vlc_ml_list_audio_history(ml, queryParams)
-    };
+    const vlc_ml_query_params_t params = withoutPaging(queryParams);
+    ml_unique_ptr<vlc_ml_media_list_t> media_list { vlc_ml_list_audio_history(ml, &params) };
 
-    if (media_list == nullptr)
-        return {};
+    const std::vector<const vlc_ml_media_t *> local = localMedia(media_list.get());
+
+    const size_t offset = queryParams ? queryParams->i_offset : 0;
+    const size_t limit = (queryParams && queryParams->i_nbResults > 0) ? queryParams->i_nbResults : local.size();
 
     std::vector<std::unique_ptr<MLItem>> res;
-
-    for (const vlc_ml_media_t & media : ml_range_iterate<vlc_ml_media_t>(media_list))
-    {
-        res.emplace_back( std::make_unique<MLAudio>(ml, &media));
-    }
+    for (size_t i = offset; i < local.size() && res.size() < limit; ++i)
+        res.emplace_back( std::make_unique<MLAudio>(ml, local[i]));
 
     return res;
 }
