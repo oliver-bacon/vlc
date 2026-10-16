@@ -1,0 +1,41 @@
+From: thespine1337 <thespine1337@gmail.com>
+Subject: [PATCH] Do not rename the case-insensitive compares on MinGW
+
+With MinGW, the inline strncasecmp() of <string.h> calls _strnicmp();
+the strncasecmp -> strnicmp -> _strnicmp defines made it
+"_strnicmp() { return _strnicmp(); }", an endless loop hit by every
+strncasecmp() call on equal-length strings (UPnP discovery hung VLC).
+---
+diff -ru a/ixml/inc/posix_overwrites.h b/ixml/inc/posix_overwrites.h
+--- a/ixml/inc/posix_overwrites.h	2026-10-16 11:45:19.243313819 +0200
++++ b/ixml/inc/posix_overwrites.h	2026-10-16 11:45:19.259604558 +0200
+@@ -6,11 +6,16 @@
+ 	/* POSIX names for functions */
+ 	#define fileno _fileno
+ 	#define unlink _unlink
+-	#define strcasecmp _stricmp
+ 	#define strdup _strdup
++	#ifndef __MINGW32__
++	/* MinGW provides the POSIX names, with inline strcasecmp() and
++	 * strncasecmp() calling _stricmp() and _strnicmp(): these defines
++	 * would turn them into functions calling themselves forever. */
++	#define strcasecmp _stricmp
+ 	#define stricmp _stricmp
+ 	#define strncasecmp strnicmp
+ 	#define strnicmp _strnicmp
++	#endif
+ 
+ 	/* Secure versions of functions */
+ 	/* Explicitly disable warnings by pragma/define, see:
+diff -ru a/upnp/src/inc/uri.h b/upnp/src/inc/uri.h
+--- a/upnp/src/inc/uri.h	2026-10-16 11:45:19.244479972 +0200
++++ b/upnp/src/inc/uri.h	2026-10-16 11:45:19.259675861 +0200
+@@ -60,7 +60,7 @@
+ 	#include <netdb.h> /* for struct addrinfo */
+ #endif
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__MINGW32__)
+ 	#define strncasecmp strnicmp
+ #else
+ 	/* Other systems have strncasecmp */
