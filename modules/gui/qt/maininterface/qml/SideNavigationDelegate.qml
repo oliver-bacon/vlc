@@ -33,6 +33,12 @@ T.ItemDelegate {
 
     property string iconTxt: ""
 
+    // VLC Redesign: filled orange Figma icon shown instead of the glyph when
+    // the entry is selected (rail and navigation)
+    property url selectedIconSource: ""
+
+    readonly property bool _selected: control.highlighted || control.checked
+
     property bool showText: true
 
     property real radius: VLCStyle.button_radius
@@ -104,30 +110,30 @@ T.ItemDelegate {
 
         radius: control.radius
 
-        Widgets.CurrentIndicator {
-            anchors {
-                left: parent.left
-                leftMargin: VLCStyle.margin_xxxsmall
-                verticalCenter: parent.verticalCenter
-            }
-            implicitHeight: parent.height / 2
-            visible: control.checked
-
-            radius: control.radius / 2
-        }
+        // VLC Redesign: no side indicator, the selected icon is filled orange
     }
 
     contentItem: RowLayout {
         spacing: VLCStyle.margin_xsmall
 
         Item {
-            Layout.preferredWidth: VLCStyle.icon_banner
+            // Figma: 24px icons
+            Layout.preferredWidth: VLCStyle.icon_normal
             Layout.fillHeight: true
+
+            Image {
+                anchors.centerIn: parent
+                width: VLCStyle.icon_normal
+                height: VLCStyle.icon_normal
+                sourceSize: Qt.size(width * 2, height * 2)
+                visible: control._selected && control.selectedIconSource.toString() !== ""
+                source: visible ? control.selectedIconSource : ""
+            }
 
             Widgets.IconLabel {
                 id: iconLabel
 
-                visible: text.length > 0
+                visible: text.length > 0 && !(control._selected && control.selectedIconSource.toString() !== "")
 
                 anchors.centerIn: parent
 
@@ -136,9 +142,9 @@ T.ItemDelegate {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
 
-                color: (control.highlighted || control.checked) ? theme.accent : theme.fg.primary
+                color: control._selected ? theme.accent : theme.fg.primary
 
-                font.pixelSize: VLCStyle.icon_banner
+                font.pixelSize: VLCStyle.icon_normal
             }
         }
 

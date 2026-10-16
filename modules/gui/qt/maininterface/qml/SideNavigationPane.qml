@@ -57,8 +57,31 @@ T.Pane {
 
     // width of the rail (icons only): the panel inset on both sides, the
     // delegate's left padding, the icon and a margin after it
+    // Figma "sidebar" frame: a 50px rail, 24px icons centred in it, a row
+    // every 46px; the navigation with text keeps VLC's row height
+    readonly property real _railPanelWidth: VLCStyle.dp(50, VLCStyle.scale)
+    readonly property real _rowHeight: delegateShowText ? VLCStyle.buttonHeightNavigationPane
+                                                        : VLCStyle.dp(46, VLCStyle.scale)
+    readonly property real _iconLeft: delegateShowText ? VLCStyle.margin_xsmall
+                                                       : (_railPanelWidth - VLCStyle.icon_normal) / 2
+
     readonly property real railWidth: 2 * panelInset + safeAreaLeftMargin + safeAreaRightMargin
-                                      + 2 * VLCStyle.margin_xsmall + VLCStyle.icon_banner + rightPadding
+                                      + _railPanelWidth + rightPadding
+
+    // side panel section of each navigation entry (rail mode)
+    readonly property var _sectionOf: ({
+        "home": "home", "video": "video", "music": "music",
+        "streams": "network", "playlists": "playlists", "recent": "recent"
+    })
+
+    // filled orange Figma icons of the selected entries (no Figma one for Recent)
+    readonly property var _selectedIcons: ({
+        "home": "qrc:///misc/rail_home_selected.svg",
+        "video": "qrc:///misc/rail_video_selected.svg",
+        "music": "qrc:///misc/rail_music_selected.svg",
+        "streams": "qrc:///misc/rail_network_selected.svg",
+        "playlists": "qrc:///misc/rail_playlists_selected.svg"
+    })
 
     // added to the pane's width by MainDisplay.qml
     readonly property real sectionWidth: sectionShown ? VLCStyle.dp(300, VLCStyle.scale) : 0
@@ -335,15 +358,16 @@ T.Pane {
                             width: ListView.view.contentWidth
                             height: preferredHeight
 
-                            property real preferredHeight: shouldShow ? VLCStyle.buttonHeightNavigationPane : 0.0
+                            property real preferredHeight: shouldShow ? root._rowHeight : 0.0
 
-                            leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                            leftPadding: root.safeAreaLeftMargin + root._iconLeft
                             rightPadding: root.safeAreaRightMargin
 
                             leftInset: root.safeAreaLeftMargin + implicitLeftInset
                             rightInset: root.safeAreaRightMargin + implicitRightInset
 
                             iconTxt: icon_alias
+                            selectedIconSource: (uri && root._selectedIcons[uri[0]]) || ""
                             text: title
 
                             showText: root.delegateShowText
@@ -367,10 +391,11 @@ T.Pane {
                                     heightBehavior.enabled = true // At this point, it can keep being enabled for good.
                             }
 
-                            Binding on highlighted {
-                                when: !!uri && History.match(History.viewPath, uri)
-                                value: true
-                            }
+                            // rail mode: the entry whose side panel is open (Figma
+                            // "sidebar" frame); otherwise the page that is shown
+                            highlighted: root.sectionShown
+                                         ? (!!uri && root.panelSection === root._sectionOf[uri[0]])
+                                         : (!!uri && History.match(History.viewPath, uri))
                             checked: (!showText || !expanded) && highlighted
 
                             onClicked: {
@@ -418,9 +443,9 @@ T.Pane {
                             required property int index
 
                             Layout.fillWidth: true
-                            Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+                            Layout.preferredHeight: root._rowHeight
 
-                            leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                            leftPadding: root.safeAreaLeftMargin + root._iconLeft
                             rightPadding: root.safeAreaRightMargin
 
                             leftInset: root.safeAreaLeftMargin + implicitLeftInset
@@ -456,9 +481,9 @@ T.Pane {
                         id: addItemButton
 
                         Layout.fillWidth: true
-                        Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+                        Layout.preferredHeight: root._rowHeight
 
-                        leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                        leftPadding: root.safeAreaLeftMargin + root._iconLeft
                         rightPadding: root.safeAreaRightMargin
 
                         leftInset: root.safeAreaLeftMargin + implicitLeftInset
@@ -522,9 +547,9 @@ T.Pane {
                 AccessibleCompat.id: "preferencesButton"
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: VLCStyle.buttonHeightNavigationPane
+                Layout.preferredHeight: root._rowHeight
 
-                leftPadding: root.safeAreaLeftMargin + VLCStyle.margin_xsmall
+                leftPadding: root.safeAreaLeftMargin + root._iconLeft
                 rightPadding: root.safeAreaRightMargin
 
                 leftInset: root.safeAreaLeftMargin + implicitLeftInset

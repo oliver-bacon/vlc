@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="none">
+<!-- VLC Redesign: selected rail icon, from the Figma "sidebar" frame -->
+ <g transform="translate(-3610 -171.5)">
+  <path d="M3617.76 178.757C3616.67 179.843 3616 181.343 3616 183C3616 184.657 3616.67 186.157 3617.76 187.243" stroke="#D37918" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3626.24 187.243C3627.33 186.157 3628 184.657 3628 183C3628 181.343 3627.33 179.843 3626.24 178.757" stroke="#D37918" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M3629.07 175.929C3630.88 177.738 3632 180.238 3632 183C3632 185.761 3630.88 188.261 3629.07 190.071M3614.93 190.071C3613.12 188.261 3612 185.761 3612 183C3612 180.238 3613.12 177.738 3614.93 175.929" stroke="#D37918" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="3622" cy="183" r="3" fill="#D37918"/>
+ </g>
+</svg>

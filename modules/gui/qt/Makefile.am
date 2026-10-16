@@ -1019,6 +1019,11 @@ libqt_plugin_la_RES = \
 	pixmaps/misc/theme_daynight.svg \
 	pixmaps/misc/theme_light.svg \
 	pixmaps/misc/volume_fill.svg \
+	pixmaps/misc/rail_home_selected.svg \
+	pixmaps/misc/rail_video_selected.svg \
+	pixmaps/misc/rail_music_selected.svg \
+	pixmaps/misc/rail_network_selected.svg \
+	pixmaps/misc/rail_playlists_selected.svg \
 	pixmaps/misc/volume_track_dark.svg \
 	pixmaps/misc/volume_track_light.svg \
 	pixmaps/misc/wait1.svg \

@@ -92,7 +92,7 @@ FocusScope {
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     readonly property var _musicRoot: [
-        { kind: "tracks", title: qsTr("Songs"), glyph: VLCIcons.songs },
+        { kind: "tracks", title: qsTr("Songs"), glyph: VLCIcons.topbar_music },
         { kind: "albums", title: qsTr("Albums"), glyph: VLCIcons.album_cover },
         { kind: "artists", title: qsTr("Artists"), glyph: VLCIcons.artist },
         { kind: "genres", title: qsTr("Genres"), glyph: VLCIcons.genre }
@@ -550,24 +550,26 @@ FocusScope {
         id: rail
 
         anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-        width: VLCStyle.dp(40, VLCStyle.scale)
+        // Figma "sidebar" frame: 50px wide, 24px icons, a row every 46px
+        width: VLCStyle.dp(50, VLCStyle.scale)
         color: root.railColor
         visible: root._hasML && root.showRail
 
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: VLCStyle.margin_small
-            spacing: VLCStyle.margin_xxsmall
+            y: VLCStyle.dp(2, VLCStyle.scale)
+            spacing: 0
 
             Repeater {
                 // Figma "sidebar" frame: Home, Videos, Music, Network,
                 // Playlists, Recent, then the pins and "+"
                 model: [
-                    { section: "home", glyph: VLCIcons.home, text: qsTr("Home") },
-                    { section: "video", glyph: VLCIcons.topbar_video, text: qsTr("Videos") },
-                    { section: "music", glyph: VLCIcons.topbar_music, text: qsTr("Music") },
-                    { section: "network", glyph: VLCIcons.stream, text: qsTr("Network") },
-                    { section: "playlists", glyph: VLCIcons.lists, text: qsTr("Playlists") },
+                    // selected: the filled orange Figma icon (none for Recent)
+                    { section: "home", glyph: VLCIcons.home, text: qsTr("Home"), selected: "qrc:///misc/rail_home_selected.svg" },
+                    { section: "video", glyph: VLCIcons.topbar_video, text: qsTr("Videos"), selected: "qrc:///misc/rail_video_selected.svg" },
+                    { section: "music", glyph: VLCIcons.songs, text: qsTr("Music"), selected: "qrc:///misc/rail_music_selected.svg" },
+                    { section: "network", glyph: VLCIcons.stream, text: qsTr("Network"), selected: "qrc:///misc/rail_network_selected.svg" },
+                    { section: "playlists", glyph: VLCIcons.playlist, text: qsTr("Playlists"), selected: "qrc:///misc/rail_playlists_selected.svg" },
                     { section: "recent", glyph: VLCIcons.history, text: qsTr("Recent") }
                 ].concat(root._pins.map((p, i) => ({
                     section: "pin" + i,
@@ -581,8 +583,8 @@ FocusScope {
 
                     required property var modelData
 
-                    width: VLCStyle.dp(32, VLCStyle.scale)
-                    height: width
+                    width: VLCStyle.dp(42, VLCStyle.scale)
+                    height: VLCStyle.dp(46, VLCStyle.scale)
 
                     Accessible.name: modelData.text
 
@@ -592,13 +594,27 @@ FocusScope {
                         radius: 4 * root.dp1
                         color: railButton.hovered ? root.hoverColor : "transparent"
                     }
-                    contentItem: Text {
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.family: VLCIcons.fontFamily
-                        font.pixelSize: VLCStyle.icon_normal
-                        text: railButton.modelData.glyph
-                        color: railButton.current ? root.accentColor : root.textColor
+                    readonly property bool _filled: railButton.current && !!railButton.modelData.selected
+
+                    contentItem: Item {
+                        Image {
+                            anchors.centerIn: parent
+                            width: VLCStyle.icon_normal
+                            height: VLCStyle.icon_normal
+                            sourceSize: Qt.size(width * 2, height * 2)
+                            visible: railButton._filled
+                            source: visible ? railButton.modelData.selected : ""
+                        }
+                        Text {
+                            anchors.fill: parent
+                            visible: !railButton._filled
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            font.family: VLCIcons.fontFamily
+                            font.pixelSize: VLCStyle.icon_normal
+                            text: railButton.modelData.glyph
+                            color: railButton.current ? root.accentColor : root.textColor
+                        }
                     }
                     onClicked: {
                         if (modelData.add)

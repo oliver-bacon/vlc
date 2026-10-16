@@ -276,7 +276,7 @@ public:
 
             // Songs / Albums / Artists / Genres are in the panel that opens
             // next to the navigation (SideNavigationPane.qml), not below Music
-            m_model.children.emplace_back(qtr("Music"), "music", VLCIcons::topbar_music, QStringLiteral(":/icons/ic_fluent_music_note_2.svg"));
+            m_model.children.emplace_back(qtr("Music"), "music", VLCIcons::songs, QStringLiteral(":/icons/ic_fluent_music_note_2.svg"));
         }
 
         // saved network streams (VLC's URL list); Browse and Discover are
@@ -285,7 +285,7 @@ public:
 
         if (m_hasMedialib)
         {
-            m_model.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::lists);
+            m_model.children.emplace_back(qtr("Playlists"), "playlists", VLCIcons::playlist);
             m_model.children.emplace_back(qtr("Recent"), "recent", VLCIcons::history);
         }
 

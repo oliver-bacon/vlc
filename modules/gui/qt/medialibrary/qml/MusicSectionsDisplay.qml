@@ -38,7 +38,7 @@ Widgets.PageExt {
     }
 
     readonly property var _sections: [
-        { "title": qsTr("Songs"),   "icon": VLCIcons.songs,       "uri": ["music", "tracks"] },
+        { "title": qsTr("Songs"),   "icon": VLCIcons.topbar_music,       "uri": ["music", "tracks"] },
         { "title": qsTr("Albums"),  "icon": VLCIcons.album_cover, "uri": ["music", "albums"] },
         { "title": qsTr("Artists"), "icon": VLCIcons.artist,      "uri": ["music", "artists"] },
         { "title": qsTr("Genres"),  "icon": VLCIcons.genre,       "uri": ["music", "genres"] }
