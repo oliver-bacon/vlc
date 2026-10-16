@@ -104,9 +104,28 @@ FocusScope {
         { kind: "listenAgain", title: qsTr("Listen Again"), model: _ml.recentAudioPreview }
     ] : []
 
-    // the levels that start with an "Add" row (add a folder to the library)
-    readonly property bool _showAdd: _hasML && (_kind === "musicRoot" || _kind === "libraryFolders"
-                                                || (_section === "video" && _levelIndex === 0))
+    // Network (Figma "sidebar" frame): Podcasts and Radio are VLC's services
+    // discovery modules "podcast" and "radio" (countries with flags,
+    // stations with icons), then the saved streams
+    readonly property var _networkRoot: [
+        { kind: "sourceRoot", source: "podcast", title: qsTr("Podcasts"), glyph: VLCIcons.stream },
+        { kind: "sourceRoot", source: "radio", title: qsTr("Radio"), glyph: VLCIcons.stream },
+        { kind: "streams", title: qsTr("Saved Streams"), glyph: VLCIcons.link }
+    ]
+
+    // the levels that start with an "Add" row: add a folder to the library,
+    // or a network stream on the Network level
+    readonly property bool _showAdd: (_hasML && (_kind === "musicRoot" || _kind === "libraryFolders"
+                                                 || (_section === "video" && _levelIndex === 0)))
+                                     || _kind === "networkRoot"
+    readonly property string _addText: _kind === "networkRoot" ? qsTr("Add Network Stream") : qsTr("Add")
+
+    function _addAction() {
+        if (_kind === "networkRoot")
+            DialogsProvider.openNetDialog()
+        else
+            _addFolder()
+    }
 
     function _addFolder() {
         const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
@@ -197,7 +216,7 @@ FocusScope {
         case "home": return { kind: "home", title: qsTr("Home") }
         case "recent": return { kind: "recent", title: qsTr("Recent") }
         case "music": return { kind: "musicRoot", title: qsTr("Music") }
-        case "network": return { kind: "streams", title: qsTr("Network") }
+        case "network": return { kind: "networkRoot", title: qsTr("Network") }
         case "playlists": return { kind: "playlists", title: qsTr("Playlists") }
         default: return _videoRootLevel()
         }
@@ -235,6 +254,8 @@ FocusScope {
             _ml.tracksOf.parentId = _level.parentId
         else if (_ml && _level.kind === "playlistMedia")
             _ml.playlistMedia.parentId = _level.parentId
+        else if (_level.kind === "sourceRoot")
+            sourceModel.source_name = _level.source
     }
 
     readonly property var _model: {
@@ -242,6 +263,8 @@ FocusScope {
         case "browse": return _section === "video" ? videoFilter : browseModel
         case "libraryFolders": return _libraryFolderRows()
         case "musicRoot": return _musicRoot
+        case "networkRoot": return _networkRoot
+        case "sourceRoot": return sourceModel
         case "videoFolders": return _ml ? _ml.videoFolders : null
         case "tracks": return _ml ? _ml.tracks : null
         case "tracksOf": return _ml ? _ml.tracksOf : null
@@ -276,7 +299,7 @@ FocusScope {
             return az("title").concat([[qsTr("Newest First"), "release_year", Qt.DescendingOrder],
                                        [qsTr("Oldest First"), "release_year", Qt.AscendingOrder]])
         case "videoFolders": case "playlistMedia": return az("title")
-        case "artists": case "genres": case "playlists": return az("name")
+        case "artists": case "genres": case "playlists": case "sourceRoot": return az("name")
         case "streams": return az("url")
         }
         return []
@@ -287,8 +310,8 @@ FocusScope {
     function _rowTitle(d) {
         switch (_kind) {
         case "browse": return d.name ?? ""
-        case "musicRoot": return d.title
-        case "artists": case "genres": case "playlists": return d.name ?? ""
+        case "musicRoot": case "networkRoot": return d.title
+        case "artists": case "genres": case "playlists": case "sourceRoot": return d.name ?? ""
         case "streams": return d.url ?? ""
         }
         return d.title ?? ""
@@ -296,9 +319,13 @@ FocusScope {
 
     function _rowGlyph(d) {
         switch (_kind) {
-        case "musicRoot": return d.glyph
+        case "musicRoot": case "networkRoot": return d.glyph
+        case "sourceRoot": return VLCIcons.stream
         case "videoFolders": case "libraryFolders": return VLCIcons.topbar_network
-        case "browse": return _rowIsNav(d) ? VLCIcons.topbar_network : VLCIcons.topbar_video
+        case "browse":
+            if (_section === "network")
+                return VLCIcons.stream
+            return _rowIsNav(d) ? VLCIcons.topbar_network : VLCIcons.topbar_video
         case "albums": case "artists": case "genres": case "tracks": case "tracksOf":
         case "listenAgain":
             return VLCIcons.topbar_music
@@ -320,7 +347,8 @@ FocusScope {
             return d.type === NetworkMediaModel.TYPE_DIRECTORY
                 || d.type === NetworkMediaModel.TYPE_NODE
                 || d.type === NetworkMediaModel.TYPE_PLAYLIST
-        case "musicRoot": case "videoFolders": case "libraryFolders": case "albums": case "artists":
+        case "musicRoot": case "networkRoot": case "sourceRoot":
+        case "videoFolders": case "libraryFolders": case "albums": case "artists":
         case "genres": case "playlists":
             return true
         }
@@ -339,6 +367,12 @@ FocusScope {
             return
         case "musicRoot":
             _push({ kind: d.kind, title: d.title })
+            return
+        case "networkRoot":
+            _push({ kind: d.kind, title: d.title, source: d.source })
+            return
+        case "sourceRoot":
+            _push({ kind: "browse", title: d.name, tree: d.tree, url: d.mrl })
             return
         case "libraryFolders":
             _push(_browseLevel(d.url, d.title))
@@ -386,9 +420,18 @@ FocusScope {
                 path = ["video", "folders"]
                 const crumbs = _levels.slice(1, _levelIndex + 1).map((l) => l.title)
                 props = crumbs.length > 0 ? { "tree": _level.tree, "crumbs": crumbs } : undefined
+            } else if (_section === "network") {
+                // VLC's services browser under Network
+                const source = _levels[1]?.source ?? ""
+                path = ["streams", "services", "source_browse"]
+                props = { "tree": _level.tree, "source_name": source }
             } else {
                 path = ["network", "browse"]; props = { "tree": _level.tree }
             }
+            break
+        case "networkRoot": path = ["streams"]; break
+        case "sourceRoot":
+            path = ["streams", "services", "source_root"]; props = { "source_name": _level.source }
             break
         case "libraryFolders": path = ["video"]; break
         case "home": case "continue": case "listenAgain": path = ["home"]; break
@@ -397,7 +440,7 @@ FocusScope {
         case "albums": path = ["music", "albums"]; break
         case "artists": path = ["music", "artists"]; break
         case "genres": path = ["music", "genres"]; break
-        case "streams": path = ["discover", "url"]; break
+        case "streams": path = ["streams", "url"]; break
         case "playlists": case "playlistMedia": path = ["video", "playlists"]; break
         }
         MainCtx.playerView = false
@@ -427,6 +470,13 @@ FocusScope {
     NetworkMediaModel {
         id: browseModel
         ctx: MainCtx
+    }
+
+    // root of a services discovery source (Podcasts, Radio)
+    NetworkDeviceModel {
+        id: sourceModel
+        ctx: MainCtx
+        sd_source: NetworkDeviceModel.CAT_INTERNET
     }
 
     VideoFolderFilter {
@@ -731,7 +781,7 @@ FocusScope {
                 visible: root._showAdd
                 leftPadding: VLCStyle.margin_xxsmall
 
-                Accessible.name: qsTr("Add a Folder to the Library")
+                Accessible.name: root._addText
 
                 background: Rectangle {
                     radius: 4 * root.dp1
@@ -749,12 +799,12 @@ FocusScope {
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: qsTr("Add")
+                        text: root._addText
                         font.pixelSize: VLCStyle.fontSize_normal
                         color: root.titleColor
                     }
                 }
-                onClicked: root._addFolder()
+                onClicked: root._addAction()
             }
 
             T.ScrollBar.vertical: Widgets.ScrollBarExt { }

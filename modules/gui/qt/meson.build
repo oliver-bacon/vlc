@@ -758,6 +758,7 @@ qml_modules += {
         'network/qml/DiscoverDisplay.qml',
         'network/qml/DiscoverUrlDisplay.qml',
         'network/qml/StreamsDisplay.qml',
+        'network/qml/NetworkSectionsDisplay.qml',
         'network/qml/NetworkAddressbar.qml',
         'network/qml/NetworkGridItem.qml',
         'network/qml/NetworkThumbnailItem.qml',
