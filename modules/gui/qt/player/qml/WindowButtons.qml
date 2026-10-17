@@ -24,8 +24,7 @@ import VLC.Style
 import VLC.Widgets as Widgets
 
 // Top right corner of the VLC Redesign player when VLC draws its own title
-// bar: minimize, picture-in-picture, maximize, fullscreen, close (video
-// notes; the Figma "Player" frame has the same buttons without PiP).
+// bar: minimize, maximize, close (fullscreen is on the control bar).
 // Replaces CSDWindowButtonSet.qml in TopBar.qml.
 Row {
     id: root
@@ -35,14 +34,15 @@ Row {
     width: implicitWidth
 
     property color color: theme.fg.primary
-    property color hoverColor: theme.bg.primary.alpha(0.5)
+    // visible on the dark and the light theme (bg.primary was invisible on
+    // the dark one)
+    property color hoverColor: theme.fg.primary.alpha(0.12)
 
     readonly property bool useWinIcons: ((MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10))
 
     readonly property bool buttonHovered: minimize.hovered || minimize.showHovered
                                           || maximize.hovered || maximize.showHovered
                                           || close.hovered || close.showHovered
-                                          || pip.hovered || fullscreen.hovered
 
     readonly property ColorContext colorContext: ColorContext {
         id: theme
@@ -143,12 +143,6 @@ Row {
         iconTxt: root.useWinIcons ? "" : VLCIcons.window_minimize
     }
 
-    PipButton {
-        id: pip
-        anchors.verticalCenter: parent.verticalCenter
-        font.pixelSize: VLCStyle.icon_banner
-    }
-
     WindowButton {
         id: maximize
         modelData: root._button(CSDButton.MaximizeRestore)
@@ -158,12 +152,6 @@ Row {
                 return maximized ? "" : ""
             return maximized ? VLCIcons.window_restore : VLCIcons.window_maximize
         }
-    }
-
-    FullscreenButton {
-        id: fullscreen
-        anchors.verticalCenter: parent.verticalCenter
-        font.pixelSize: VLCStyle.icon_banner
     }
 
     WindowButton {

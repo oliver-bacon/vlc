@@ -31,7 +31,7 @@ Row {
     width: implicitWidth
 
     property color color: theme.fg.primary
-    property color hoverColor: theme.bg.primary.alpha(0.5)
+    property color hoverColor: theme.fg.primary.alpha(0.12)
 
     readonly property bool useWinIcons: ((MainCtx.osName === MainCtx.Windows)&&(MainCtx.osVersion >= 10))
 

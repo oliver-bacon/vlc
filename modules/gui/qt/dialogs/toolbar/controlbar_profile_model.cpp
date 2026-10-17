@@ -116,6 +116,7 @@ decltype (ControlbarProfileModel::m_defaults)
                                 {
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
+                                    ControlListModel::FULLSCREEN_BUTTON,
                                     ControlListModel::AUDIO_TRACKS_BUTTON,
                                     ControlListModel::SUBTITLE_TRACKS_BUTTON,
                                     ControlListModel::EXTENDED_BUTTON,
