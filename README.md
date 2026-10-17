@@ -181,7 +181,7 @@ endorsed it.
 
 **VLC:** the [VideoLAN team and VLC contributors](THANKS), who make VLC and its Qt interface.
 
-**Redesign implementation:** Oliver Bacon ([@oliver-bacon](https://github.com/oliver-bacon), commits as thespine1337).
+**Redesign implementation:** Oliver Bacon ([@oliver-bacon](https://github.com/oliver-bacon)).
 
 **Third-party assets:** country flags from [flag-icons](https://github.com/lipis/flag-icons)
 (MIT). Details in [CREDITS.md](CREDITS.md).
