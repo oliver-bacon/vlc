@@ -37,6 +37,21 @@ constexpr int PREVIEW_WIDTH = 504;
 constexpr int CACHE_SIZE = 64;
 }
 
+QMutex SeekPreview::s_imagesLock;
+QHash<QString, QImage> SeekPreview::s_images;
+
+QImage SeekPreviewImageProvider::requestImage(const QString &id, QSize *size, const QSize &)
+{
+    QImage image;
+    {
+        QMutexLocker locker(&SeekPreview::s_imagesLock);
+        image = SeekPreview::s_images.value(id);
+    }
+    if (size)
+        *size = image.size();
+    return image;
+}
+
 struct SeekPreview::Request
 {
     SeekPreview *self;
@@ -104,6 +119,10 @@ void SeekPreview::clear()
     }
     m_cache.clear();
     m_cacheOrder.clear();
+    {
+        QMutexLocker locker(&s_imagesLock);
+        s_images.clear();
+    }
     m_wanted.clear();
     if (!m_source.isEmpty())
     {
@@ -139,9 +158,7 @@ void SeekPreview::request(const QString &mrl, qint64 timeMs)
     const auto cached = m_cache.constFind(key);
     if (cached != m_cache.constEnd())
     {
-        m_source = cached.value();
-        m_time = timeMs;
-        emit sourceChanged();
+        setSource(cached.value(), timeMs);
         return;
     }
 
@@ -209,17 +226,26 @@ void SeekPreview::onEnded(vlc_preparser_req *req, int status, picture_t *pic, vo
         if (picture_Export(VLC_OBJECT(self->m_intf), &block, nullptr, pic,
                            VLC_CODEC_PNG, PREVIEW_WIDTH, 0, false) == VLC_SUCCESS && block)
         {
-            const QByteArray png(reinterpret_cast<const char *>(block->p_buffer),
-                                 static_cast<qsizetype>(block->i_buffer));
+            const QImage image = QImage::fromData(reinterpret_cast<const uchar *>(block->p_buffer),
+                                                  static_cast<int>(block->i_buffer), "PNG");
             block_Release(block);
 
-            const QString dataUrl = QStringLiteral("data:image/png;base64,")
-                                    + QString::fromLatin1(png.toBase64());
-            const QString key = data->key;
-            const qint64 timeMs = data->timeMs;
-            QMetaObject::invokeMethod(self, [self, key, timeMs, dataUrl]() {
-                self->publish(key, timeMs, dataUrl);
-            }, Qt::QueuedConnection);
+            if (image.isNull())
+            {
+                msg_Warn(self->m_intf, "seek preview: the frame could not be read");
+            }
+            else
+            {
+                const QString key = data->key;
+                const qint64 timeMs = data->timeMs;
+                QMetaObject::invokeMethod(self, [self, key, timeMs, image]() {
+                    self->publish(key, timeMs, image);
+                }, Qt::QueuedConnection);
+            }
+        }
+        else
+        {
+            msg_Warn(self->m_intf, "seek preview: the frame could not be exported");
         }
     }
 
@@ -228,20 +254,34 @@ void SeekPreview::onEnded(vlc_preparser_req *req, int status, picture_t *pic, vo
     delete data;
 }
 
-void SeekPreview::publish(const QString &key, qint64 timeMs, const QString &dataUrl)
+void SeekPreview::publish(const QString &key, qint64 timeMs, const QImage &image)
 {
     if (!m_cache.contains(key))
     {
-        m_cache.insert(key, dataUrl);
+        const QString id = QString::number(++m_serial);
+        {
+            QMutexLocker locker(&s_imagesLock);
+            s_images.insert(id, image);
+        }
+        m_cache.insert(key, id);
         m_cacheOrder.append(key);
         while (m_cacheOrder.size() > CACHE_SIZE)
-            m_cache.remove(m_cacheOrder.takeFirst());
+        {
+            const QString oldId = m_cache.take(m_cacheOrder.takeFirst());
+            QMutexLocker locker(&s_imagesLock);
+            s_images.remove(oldId);
+        }
     }
 
     if (key != m_wanted)
         return;
 
-    m_source = dataUrl;
+    setSource(m_cache.value(key), timeMs);
+}
+
+void SeekPreview::setSource(const QString &id, qint64 timeMs)
+{
+    m_source = QStringLiteral("image://%1/%2").arg(QLatin1String(SeekPreviewImageProvider::providerId), id);
     m_time = timeMs;
     emit sourceChanged();
 }

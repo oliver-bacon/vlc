@@ -19,6 +19,8 @@
 #define SEEK_PREVIEW_HPP
 
 #include <QObject>
+#include <QImage>
+#include <QQuickImageProvider>
 #include <QString>
 #include <QHash>
 #include <QList>
@@ -35,8 +37,10 @@ struct vlc_preparser_req;
  *
  * request() asks VLC's thumbnailer for a frame of a media at a given time.
  * Only the latest request is kept: a new request cancels the previous one.
- * The result is published as a PNG data URL in `source` (for a QML Image),
- * with the time it shows in `time`. Recent results are cached.
+ * The result is published as an "image://seekpreview/<id>" URL in `source`
+ * (for a QML Image), with the time it shows in `time`. Recent results are
+ * cached. (A data: URL showed nothing on Windows, where VLC's Qt is built
+ * without its network module.)
  */
 class SeekPreview : public QObject
 {
@@ -65,7 +69,8 @@ signals:
 private:
     struct Request;
     static void onEnded(vlc_preparser_req *req, int status, struct picture_t *pic, void *data);
-    void publish(const QString &key, qint64 timeMs, const QString &dataUrl);
+    void publish(const QString &key, qint64 timeMs, const QImage &image);
+    void setSource(const QString &id, qint64 timeMs);
     bool ensurePreparser();
 
     qt_intf_t *m_intf;
@@ -77,8 +82,23 @@ private:
     QString m_source;
     qint64 m_time = -1;
     QString m_wanted;                   // cache key of the latest request
-    QHash<QString, QString> m_cache;    // key -> data URL
+    QHash<QString, QString> m_cache;    // key -> image id
     QList<QString> m_cacheOrder;
+    quint64 m_serial = 0;
+
+    friend class SeekPreviewImageProvider;
+    // images of the cache, read by the image provider (QML threads)
+    static QMutex s_imagesLock;
+    static QHash<QString, QImage> s_images;
+};
+
+/// "image://seekpreview/<id>": the frames of SeekPreview
+class SeekPreviewImageProvider : public QQuickImageProvider
+{
+public:
+    SeekPreviewImageProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
+    QImage requestImage(const QString &id, QSize *size, const QSize &requestedSize) override;
+    static constexpr const char *providerId = "seekpreview";
 };
 
 #endif // SEEK_PREVIEW_HPP
