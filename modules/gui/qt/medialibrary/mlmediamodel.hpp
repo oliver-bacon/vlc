@@ -31,6 +31,9 @@
 class MLMediaModel : public MLBaseModel
 {
     Q_OBJECT
+    /// name of a Home row: leaves out the media hidden from it
+    /// (MediaLib::homeHidden), used by New Videos and New Music
+    Q_PROPERTY(QString homeList READ homeList WRITE setHomeList NOTIFY homeListChanged FINAL)
 public:
     enum Roles
     {
@@ -55,6 +58,19 @@ public:
     virtual ~MLMediaModel() = default;
 
     Q_INVOKABLE void setMediaIsFavorite(const QModelIndex &index, bool isFavorite);
+    // as if the media were never played: leaves the history (Home, Recent),
+    // loses its play count and progress
+    Q_INVOKABLE void removeFromHistory(const QModelIndexList &indexes);
+    // "Remove from Home" on a row with homeList
+    Q_INVOKABLE void hideOnHome(const QModelIndexList &indexes);
+
+    QString homeList() const { return m_homeList; }
+    void setHomeList(const QString &list);
+
+signals:
+    void homeListChanged();
+
+public:
     Q_INVOKABLE QUrl getParentURL(const QModelIndex &index);
     Q_INVOKABLE QUrl getParentURL(const MLMedia *media) const;
     Q_INVOKABLE bool getPermissions(const MLMedia* media) const;
@@ -66,7 +82,12 @@ protected:
     void onVlcMlEvent(const MLEvent &event) override;
     std::unique_ptr<MLListCacheLoader> createMLLoader() const override;
 
+    // `op` without the media hidden from homeList (op itself without one)
+    std::shared_ptr<MLListCacheLoader::MLOp> withoutHidden(std::shared_ptr<MLListCacheLoader::MLOp> op) const;
+
 private:
+    QString m_homeList;
+
     vlc_ml_sorting_criteria_t nameToCriteria(QByteArray name) const override;
     void generateThumbnail(const MLVideo *video) const;
 

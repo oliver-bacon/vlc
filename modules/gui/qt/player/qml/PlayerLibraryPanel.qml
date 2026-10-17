@@ -718,6 +718,23 @@ FocusScope {
         }
     }
 
+    // right-click on an entry of Home (Continue Watching, Listen Again)
+    StringListMenu {
+        id: homeRowMenu
+
+        property var historyModel: null
+        property int row: -1
+        property var mediaId: null
+
+        ctx: MainCtx
+        onSelected: (index, text) => {
+            if (index === 0)
+                MainCtx.mediaLibrary.addAndPlay(mediaId)
+            else if (historyModel && row >= 0)
+                historyModel.removeFromHistory([historyModel.index(row, 0)])
+        }
+    }
+
     // ---- browser
     ColumnLayout {
         anchors {
@@ -1176,6 +1193,17 @@ FocusScope {
                                     }
                                 }
                                 onDoubleClicked: MainCtx.mediaLibrary.addAndPlay(homeRow.model.id)
+
+                                TapHandler {
+                                    acceptedButtons: Qt.RightButton
+                                    onTapped: (point) => {
+                                        homeRowMenu.historyModel = section.modelData.model
+                                        homeRowMenu.row = homeRow.model.index
+                                        homeRowMenu.mediaId = homeRow.model.id
+                                        homeRowMenu.popup(homeRow.mapToGlobal(point.position.x, point.position.y),
+                                                          [{ "text": qsTr("Play") }, { "text": qsTr("Remove from Home") }])
+                                    }
+                                }
                             }
                         }
                     }

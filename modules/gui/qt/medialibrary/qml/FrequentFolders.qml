@@ -83,7 +83,25 @@ FocusScope {
         onTriggered: root._rebuild()
     }
 
+    // folders removed with "Remove from Home"
+    function _hiddenFolders() {
+        try {
+            const list = JSON.parse(VLCConfig.uiValue("Home/HiddenFolders", "[]"))
+            return Array.isArray(list) ? list : []
+        } catch (e) {
+            return []
+        }
+    }
+
+    function _hide(folder) {
+        const list = _hiddenFolders().filter((url) => url !== folder.url)
+        list.push(folder.url)
+        VLCConfig.setUiValue("Home/HiddenFolders", JSON.stringify(list))
+        _rebuild()
+    }
+
     function _rebuild() {
+        const hidden = _hiddenFolders()
         const scores = {}
         for (let i = 0; i < rows.count; ++i) {
             const row = rows.itemAt(i)
@@ -93,7 +111,7 @@ FocusScope {
             if (!mrl.startsWith("file://"))
                 continue
             const folder = mrl.substring(0, mrl.lastIndexOf("/"))
-            if (folder.length <= "file://".length)
+            if (folder.length <= "file://".length || hidden.includes(folder))
                 continue
             scores[folder] = (scores[folder] ?? 0) + Math.max(1, Number(row.playcount) || 0)
         }
@@ -140,8 +158,10 @@ FocusScope {
                 return
             if (index === 0)
                 root._open(folder)
-            else
+            else if (index === 1)
                 root._pin(folder)
+            else
+                root._hide(folder)
         }
     }
 
@@ -227,7 +247,8 @@ FocusScope {
                         if (mouseEvent.button === Qt.RightButton) {
                             menu.folder = card.modelData
                             menu.popup(card.mapToGlobal(mouseEvent.x, mouseEvent.y),
-                                       [{ "text": qsTr("Open") }, { "text": qsTr("Pin to Sidebar") }])
+                                       [{ "text": qsTr("Open") }, { "text": qsTr("Pin to Sidebar") },
+                                        { "text": qsTr("Remove from Home") }])
                         } else {
                             root._open(card.modelData)
                         }

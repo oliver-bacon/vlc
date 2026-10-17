@@ -37,6 +37,11 @@ NativeMenu {
 
     property bool showPlayAsAudioAction: false
 
+    // "Remove from Home" on a row of Home: "history" removes the media from
+    // the history (Continue Watching, Listen Again), "hide" hides it from
+    // the row (model.homeList: New Videos, New Music)
+    property string removeFromHome: ""
+
     // This is only applicable when the model is `MLAudioModel`:
     property bool showPlayAsAlbumAction: implicitShowPlayAsAlbumAction
     property bool implicitShowPlayAsAlbumAction: !showPlayAsAudioAction
@@ -251,6 +256,16 @@ NativeMenu {
                 return root._folderMenu && showInformationAvailable(dataList, options, indexes)
             }
         }, {
+            "text": qsTr("Remove from Home"),
+            "icon": "file_remove_from_home",
+            "action": function(dataList, options, indexes) {
+                if (root.removeFromHome === "history")
+                    model.removeFromHistory(indexes)
+                else
+                    model.hideOnHome(indexes)
+            },
+            "visible": root.removeFromHome !== ""
+     }, {
             "text": qsTr("More"),
             "children": _moreActions
         }

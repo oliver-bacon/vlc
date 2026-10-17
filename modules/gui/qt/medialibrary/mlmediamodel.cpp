@@ -23,9 +23,104 @@
 #include "mlhelper.hpp"
 #include <QFile>
 
+#include <vector>
+
 MLMediaModel::MLMediaModel(QObject *par)
     : MLBaseModel(par)
 {
+    connect(this, &MLBaseModel::mlChanged, this, [this]() {
+        if (!m_mediaLib)
+            return;
+        connect(m_mediaLib, &MediaLib::homeHiddenChanged, this, [this](const QString &list) {
+            // a full reset: the loader keeps the hidden media it was made with
+            if (!m_homeList.isEmpty() && list == m_homeList)
+                resetCache();
+        });
+    });
+}
+
+void MLMediaModel::setHomeList(const QString &list)
+{
+    if (m_homeList == list)
+        return;
+    m_homeList = list;
+    emit homeListChanged();
+    resetCache();
+}
+
+void MLMediaModel::hideOnHome(const QModelIndexList &indexes)
+{
+    assert(m_mediaLib != nullptr);
+
+    QVector<int64_t> ids;
+    for (const QModelIndex &index : indexes)
+    {
+        const auto media = static_cast<MLMedia *>(item(index.row()));
+        if (media)
+            ids.push_back(media->getId().id);
+    }
+    m_mediaLib->hideOnHome(m_homeList, ids);
+}
+
+namespace {
+
+// Loads through another loader and drops the hidden media. Home rows load
+// from the start (offset 0): one more item is asked for every hidden one.
+struct WithoutHiddenOp : public MLListCacheLoader::MLOp
+{
+    WithoutHiddenOp(const MLBaseModel &model, std::shared_ptr<MLListCacheLoader::MLOp> op,
+                    QSet<int64_t> hidden)
+        : MLOp(model), m_op(std::move(op)), m_hidden(std::move(hidden))
+    {}
+
+    size_t count(vlc_medialibrary_t *ml, const vlc_ml_query_params_t *queryParams) const override
+    {
+        const size_t count = m_op->count(ml, queryParams);
+        return count > size_t(m_hidden.size()) ? count - m_hidden.size() : 0;
+    }
+
+    std::vector<std::unique_ptr<MLItem>> load(vlc_medialibrary_t *ml, const vlc_ml_query_params_t *queryParams) const override
+    {
+        vlc_ml_query_params_t params = queryParams ? *queryParams : vlc_ml_query_params_create();
+        const uint32_t wanted = params.i_nbResults;
+        if (wanted > 0)
+            params.i_nbResults = wanted + m_hidden.size();
+
+        std::vector<std::unique_ptr<MLItem>> items = m_op->load(ml, &params);
+        std::vector<std::unique_ptr<MLItem>> res;
+        for (auto &item : items)
+        {
+            if (m_hidden.contains(item->getId().id))
+                continue;
+            if (wanted > 0 && res.size() >= wanted)
+                break;
+            res.push_back(std::move(item));
+        }
+        return res;
+    }
+
+    std::unique_ptr<MLItem> loadItemById(vlc_medialibrary_t *ml, MLItemId itemId) const override
+    {
+        if (m_hidden.contains(itemId.id))
+            return nullptr;
+        return m_op->loadItemById(ml, itemId);
+    }
+
+    std::shared_ptr<MLListCacheLoader::MLOp> m_op;
+    QSet<int64_t> m_hidden;
+};
+
+} // namespace
+
+std::shared_ptr<MLListCacheLoader::MLOp>
+MLMediaModel::withoutHidden(std::shared_ptr<MLListCacheLoader::MLOp> op) const
+{
+    if (m_homeList.isEmpty() || !m_mediaLib)
+        return op;
+    QSet<int64_t> hidden = m_mediaLib->homeHidden(m_homeList);
+    if (hidden.isEmpty())
+        return op;
+    return std::make_shared<WithoutHiddenOp>(*this, std::move(op), std::move(hidden));
 }
 
 void MLMediaModel::setMediaIsFavorite(const QModelIndex &index, bool isFavorite)
@@ -44,6 +139,28 @@ void MLMediaModel::setMediaIsFavorite(const QModelIndex &index, bool isFavorite)
     media->setIsFavorite(isFavorite);
 
     emit dataChanged(index, index, { MEDIA_IS_FAVORITE });
+}
+
+void MLMediaModel::removeFromHistory(const QModelIndexList &indexes)
+{
+    assert(m_mediaLib != nullptr);
+
+    std::vector<int64_t> ids;
+    for (const QModelIndex &index : indexes)
+    {
+        const auto media = static_cast<MLMedia *>(item(index.row()));
+        if (media)
+            ids.push_back(media->getId().id);
+    }
+    if (ids.empty())
+        return;
+
+    // on ML thread; the history models reload on VLC_ML_EVENT_HISTORY_CHANGED
+    m_mediaLib->runOnMLThread(this, [ids](vlc_medialibrary_t *ml)
+    {
+        for (const int64_t id : ids)
+            vlc_ml_media_remove_from_history(ml, id);
+    });
 }
 
 QUrl MLMediaModel::getParentURL(const QModelIndex &index) {

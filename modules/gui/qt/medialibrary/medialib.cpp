@@ -22,6 +22,7 @@
 #include <QDir>
 #include <QImage>
 #include <QSet>
+#include <QSettings>
 #include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
@@ -36,6 +37,49 @@
 #include <utility>
 
 #include <QQmlEngine>
+
+static QString homeHiddenKey(const QString& list)
+{
+    return QStringLiteral("HomeHidden/") + list;
+}
+
+QSet<int64_t> MediaLib::homeHidden(const QString& list) const
+{
+    if (list.isEmpty())
+        return {};
+    auto it = m_homeHidden.find(list);
+    if (it == m_homeHidden.end())
+    {
+        QSet<int64_t> ids;
+        const QStringList saved = m_intf->mainSettings->value(homeHiddenKey(list)).toStringList();
+        for (const QString& id : saved)
+        {
+            bool ok = false;
+            const qlonglong value = id.toLongLong(&ok);
+            if (ok)
+                ids.insert(value);
+        }
+        it = m_homeHidden.insert(list, ids);
+    }
+    return *it;
+}
+
+void MediaLib::hideOnHome(const QString& list, const QVector<int64_t>& ids)
+{
+    if (list.isEmpty() || ids.isEmpty())
+        return;
+    QSet<int64_t> hidden = homeHidden(list);
+    for (const int64_t id : ids)
+        hidden.insert(id);
+    m_homeHidden[list] = hidden;
+
+    QStringList saved;
+    for (const int64_t id : hidden)
+        saved.append(QString::number(id));
+    m_intf->mainSettings->setValue(homeHiddenKey(list), saved);
+
+    emit homeHiddenChanged(list);
+}
 
 MediaLib::MediaLib(qt_intf_t *_intf, vlc::playlist::PlaylistController* playlistController, QObject *_parent)
     : QObject( _parent )

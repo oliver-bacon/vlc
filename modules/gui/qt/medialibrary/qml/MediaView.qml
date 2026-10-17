@@ -58,6 +58,9 @@ MainViewLoader {
 
     property bool interactive: true // false, when as a row
 
+    // "Remove from Home" in the context menu (see MLContextMenu)
+    property string removeFromHome: ""
+
     property bool reuseItems: true
 
     property bool seeAllButtonVisible: model.maximumCount > model.count
@@ -118,6 +121,7 @@ MainViewLoader {
         id: contextMenu
 
         model: root.model
+        removeFromHome: root.removeFromHome
     }
 
     Component {

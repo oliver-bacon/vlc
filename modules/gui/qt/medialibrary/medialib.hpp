@@ -21,6 +21,7 @@
 #include <memory>
 
 #include <QHash>
+#include <QSet>
 #include <QVector>
 
 #include "qt.hpp"
@@ -59,6 +60,12 @@ public:
     ~MediaLib();
 
     Q_INVOKABLE static MLItemId deserializeMlItemIdFromString(const QString& serialized_id);
+
+    /// Media hidden from a row of Home ("Remove from Home" on rows that are
+    /// not the history, e.g. New Videos); `list` names the row. Kept in the
+    /// interface settings, group HomeHidden.
+    QSet<int64_t> homeHidden(const QString& list) const;
+    void hideOnHome(const QString& list, const QVector<int64_t>& ids);
 
     Q_INVOKABLE void addToPlaylist(const MLItemId &itemId, const QStringList &options = {});
     Q_INVOKABLE void addToPlaylist(const QString& mrl, const QStringList &options = {});
@@ -238,6 +245,7 @@ signals:
     /// (its picture) or its state must be read again
     void playlistChanged(const MLItemId& playlistId);
     void currentPlaylistNameChanged();
+    void homeHiddenChanged(const QString& list);
 
 private:
     static void onMediaLibraryEvent( void* data, const vlc_ml_event_t* event );
@@ -245,6 +253,8 @@ private:
     void rememberPlaylistOrigins(const QVector<vlc::playlist::Media>& medias,
                                  const MLPlaylistOrigins& origins);
     void updateCurrentPlaylistName();
+
+    mutable QHash<QString, QSet<int64_t>> m_homeHidden;
 
 private:
     qt_intf_t* m_intf;

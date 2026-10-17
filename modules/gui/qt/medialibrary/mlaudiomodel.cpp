@@ -131,7 +131,7 @@ void MLAudioModel::onVlcMlEvent(const MLEvent &event)
 std::unique_ptr<MLListCacheLoader>
 MLAudioModel::createMLLoader() const
 {
-    return std::make_unique<MLListCacheLoader>(m_mediaLib, std::make_shared<MLAudioModel::Loader>(*this));
+    return std::make_unique<MLListCacheLoader>(m_mediaLib, withoutHidden(std::make_shared<MLAudioModel::Loader>(*this)));
 }
 
 size_t MLAudioModel::Loader::count(vlc_medialibrary_t* ml, const vlc_ml_query_params_t* queryParams) const

@@ -975,6 +975,7 @@ libqt_plugin_la_RES = \
 	pixmaps/menu/figma/file_go_to_source.svg \
 	pixmaps/menu/figma/file_mark_as_watched.svg \
 	pixmaps/menu/figma/file_play.svg \
+	pixmaps/menu/figma/file_remove_from_home.svg \
 	pixmaps/menu/figma/eq_classical.svg \
 	pixmaps/menu/figma/eq_club.svg \
 	pixmaps/menu/figma/eq_dance.svg \

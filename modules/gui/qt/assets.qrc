@@ -74,6 +74,7 @@
         <file alias="figma/file_go_to_source.svg">pixmaps/menu/figma/file_go_to_source.svg</file>
         <file alias="figma/file_mark_as_watched.svg">pixmaps/menu/figma/file_mark_as_watched.svg</file>
         <file alias="figma/file_play.svg">pixmaps/menu/figma/file_play.svg</file>
+        <file alias="figma/file_remove_from_home.svg">pixmaps/menu/figma/file_remove_from_home.svg</file>
         <file alias="figma/eq_classical.svg">pixmaps/menu/figma/eq_classical.svg</file>
         <file alias="figma/eq_club.svg">pixmaps/menu/figma/eq_club.svg</file>
         <file alias="figma/eq_dance.svg">pixmaps/menu/figma/eq_dance.svg</file>

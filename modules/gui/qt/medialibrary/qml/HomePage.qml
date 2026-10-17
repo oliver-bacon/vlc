@@ -251,6 +251,7 @@ Widgets.PageExt {
                     model: continueWatchingRow.model
 
                     showPlayAsAudioAction: true
+                    removeFromHome: "history"
                 }
 
                 onActiveFocusChanged: {
@@ -314,6 +315,8 @@ Widgets.PageExt {
                 listCoverRadius: root.listCoverRadius
 
                 Navigation.parentItem: mediaRows
+
+                removeFromHome: "history"
 
                 model: MLRecentAudioModel {
                     ml: MediaLib
@@ -479,6 +482,8 @@ Widgets.PageExt {
                 model: MLVideoModel {
                     ml: MediaLib
 
+                    homeList: "newVideos"
+
                     sortCriteria: root.sort.criteria || "insertion"
                     sortOrder: root.sort.order
                     searchPattern: root.search.pattern
@@ -491,6 +496,7 @@ Widgets.PageExt {
                     model: newVideoRow.model
 
                     showPlayAsAudioAction: true
+                    removeFromHome: "hide"
                 }
 
                 onActiveFocusChanged: {
@@ -556,8 +562,12 @@ Widgets.PageExt {
 
                 Navigation.parentItem: mediaRows
 
+                removeFromHome: "hide"
+
                 model: MLAudioModel {
                     ml: MediaLib
+
+                    homeList: "newMusic"
 
                     sortCriteria: root.sort.criteria || "insertion"
                     sortOrder: root.sort.order
