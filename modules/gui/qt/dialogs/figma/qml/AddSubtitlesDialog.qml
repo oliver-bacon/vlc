@@ -29,8 +29,11 @@ import VLC.Dialogs
 //    file of the same name found in the subtitle folder (path box)
 //  - To This File: pick one or more subtitle files for one video
 // Saved subtitles are attached to the videos in the media library, so they
-// are loaded every time. "From OpenSubtitles" of the design is not
-// available yet.
+// are loaded every time (and the playing media gets them at once).
+//  - To This Playlist: the videos of a library playlist, or of the queue
+//    when the dialog is opened from the player
+//  - From Link: one subtitle file on the web, for one video
+// "From OpenSubtitles" of the design is not available yet.
 FigmaDialog {
     id: root
 
@@ -51,12 +54,17 @@ FigmaDialog {
     property string mediaFolder: ""     // folder of the videos
     property string subtitleFolder: ""  // folder the subtitles come from
     property bool fileAvailable: false
+    property var playlistMedia: []      // videos offered by "To This Playlist"
+    property string origin: "computer"  // "computer" or "link"
+    property string linkUrl: ""
+    readonly property bool _linkValid: /^(https?|ftp):\/\/\S+$/i.test(linkUrl.trim())
 
     property var _rows: []              // folder mode: { video, subtitle, checked }
     property var _subtitles: []         // file mode: { name, checked }
 
     saveEnabled: MainCtx.mediaLibraryAvailable
-                 && (mode !== "file" ? _rows.some((r) => r.checked && r.subtitle)
+                 && (origin === "link" ? (mode === "file" && _linkValid)
+                     : mode !== "file" ? _rows.some((r) => r.checked && r.subtitle)
                                        : _subtitles.some((s) => s.checked))
 
     function _folderOf(url) {
@@ -77,11 +85,15 @@ FigmaDialog {
     // args: { mode: "file", mrl: <video URL> } or { mode: "folder", mrl: <folder URL> }
     // args: { mode: "file", mrl: <video URL> }, { mode: "folder", mrl: <folder URL> }
     //       or { mode: "list", mrls: [<video URLs>] }; kind: "subtitles" or "audio"
+    //       queue: [<video URLs>] (player: the queue, for "To This Playlist")
     function reset(args) {
         kind = args?.kind ?? "subtitles"
         mode = args?.mode ?? "folder"
+        origin = "computer"
+        linkUrl = ""
         fileAvailable = (mode === "file")
         listMedia = (mode === "list") ? (args.mrls ?? []).map(String) : []
+        playlistMedia = (mode === "list") ? listMedia : (args?.queue ?? []).map(String)
         mediaUrl = fileAvailable ? String(args.mrl) : ""
         mediaFolder = fileAvailable ? _folderOf(args.mrl)
                     : mode === "list" ? (listMedia.length > 0 ? _folderOf(listMedia[0]) : "")
@@ -114,7 +126,10 @@ FigmaDialog {
     onAccepted: {
         const pairs = []
         const audio = (kind === "audio")
-        if (mode === "folder" || mode === "list") {
+        if (origin === "link") {
+            if (mode === "file" && _linkValid)
+                pairs.push({ "media": mediaUrl, "subtitle": linkUrl.trim(), "audio": audio })
+        } else if (mode === "folder" || mode === "list") {
             for (let i = 0; i < _rows.length; ++i) {
                 const r = _rows[i]
                 if (r.checked && r.subtitle)
@@ -137,34 +152,112 @@ FigmaDialog {
         width: parent.width
         spacing: VLCStyle.dp(10, VLCStyle.scale)
 
+        // where the subtitles apply
         HeaderBox {
             Layout.preferredWidth: VLCStyle.dp(166, VLCStyle.scale)
             text: root.mode === "list" ? qsTr("To This Playlist")
                 : root.mode === "folder" ? qsTr("To This Folder") : qsTr("To This File")
             chevron: true
-            onClicked: if (root.mode !== "list") targetMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)), [
-                { "text": qsTr("To This Folder"), "checked": root.mode === "folder" },
-                { "text": qsTr("To This File"), "checked": root.mode === "file", "enabled": root.fileAvailable }
+            onClicked: targetMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)), [
+                { "text": qsTr("To This File"), "checked": root.mode === "file", "enabled": root.fileAvailable },
+                { "text": qsTr("To This Folder"), "checked": root.mode === "folder",
+                  "enabled": root.origin !== "link" && (root.fileAvailable || root.mode === "folder") },
+                { "text": qsTr("To This Playlist"), "checked": root.mode === "list",
+                  "enabled": root.origin !== "link" && root.playlistMedia.length > 0 }
             ])
 
             StringListMenu {
                 id: targetMenu
                 ctx: MainCtx
                 onSelected: (index, _) => {
-                    root.mode = (index === 0) ? "folder" : "file"
+                    if (index === 0) {
+                        root.mode = "file"
+                        root.mediaFolder = root._folderOf(root.mediaUrl)
+                    } else if (index === 1) {
+                        if (root.fileAvailable)
+                            root.mediaFolder = root._folderOf(root.mediaUrl)
+                        root.mode = "folder"
+                    } else {
+                        root.mode = "list"
+                        root.listMedia = root.playlistMedia
+                        root.mediaFolder = root.listMedia.length > 0 ? root._folderOf(root.listMedia[0]) : ""
+                    }
+                    root.subtitleFolder = root.mediaFolder
                     root._refresh()
                 }
             }
         }
 
+        // where the subtitles come from
         HeaderBox {
             Layout.preferredWidth: VLCStyle.dp(166, VLCStyle.scale)
-            text: qsTr("From Computer")
+            text: root.origin === "link" ? qsTr("From Link") : qsTr("From Computer")
             chevron: true
+            onClicked: originMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)), [
+                { "text": qsTr("From Computer"), "checked": root.origin === "computer" },
+                { "text": qsTr("From OpenSubtitles (not available yet)"), "enabled": false },
+                { "text": qsTr("From Link"), "checked": root.origin === "link", "enabled": root.fileAvailable }
+            ])
+
+            StringListMenu {
+                id: originMenu
+                ctx: MainCtx
+                onSelected: (index, _) => {
+                    if (index === 2) {
+                        // one link is one subtitle file: for one video
+                        root.origin = "link"
+                        if (root.mode !== "file") {
+                            root.mode = "file"
+                            root.mediaFolder = root._folderOf(root.mediaUrl)
+                            root.subtitleFolder = root.mediaFolder
+                            root._refresh()
+                        }
+                    } else if (index === 0) {
+                        root.origin = "computer"
+                    }
+                }
+            }
+        }
+
+        // link of the subtitle file
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: VLCStyle.dp(34, VLCStyle.scale)
+            visible: root.origin === "link"
+            radius: VLCStyle.dp(6, VLCStyle.scale)
+            color: root.dark ? "#151515" : "#DEDEDE"
+            border.width: linkField.activeFocus ? 1 : 0
+            border.color: root.accentColor
+
+            T.TextField {
+                id: linkField
+                anchors.fill: parent
+                leftPadding: VLCStyle.dp(10, VLCStyle.scale)
+                rightPadding: VLCStyle.dp(10, VLCStyle.scale)
+                verticalAlignment: TextInput.AlignVCenter
+                color: root.dark ? "#C6C6C6" : root.textColor
+                font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
+                background: null
+                text: root.linkUrl
+                onTextEdited: root.linkUrl = text
+
+                // the templates text field draws no placeholder
+                Text {
+                    anchors.fill: parent
+                    leftPadding: linkField.leftPadding
+                    verticalAlignment: Text.AlignVCenter
+                    visible: linkField.text === ""
+                    text: root.kind === "audio" ? qsTr("https://… link of the audio file")
+                                                : qsTr("https://… link of the subtitle file")
+                    color: root.dark ? "#6B6B6B" : "#8F8F8F"
+                    font: linkField.font
+                }
+            }
         }
 
         HeaderBox {
             Layout.fillWidth: true
+            visible: root.origin !== "link"
             iconText: VLCIcons.topbar_network
             text: decodeURIComponent(root.subtitleFolder.replace(/^file:\/\//, "")).split("/").filter((p) => p).slice(-4).join(" / ")
             onClicked: {
@@ -249,7 +342,7 @@ FigmaDialog {
 
     ListView {
         anchors.fill: parent
-        visible: root.mode === "file"
+        visible: root.mode === "file" && root.origin !== "link"
         clip: true
         spacing: VLCStyle.dp(3, VLCStyle.scale)
         boundsBehavior: Flickable.StopAtBounds
@@ -294,9 +387,23 @@ FigmaDialog {
         }
     }
 
+    // From Link: what is saved
     Text {
         anchors.centerIn: parent
-        visible: (root.mode !== "file" ? root._rows.length : root._subtitles.length) === 0
+        width: parent.width * 0.8
+        visible: root.origin === "link"
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.Wrap
+        text: (root.kind === "audio" ? qsTr("The audio track at this link is added to %1.")
+                                     : qsTr("The subtitles at this link are added to %1."))
+              .arg(root._fileName(root.mediaUrl))
+        color: root.textColor
+        font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
+    }
+
+    Text {
+        anchors.centerIn: parent
+        visible: root.origin !== "link" && (root.mode !== "file" ? root._rows.length : root._subtitles.length) === 0
         text: root.mode !== "file" ? qsTr("No videos found.")
             : root.kind === "audio" ? qsTr("No audio files found. Click the folder above to choose where to look.")
                                     : qsTr("No subtitle files found. Click the folder above to choose where to look.")

@@ -30,6 +30,7 @@
 #include "mlhelper.hpp"
 #include "mlcustomcover.hpp"
 #include "playlist/playlist_controller.hpp"
+#include "player/player_controller.hpp"
 #include "util/shared_input_item.hpp"
 
 #include <utility>
@@ -584,6 +585,15 @@ void MediaLib::addExternalSubtitles(const QVariantList& pairs)
         const QByteArray subtitle = toMrl(map.value("subtitle"));
         if (!media.isEmpty() && !subtitle.isEmpty())
             list.push_back({ media, subtitle, map.value("audio").toBool() });
+
+        // the media that is playing gets the track at once
+        PlayerController* player = m_intf->p_mainPlayerController;
+        if (player && !media.isEmpty() && !subtitle.isEmpty()
+            && toMrl(player->getUrl().toString()) == media)
+        {
+            player->AddAssociatedMedia(map.value("audio").toBool() ? AUDIO_ES : SPU_ES,
+                                       QString::fromUtf8(subtitle), true, true, false);
+        }
     }
     if (list.empty())
         return;

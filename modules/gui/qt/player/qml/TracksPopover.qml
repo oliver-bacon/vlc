@@ -22,6 +22,7 @@ import QtQuick.Templates as T
 import VLC.Dialogs
 import VLC.MainInterface
 import VLC.Player
+import VLC.Playlist
 import VLC.Style
 
 // Track popover of the VLC Redesign Figma file (subtitle button of the
@@ -149,9 +150,27 @@ T.Popup {
                 Choice {
                     visible: root.currentTab === 2
                     label: qsTr("Add Subtitle File...")
+                    // the Add Subtitles dialog (video 5:00): this file, its
+                    // folder or the queue; local files only
                     onClicked: {
                         root.close()
-                        DialogsProvider.loadSubtitlesFile()
+                        const url = String(Player.url)
+                        if (!url.startsWith("file:")) {
+                            DialogsProvider.loadSubtitlesFile()
+                            return
+                        }
+                        const queue = []
+                        for (let i = 0; i < queueModel.count; ++i) {
+                            const itemUrl = String(queueModel.itemAt(i).url)
+                            if (itemUrl.startsWith("file:"))
+                                queue.push(itemUrl)
+                        }
+                        DialogsProvider.addSubtitlesDialog({ "mode": "file", "mrl": url, "queue": queue })
+                    }
+
+                    PlaylistListModel {
+                        id: queueModel
+                        playlist: MainPlaylistController.playlist
                     }
                 }
 
