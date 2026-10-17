@@ -13,6 +13,19 @@ bool NavigationHistory::isPreviousEmpty()
     return m_history.size() <= 1;
 }
 
+bool NavigationHistory::isNextEmpty() const
+{
+    return m_forward.empty();
+}
+
+void NavigationHistory::clearForward()
+{
+    if (m_forward.empty())
+        return;
+    m_forward.clear();
+    emit nextEmptyChanged(true);
+}
+
 void NavigationHistory::push(QStringList path, const QVariantMap& properties, Qt::FocusReason focusReason)
 {
     auto prop = std::make_unique<QQmlPropertyMap>();
@@ -21,6 +34,7 @@ void NavigationHistory::push(QStringList path, const QVariantMap& properties, Qt
 
     m_history.emplace_back(path, std::move(prop));
 
+    clearForward();
     updateCurrent();
 
     if (m_history.size() == 2)
@@ -33,6 +47,7 @@ void NavigationHistory::push(QStringList path, Qt::FocusReason focusReason)
 {
     m_history.emplace_back(path, std::make_unique<QQmlPropertyMap>());
 
+    clearForward();
     updateCurrent();
 
     if (m_history.size() == 2)
@@ -139,7 +154,15 @@ void NavigationHistory::previous(Qt::FocusReason reason)
     if (m_history.size() == 1)
         return;
 
+    const bool wasNextEmpty = m_forward.empty();
+
+    // the player is not a page to go forward to (nothing may be playing)
+    if (m_history.back().first.value(0) != QLatin1String("player"))
+        m_forward.push_back(std::move(m_history.back()));
     m_history.pop_back();
+
+    if (wasNextEmpty && !m_forward.empty())
+        emit nextEmptyChanged(false);
 
     while (!isNodeValid(*m_history.back().second)) {
         m_history.pop_back();
@@ -149,6 +172,30 @@ void NavigationHistory::previous(Qt::FocusReason reason)
 
     if (m_history.size() == 1)
         emit previousEmptyChanged(true);
+
+    updateCurrent();
+    emit navigate(reason);
+}
+
+void NavigationHistory::next(Qt::FocusReason reason)
+{
+    // drop pages that can not be shown again
+    while (!m_forward.empty() && !isNodeValid(*m_forward.back().second))
+        m_forward.pop_back();
+
+    if (m_forward.empty())
+    {
+        emit nextEmptyChanged(true);
+        return;
+    }
+
+    m_history.push_back(std::move(m_forward.back()));
+    m_forward.pop_back();
+
+    if (m_history.size() == 2)
+        emit previousEmptyChanged(false);
+    if (m_forward.empty())
+        emit nextEmptyChanged(true);
 
     updateCurrent();
     emit navigate(reason);

@@ -153,33 +153,9 @@ T.ToolBar {
 
                     Navigation.parentItem: navigationButtons
                     Navigation.leftItem: menuBtn.visible ? menuBtn : null
-                    Navigation.rightItem: historyBack
                 }
 
-                Widgets.IconToolButton {
-                    id: historyBack
-
-                    font.pixelSize: VLCStyle.icon_banner
-                    text: VLCIcons.back
-                    description: qsTr("Previous")
-
-                    AccessibleCompat.id: "historyBackButton"
-
-                    height: VLCStyle.bannerButton_height
-                    width: VLCStyle.bannerButton_width
-
-                    onClicked: History.previous()
-                    enabled: !History.previousEmpty
-
-                    onEnabledChanged: {
-                        if (historyBack.activeFocus)
-                            navigationVisibilty.focus = true
-                    }
-
-                    Navigation.parentItem: navigationButtons
-                    Navigation.leftItem: navigationVisibilty
-                    Navigation.rightItem: playlistBtn
-                }
+                // VLC Redesign: back / forward are in the page header (PageExt.qml)
             }
         }
 
@@ -241,7 +217,7 @@ T.ToolBar {
                     plListView: root.plListView
 
                     Navigation.parentItem: playqueueButtonsTop
-                    Navigation.leftItem: historyBack
+                    Navigation.leftItem: navigationVisibilty
 
                     onClicked:  root.togglePlayqueueVisibility()
                 }

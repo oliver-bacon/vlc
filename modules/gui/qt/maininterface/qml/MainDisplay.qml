@@ -1208,8 +1208,13 @@ FocusScope {
         /// handles mouse navigation buttons
         z:9
         anchors.fill: parent
-        acceptedButtons: Qt.BackButton
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
         cursorShape: undefined
-        onClicked: History.previous()
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.ForwardButton)
+                History.next()
+            else
+                History.previous()
+        }
     }
 }

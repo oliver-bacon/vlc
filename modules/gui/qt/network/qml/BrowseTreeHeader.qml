@@ -73,6 +73,10 @@ T.Pane {
 
         anchors.fill: parent
 
+        Widgets.HistoryButtons {
+            Layout.alignment: Qt.AlignVCenter
+        }
+
         NetworkAddressbar {
             id: networkAddressbar
 

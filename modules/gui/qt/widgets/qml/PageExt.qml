@@ -187,6 +187,10 @@ T.Page {
 
             anchors.fill: parent
 
+            HistoryButtons {
+                Layout.alignment: Qt.AlignVCenter
+            }
+
             SubtitleLabel {
                 id: label
 
