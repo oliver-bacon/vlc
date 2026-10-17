@@ -23,6 +23,7 @@
 #include <QImage>
 #include <QSet>
 #include <QSettings>
+#include <QTimer>
 #include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
@@ -93,6 +94,18 @@ MediaLib::MediaLib(qt_intf_t *_intf, vlc::playlist::PlaylistController* playlist
     m_event_cb.reset( vlc_ml_event_register_callback( m_ml, MediaLib::onMediaLibraryEvent,
                                                       this ) );
     m_runner = new ThreadRunner();
+
+    // music played outside the library folders (or a track the library
+    // found no picture for) gets the artwork the player found for it, so
+    // that Home (Listen Again) and the music views show it
+    if (PlayerController* player = m_intf->p_mainPlayerController)
+    {
+        connect(player, &PlayerController::currentMetaChanged, this, &MediaLib::storePlayerArtwork);
+        connect(player, &PlayerController::playingStateChanged, this, [this](PlayerController::PlayingState state) {
+            if (state == PlayerController::PLAYING_STATE_STOPPED)
+                flushPlayerArtwork();
+        });
+    }
 
     // "Playlist Name" item of the player bar
     connect(m_playlistController, &vlc::playlist::PlaylistController::currentItemChanged,
@@ -652,6 +665,84 @@ void MediaLib::addExternalSubtitles(const QVariantList& pairs)
                 vlc_ml_media_add_external_mrl(ml, item->i_id, pair.file.constData(),
                                               pair.audio ? VLC_ML_FILE_TYPE_SOUNDTRACK : VLC_ML_FILE_TYPE_SUBTITLE);
         }
+    });
+}
+
+void MediaLib::storePlayerArtwork(input_item_t* item)
+{
+    if (!item)
+        return;
+    // the URL and the artwork of the same item (the player's own getters
+    // change at different moments when the next media starts)
+    QUrl url;
+    QUrl artwork;
+    {
+        char* uri = input_item_GetURI(item);
+        char* art = input_item_GetArtworkURL(item);
+        url = QUrl(qfu(uri));
+        artwork = QUrl(qfu(art));
+        free(uri);
+        free(art);
+    }
+
+    // the previous media is in the media library now if it was played from
+    // outside the library folders (it is added when its playback ends)
+    if (!m_pendingArtwork.first.isEmpty() && m_pendingArtwork.first != url)
+        flushPlayerArtwork();
+
+    // only pictures that stay: VLC's art cache or a cover file
+    if (url.isEmpty() || !artwork.isLocalFile())
+        return;
+    const QString key = url.toString() + QLatin1Char('\n') + artwork.toString();
+    if (key == m_storedArtwork)
+        return;
+    m_storedArtwork = key;
+    m_pendingArtwork = { url, artwork };
+    storeArtwork(url, artwork, -1);
+}
+
+void MediaLib::flushPlayerArtwork()
+{
+    if (m_pendingArtwork.first.isEmpty())
+        return;
+    storeArtwork(m_pendingArtwork.first, m_pendingArtwork.second, 0);
+    m_pendingArtwork = {};
+}
+
+void MediaLib::storeArtwork(const QUrl& url, const QUrl& artwork, int attempt)
+{
+    struct Ctx {
+        bool found = false;
+        bool stored = false;
+    };
+
+    runOnMLThread<Ctx>(this,
+    //ML thread
+    [mrl = url.toString(QUrl::FullyEncoded).toUtf8(),
+     art = artwork.toString(QUrl::FullyEncoded).toUtf8()](vlc_medialibrary_t* ml, Ctx& ctx){
+        ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media_by_mrl(ml, mrl.constData()) };
+        if (!media)
+            return;
+        ctx.found = true;
+        if (media->i_type != VLC_ML_MEDIA_TYPE_AUDIO)
+            return;
+        if (media->thumbnails[VLC_ML_THUMBNAIL_SMALL].i_status == VLC_ML_THUMBNAIL_STATUS_AVAILABLE)
+            return;
+        ctx.stored = vlc_ml_media_set_thumbnail(ml, media->i_id, art.constData(),
+                                                VLC_ML_THUMBNAIL_SMALL) == VLC_SUCCESS;
+    },
+    //UI thread
+    [this, url, artwork, attempt](quint64, Ctx& ctx){
+        if (ctx.stored)
+            emit mediaArtworkStored();
+        if (ctx.found && m_pendingArtwork.first == url)
+            m_pendingArtwork = {};
+        // attempt -1: while it plays (flushPlayerArtwork() tries again when
+        // it ends); then a few more times while the media library adds it
+        if (!ctx.found && attempt >= 0 && attempt < 5)
+            QTimer::singleShot(2000, this, [this, url, artwork, attempt]() {
+                storeArtwork(url, artwork, attempt + 1);
+            });
     });
 }
 

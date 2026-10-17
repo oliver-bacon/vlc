@@ -246,6 +246,8 @@ signals:
     void playlistChanged(const MLItemId& playlistId);
     void currentPlaylistNameChanged();
     void homeHiddenChanged(const QString& list);
+    /// a media got the artwork found by the player (storePlayerArtwork)
+    void mediaArtworkStored();
 
 private:
     static void onMediaLibraryEvent( void* data, const vlc_ml_event_t* event );
@@ -253,6 +255,11 @@ private:
     void rememberPlaylistOrigins(const QVector<vlc::playlist::Media>& medias,
                                  const MLPlaylistOrigins& origins);
     void updateCurrentPlaylistName();
+    void storePlayerArtwork(input_item_t* item);
+    void flushPlayerArtwork();
+    QPair<QUrl, QUrl> m_pendingArtwork; // media, artwork
+    void storeArtwork(const QUrl& url, const QUrl& artwork, int attempt);
+    QString m_storedArtwork;
 
     mutable QHash<QString, QSet<int64_t>> m_homeHidden;
 

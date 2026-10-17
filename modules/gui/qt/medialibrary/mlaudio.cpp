@@ -35,6 +35,17 @@ MLAudio::MLAudio(vlc_medialibrary_t* _ml, const vlc_ml_media_t *_data)
         if (album) {
             m_albumId =  album->i_id;
             m_albumTitle =  album->psz_title;
+
+            // the album's artwork when the track has none of its own (the
+            // media library gives it to the album only in some cases, e.g.
+            // a cover file next to tracks that were added before it)
+            const vlc_ml_thumbnail_t &albumThumbnail = album->thumbnails[VLC_ML_THUMBNAIL_SMALL];
+            if (m_smallThumbnail.status != VLC_ML_THUMBNAIL_STATUS_AVAILABLE
+                && albumThumbnail.i_status == VLC_ML_THUMBNAIL_STATUS_AVAILABLE
+                && albumThumbnail.psz_mrl != nullptr)
+            {
+                m_smallThumbnail = { qfu(albumThumbnail.psz_mrl), albumThumbnail.i_status };
+            }
         }
     }
 

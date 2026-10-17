@@ -21,6 +21,14 @@
 MLAudioModel::MLAudioModel(QObject *parent)
     : MLMediaModel(parent)
 {
+    // a track got the artwork the player found (MediaLib::storePlayerArtwork);
+    // the media library sends no event for it. A full reset: the cache
+    // update only compares the ids.
+    connect(this, &MLBaseModel::mlChanged, this, [this]() {
+        if (m_mediaLib)
+            connect(m_mediaLib, &MediaLib::mediaArtworkStored, this, &MLAudioModel::resetCache,
+                    Qt::UniqueConnection);
+    });
 }
 
 QVariant MLAudioModel::itemRoleData(const MLItem *item, const int role) const
