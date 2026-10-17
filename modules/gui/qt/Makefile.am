@@ -297,6 +297,8 @@ libqt_plugin_la_SOURCES = \
 	player/delay_estimator.hpp \
 	player/seek_preview.cpp \
 	player/seek_preview.hpp \
+	player/audio_waveform.cpp \
+	player/audio_waveform.hpp \
 	player/subtitle_cues.cpp \
 	player/subtitle_cues.hpp \
 	player/player_controller.cpp player/player_controller.hpp player/player_controller_p.hpp \
@@ -507,6 +509,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	style/vlcicons.moc.cpp \
 	player/delay_estimator.moc.cpp \
 	player/seek_preview.moc.cpp \
+	player/audio_waveform.moc.cpp \
 	player/subtitle_cues.moc.cpp \
 	player/input_models.moc.cpp \
 	player/player_controller.moc.cpp \

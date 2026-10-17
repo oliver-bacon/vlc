@@ -31,6 +31,7 @@
 #include "player/control_list_filter.hpp"
 #include "player/delay_estimator.hpp"
 #include "player/seek_preview.hpp"
+#include "player/audio_waveform.hpp"
 #include "player/subtitle_cues.hpp"
 
 #include "dialogs/toolbar/controlbar_profile_model.hpp"
@@ -325,6 +326,7 @@ void MainUI::registerQMLTypes()
         // VLC Redesign: seek preview thumbnails and subtitle timeline
         qmlRegisterSingletonInstance<SeekPreview>(uri, versionMajor, versionMinor, "SeekPreview", new SeekPreview(m_intf, this));
         qmlRegisterSingletonInstance<SubtitleCues>(uri, versionMajor, versionMinor, "SubtitleCues", new SubtitleCues(m_intf, this));
+        qmlRegisterSingletonInstance<AudioWaveform>(uri, versionMajor, versionMinor, "AudioWaveform", new AudioWaveform(m_intf, this));
         qmlRegisterTypesAndRevisions<TimedText>(uri, versionMajor);
         qmlRegisterType<PlayerHighResolutionTimeUpdater>(uri, versionMajor, versionMinor, "HighResolutionTimeUpdater");
         qmlRegisterUncreatableMetaObject(VLCTickForeign::staticMetaObject, uri, versionMajor, versionMinor, "VLCTick", "Not Instantiable" );

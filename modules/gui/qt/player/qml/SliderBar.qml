@@ -106,6 +106,47 @@ T.ProgressBar {
         function onRowsRemoved() { cueReload.restart() }
     }
 
+    // waveform of audio files (VLC Redesign "waveform" seek bar): local
+    // audio-only media, decoded in the background by AudioWaveform
+    readonly property bool _waveFile: trackStyle && !Player.hasVideoOutput && Player.audioTracks.count > 0
+                                      && String(Player.url).startsWith("file:")
+    readonly property bool waveformActive: _waveFile && !timelineActive && Player.length.valid()
+                                           && AudioWaveform.mrl === String(Player.url)
+    readonly property int _waveStep: VLCStyle.dp(5, VLCStyle.scale)
+    readonly property int _waveBarCount: Math.max(0, Math.floor((availableWidth - 2 * _waveStep) / _waveStep))
+    property var _waveLevels: []
+
+    function _updateWave() {
+        _waveLevels = waveformActive ? AudioWaveform.levels(_waveBarCount, Player.length.toMilliseconds()) : []
+    }
+
+    on_WaveFileChanged: waveStart.restart()
+    onWaveformActiveChanged: _updateWave()
+    on_WaveBarCountChanged: _updateWave()
+
+    // wait until the tracks are known (a video only gets its video output
+    // after a moment)
+    Timer {
+        id: waveStart
+        interval: 1000
+        onTriggered: {
+            if (control._waveFile)
+                AudioWaveform.load(String(Player.url))
+            else if (control.trackStyle)
+                AudioWaveform.clear()
+        }
+    }
+
+    Connections {
+        target: Player
+        function onUrlChanged() { waveStart.restart() }
+    }
+
+    Connections {
+        target: AudioWaveform
+        function onLevelsChanged() { control._updateWave() }
+    }
+
     // seek preview thumbnails (VLC Redesign): video files only
     readonly property bool _previewEnabled: trackStyle && !timelineActive && Player.hasVideoOutput
                                             && String(Player.url).startsWith("file:")
@@ -524,7 +565,7 @@ T.ProgressBar {
         Rectangle {
             id: progressRect
             width: control.visualPosition * parent.width
-            visible: !Player.hasChapters
+            visible: !Player.hasChapters && !control.waveformActive
             color: control._progressColor
             height: control.barHeight
             radius: control._seekPointsRadius
@@ -538,6 +579,44 @@ T.ProgressBar {
                 when: (progressRect.mutabilityGroup !== undefined)
                 value: (Player.playingState === Player.PLAYING_STATE_PLAYING) ? Item.DynamicMutabilityGroup
                                                                               : Item.StaticMutabilityGroup
+            }
+        }
+
+        // waveform: grey bars, and the same bars in the accent colour up to
+        // the playhead (Figma "waveform" seek bar)
+        Item {
+            anchors.fill: parent
+            visible: control.waveformActive
+
+            component WaveBars: Repeater {
+                id: bars
+                property color barColor
+                model: control._waveLevels
+                Rectangle {
+                    required property int index
+                    required property var modelData
+                    readonly property real maxHeight: control.barHeight - 4 * control.playheadMargin
+                    width: VLCStyle.dp(2, VLCStyle.scale)
+                    height: modelData < 0 ? width : Math.max(width, maxHeight * modelData)
+                    radius: width / 2
+                    x: control._waveStep * (index + 1)
+                    y: (control.barHeight - height) / 2
+                    color: modelData < 0 ? Qt.alpha(bars.barColor, 0.3) : bars.barColor
+                }
+            }
+
+            WaveBars {
+                barColor: Qt.alpha(theme.fg.secondary, 0.5)
+            }
+
+            Item {
+                width: control.visualPosition * parent.width
+                height: parent.height
+                clip: true
+
+                WaveBars {
+                    barColor: theme.fg.primary
+                }
             }
         }
 
