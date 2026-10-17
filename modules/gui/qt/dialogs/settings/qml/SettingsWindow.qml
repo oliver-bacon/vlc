@@ -52,7 +52,11 @@ Window {
     readonly property bool searching: searchText !== ""
 
     function open() {
-        show()
+        // show() leaves a minimized window minimized
+        if (visibility === Window.Minimized)
+            showNormal()
+        else
+            show()
         raise()
         requestActivate()
     }
