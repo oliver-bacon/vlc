@@ -986,16 +986,21 @@ FocusScope {
                  && topBar.visible && controlBar.visible
         opacity: rootPlayer._controlsUnderVideo ? 1.0 : controlBar.opacity
 
+        // Only the inner edge may be round: the border is drawn 3x as wide,
+        // its outer edge (round too) lies outside the window
         Rectangle {
-            x: 0
-            y: -videoFrame._border
-            width: videoFrame.width
-            height: videoFrame.height + 2 * videoFrame._border
+            readonly property real _width: 3 * videoFrame._border
+
+            x: videoFrame._border - _width
+            y: -_width
+            width: videoFrame.width + 2 * (_width - videoFrame._border)
+            height: videoFrame.height + 2 * _width
 
             color: "transparent"
-            border.width: videoFrame._border
+            border.width: _width
             border.color: windowTheme.bg.primary
-            radius: VLCStyle.dp(19, VLCStyle.scale)
+            // inner radius: 9px (Figma)
+            radius: _width + VLCStyle.dp(9, VLCStyle.scale)
             antialiasing: true
         }
     }
@@ -1089,8 +1094,13 @@ FocusScope {
             // file) is always drawn on a solid surface.
             readonly property bool _singleLine: topBar._showCenterText
 
+            // solid, in the colour of the video frame, while it is shown
+            enabled: !videoFrame.visible
+
             opacity: {
-                if (_singleLine && !(MainCtx.intfMainWindow.visibility === Window.FullScreen && MainCtx.hasEmbededVideo)) {
+                if (videoFrame.visible) {
+                    return 1.0
+                } else if (_singleLine && !(MainCtx.intfMainWindow.visibility === Window.FullScreen && MainCtx.hasEmbededVideo)) {
                     return 0.95
                 } else if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
                     return 0.6
@@ -1486,7 +1496,9 @@ FocusScope {
             visible: _inline || !MainCtx.hasEmbededVideo || MainCtx.pinVideoControls || !rootPlayer.displayFadeRectangles
 
             opacity: {
-                if (_inline && !((Window.visibility === Window.FullScreen) && MainCtx.hasEmbededVideo)) {
+                if (videoFrame.visible) {
+                    return 1.0 // solid, in the colour of the video frame
+                } else if (_inline && !((Window.visibility === Window.FullScreen) && MainCtx.hasEmbededVideo)) {
                     return 0.95
                 } else if (MainCtx.hasEmbededVideo && !MainCtx.pinVideoControls && !rootPlayer.displayFadeRectangles) {
                     return 0.6
@@ -1503,7 +1515,8 @@ FocusScope {
 
             // Hairline separating the single-row bar from the video
             Rectangle {
-                visible: controlBarBackground._inline
+                // the video frame is the separation when it is shown
+                visible: controlBarBackground._inline && !videoFrame.visible
                 anchors { top: parent.top; left: parent.left; right: parent.right }
                 height: VLCStyle.border
                 color: windowTheme.border
