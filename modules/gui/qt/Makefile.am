@@ -972,6 +972,24 @@ libqt_plugin_la_RES = \
 	pixmaps/menu/figma/file_go_to_source.svg \
 	pixmaps/menu/figma/file_mark_as_watched.svg \
 	pixmaps/menu/figma/file_play.svg \
+	pixmaps/menu/figma/eq_classical.svg \
+	pixmaps/menu/figma/eq_club.svg \
+	pixmaps/menu/figma/eq_dance.svg \
+	pixmaps/menu/figma/eq_flat.svg \
+	pixmaps/menu/figma/eq_fullbass.svg \
+	pixmaps/menu/figma/eq_fullbasstreble.svg \
+	pixmaps/menu/figma/eq_fulltreble.svg \
+	pixmaps/menu/figma/eq_headphones.svg \
+	pixmaps/menu/figma/eq_largehall.svg \
+	pixmaps/menu/figma/eq_live.svg \
+	pixmaps/menu/figma/eq_party.svg \
+	pixmaps/menu/figma/eq_pop.svg \
+	pixmaps/menu/figma/eq_reggae.svg \
+	pixmaps/menu/figma/eq_rock.svg \
+	pixmaps/menu/figma/eq_ska.svg \
+	pixmaps/menu/figma/eq_soft.svg \
+	pixmaps/menu/figma/eq_softrock.svg \
+	pixmaps/menu/figma/eq_techno.svg \
 	pixmaps/menu/figma/file_properties_metadata.svg \
 	pixmaps/menu/figma/file_show_in_file_explorer.svg \
 	pixmaps/menu/figma/file_stream.svg \

@@ -916,7 +916,9 @@ T.Popup {
         }
         onClicked: presetMenu.popup(mapToGlobal(0, height + 4 * root.dp1),
             [{ "text": qsTr("None"), "checked": !enabledEq }].concat(
-                presets.map((p) => ({ "text": p.text, "checked": enabledEq && p.name === preset }))))
+                // Figma EQ preset icons (:/menu/figma/eq_<preset>.svg)
+                presets.map((p) => ({ "text": p.text, "icon": "eq_" + p.name,
+                                      "checked": enabledEq && p.name === preset }))))
 
         StringListMenu {
             id: presetMenu
