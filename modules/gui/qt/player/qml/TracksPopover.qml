@@ -29,14 +29,22 @@ import VLC.Style
 
 // Track popover of the VLC Redesign Figma file (subtitle button of the
 // player bar): Video / Audio / Subtitles tabs listing the embedded tracks,
-// the audio output devices, and "Show Preferences".
+// the audio output devices, and "Show Preferences". For an audio file only
+// the output devices.
 T.Popup {
     id: root
 
     property int currentTab: 1
 
+    // audio file: no tabs and no embedded tracks, only the output device
+    readonly property bool audioOnly: Player.videoTracks.count === 0
+    readonly property int _tab: audioOnly ? 1 : currentTab
+
     width: VLCStyle.dp(400, VLCStyle.scale)
-    height: VLCStyle.dp(520, VLCStyle.scale)
+    height: audioOnly
+            ? Math.min(VLCStyle.dp(520, VLCStyle.scale),
+                       column.implicitHeight + 34 * dp1 + prefs.implicitHeight + 20 * dp1)
+            : VLCStyle.dp(520, VLCStyle.scale)
     padding: 0
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent
 
@@ -59,6 +67,7 @@ T.Popup {
         spacing: 0
 
         Rectangle {
+            visible: !root.audioOnly
             Layout.fillWidth: true
             Layout.preferredHeight: 50 * root.dp1
             color: root.tabsColor
@@ -141,16 +150,21 @@ T.Popup {
                 width: flick.width - 40 * root.dp1
                 spacing: 2 * root.dp1
 
-                SectionTitle { text: qsTr("Embedded Tracks") }
+                SectionTitle {
+                    visible: !root.audioOnly
+                    text: qsTr("Embedded Tracks")
+                }
 
                 TrackList {
-                    model: root.currentTab === 0 ? Player.videoTracks
+                    visible: !root.audioOnly
+                    model: root.audioOnly ? null
+                         : root.currentTab === 0 ? Player.videoTracks
                          : root.currentTab === 1 ? Player.audioTracks : Player.subtitleTracks
                 }
 
                 // subtitles: load a file
                 Choice {
-                    visible: root.currentTab === 2
+                    visible: root._tab === 2
                     label: qsTr("Add Subtitle File...")
                     // the Add Subtitles dialog (video 5:00): this file, its
                     // folder or the queue; local files only
@@ -178,7 +192,7 @@ T.Popup {
 
                 // audio: output device
                 Rectangle {
-                    visible: root.currentTab === 1
+                    visible: root._tab === 1 && !root.audioOnly
                     Layout.fillWidth: true
                     Layout.leftMargin: -20 * root.dp1
                     Layout.rightMargin: -20 * root.dp1
@@ -187,9 +201,9 @@ T.Popup {
                     implicitHeight: 1
                     color: root.dividerColor
                 }
-                SectionTitle { visible: root.currentTab === 1; text: qsTr("Output Device") }
+                SectionTitle { visible: root._tab === 1; text: qsTr("Output Device") }
                 Repeater {
-                    model: root.currentTab === 1 ? Player.audioDevices : null
+                    model: root._tab === 1 ? Player.audioDevices : null
                     delegate: Choice {
                         required property var model
                         label: model.display
