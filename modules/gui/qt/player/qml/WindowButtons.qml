@@ -79,6 +79,10 @@ Row {
         function updateRect() {
             if (!modelData)
                 return
+            if (!visible || !root.visible || !root.parent || !root.parent.visible) {
+                modelData.rect = Qt.rect(0, 0, 0, 0)
+                return
+            }
             const point = mapToItem(null, 0, 0)
             modelData.rect = Qt.rect(point.x, point.y, width, height)
         }
@@ -87,12 +91,50 @@ Row {
         onWidthChanged: Qt.callLater(updateRect)
         onHeightChanged: Qt.callLater(updateRect)
         onModelDataChanged: Qt.callLater(updateRect)
+        onVisibleChanged: Qt.callLater(updateRect)
 
         Connections {
             target: VLCStyle
             function onAppWidthChanged() { Qt.callLater(button.updateRect) }
             function onAppHeightChanged() { Qt.callLater(button.updateRect) }
         }
+
+        // the row moves with the top bar (its buttons do not move inside it)
+        Connections {
+            target: root
+            function onRowMoved() { Qt.callLater(button.updateRect) }
+        }
+
+        // Windows answers clicks in these rectangles itself (close, maximize):
+        // a rectangle left behind would close or maximize the window when
+        // something else is clicked there (fullscreen, CSD off, ...)
+        Component.onDestruction: {
+            if (modelData)
+                modelData.rect = Qt.rect(0, 0, 0, 0)
+        }
+    }
+
+    signal rowMoved()
+
+    onXChanged: rowMoved()
+    onYChanged: rowMoved()
+    onWidthChanged: rowMoved()
+    onVisibleChanged: rowMoved()
+
+    Connections {
+        target: root.parent
+        ignoreUnknownSignals: true
+        function onXChanged() { root.rowMoved() }
+        function onYChanged() { root.rowMoved() }
+        function onWidthChanged() { root.rowMoved() }
+        function onVisibleChanged() { root.rowMoved() }
+    }
+
+    // once the top bar has its final layout
+    Timer {
+        running: true
+        interval: 500
+        onTriggered: root.rowMoved()
     }
 
     WindowButton {
