@@ -357,6 +357,9 @@ public slots:
     int getSecondarySubtitleDelayMS() const;
     void setSecondarySubtitleDelayMS( int );
     float getSubtitleFPS( ) const;
+    /// VLC Redesign subtitle size: text scale in percent (10..500, 100 = default)
+    Q_INVOKABLE int getSubtitleTextScale() const;
+    Q_INVOKABLE void setSubtitleTextScale(int scale);
     void setSubtitleFPS( float );
 
     //title/chapters/menu

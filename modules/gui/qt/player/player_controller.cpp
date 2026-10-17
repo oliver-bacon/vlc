@@ -1547,6 +1547,20 @@ void PlayerController::setSubtitleFPS(float fps)
     vlc_player_SetAssociatedSubsFPS( d->m_player, fps );
 }
 
+int PlayerController::getSubtitleTextScale() const
+{
+    Q_D(const PlayerController);
+    vlc_player_locker lock{ d->m_player };
+    return vlc_player_GetSubtitleTextScale( d->m_player );
+}
+
+void PlayerController::setSubtitleTextScale(int scale)
+{
+    Q_D(PlayerController);
+    vlc_player_locker lock{ d->m_player };
+    vlc_player_SetSubtitleTextScale( d->m_player, unsigned(qBound(10, scale, 500)) );
+}
+
 //TITLE/CHAPTER/MENU
 
 void PlayerController::sectionPrev()

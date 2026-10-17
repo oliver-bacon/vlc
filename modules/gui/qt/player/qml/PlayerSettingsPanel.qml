@@ -429,6 +429,160 @@ T.Popup {
         Row2 { label: qsTr("Subtitle Font"); visible: VLCConfig.exists("freetype-font"); ConfigBox { option: "freetype-font" } }
         Row2 { label: qsTr("Text Color"); visible: VLCConfig.exists("freetype-color"); ColorBox { option: "freetype-color" } }
         Row2 { label: qsTr("Outline Color"); visible: VLCConfig.exists("freetype-outline-color"); ColorBox { option: "freetype-outline-color" } }
+        Row2 {
+            label: qsTr("Subtitle Offset")
+            UnitBox {
+                implicitWidth: 136 * root.dp1
+                Layout.fillWidth: false
+                unit: "px"
+                value: { root.configRevision; return Number(VLCConfig.value("sub-margin") ?? 0) || 0 }
+                onEdited: (v) => VLCConfig.setValue("sub-margin", v)
+            }
+        }
+
+        // video 8:00: size values as "Relative" (named steps) or "Scale"
+        // (numbers in percent, VLC 4 has no font size in pixels)
+        Row2 {
+            label: qsTr("Size Values")
+            Segmented {
+                options: [qsTr("Relative"), qsTr("Scale")]
+                current: root.subtitleSizeScale ? 1 : 0
+                onChosen: (i) => {
+                    root.subtitleSizeScale = (i === 1)
+                    VLCConfig.setUiValue("Player/SubtitleSizeValues", root.subtitleSizeScale ? "scale" : "relative")
+                }
+            }
+        }
+
+        // ---- relative: sliders with named steps
+        StepSlider {
+            visible: !root.subtitleSizeScale
+            label: qsTr("Font Size")
+            steps: [10, 50, 75, 100, 150, 200, 300]
+            names: [qsTr("Tiny"), qsTr("Smaller"), qsTr("Small"), qsTr("Normal"), qsTr("Large"), qsTr("Larger"), qsTr("Huge")]
+            value: root.textScale
+            onChosen: (v) => root.setTextScale(v)
+        }
+        StepSlider {
+            visible: !root.subtitleSizeScale && VLCConfig.exists("freetype-outline-thickness")
+            label: qsTr("Outline Thickness")
+            steps: [0, 2, 4, 6]
+            names: [qsTr("None"), qsTr("Thin"), qsTr("Normal"), qsTr("Thick")]
+            value: { root.configRevision; return Number(VLCConfig.value("freetype-outline-thickness") ?? 4) }
+            onChosen: (v) => root.setSubtitleOption("freetype-outline-thickness", v)
+        }
+        StepSlider {
+            visible: !root.subtitleSizeScale && VLCConfig.exists("freetype-background-opacity")
+            label: qsTr("Background Opacity")
+            steps: [0, 64, 128, 191, 255]
+            names: ["0 %", "25 %", "50 %", "75 %", "100 %"]
+            value: { root.configRevision; return Number(VLCConfig.value("freetype-background-opacity") ?? 0) }
+            onChosen: (v) => root.setSubtitleOption("freetype-background-opacity", v)
+        }
+
+        // ---- scale: numbers
+        Row2 {
+            visible: root.subtitleSizeScale
+            label: qsTr("Font Size")
+            UnitBox {
+                implicitWidth: 136 * root.dp1
+                Layout.fillWidth: false
+                unit: "%"
+                maxValue: 500
+                value: root.textScale
+                onEdited: (v) => root.setTextScale(v)
+            }
+        }
+        Row2 {
+            visible: root.subtitleSizeScale && VLCConfig.exists("freetype-outline-thickness")
+            label: qsTr("Outline Thickness")
+            UnitBox {
+                implicitWidth: 136 * root.dp1
+                Layout.fillWidth: false
+                unit: "%"
+                maxValue: 50
+                value: { root.configRevision; return Number(VLCConfig.value("freetype-outline-thickness") ?? 4) }
+                onEdited: (v) => root.setSubtitleOption("freetype-outline-thickness", Math.min(50, v))
+            }
+        }
+        Row2 {
+            visible: root.subtitleSizeScale && VLCConfig.exists("freetype-background-opacity")
+            label: qsTr("Background Opacity")
+            UnitBox {
+                implicitWidth: 136 * root.dp1
+                Layout.fillWidth: false
+                unit: "%"
+                maxValue: 100
+                value: { root.configRevision; return Math.round(Number(VLCConfig.value("freetype-background-opacity") ?? 0) * 100 / 255) }
+                onEdited: (v) => root.setSubtitleOption("freetype-background-opacity", Math.round(Math.min(100, v) * 255 / 100))
+            }
+        }
+
+        // video 8:30: the subtitle settings saved as presets (per show)
+        SubtitlePresetCard { Layout.topMargin: 6 * root.dp1 }
+    }
+
+    // ---- subtitle settings: size values, presets ------------------------
+
+    // bumped when subtitle options change from a preset, so that the fields
+    // read them again
+    property int configRevision: 0
+    property bool subtitleSizeScale: String(VLCConfig.uiValue("Player/SubtitleSizeValues", "relative")) === "scale"
+    property int textScale: 100
+
+    onOpened: textScale = Player.getSubtitleTextScale()
+
+    function setTextScale(v) {
+        textScale = Math.max(10, Math.min(500, v))
+        Player.setSubtitleTextScale(textScale)
+        VLCConfig.setValue("sub-text-scale", textScale)
+    }
+
+    // the text renderer reads these options for every subtitle: they apply
+    // at once
+    function setSubtitleOption(option, value) {
+        VLCConfig.setValue(option, value)
+        configRevision++
+    }
+
+    readonly property var presetOptions: ["freetype-font", "freetype-color", "freetype-outline-color",
+                                          "freetype-outline-thickness", "freetype-background-opacity",
+                                          "sub-margin", "sub-language"]
+
+    function loadPresets() {
+        try {
+            const list = JSON.parse(VLCConfig.uiValue("Player/SubtitlePresets", "[]"))
+            return Array.isArray(list) ? list : []
+        } catch (e) {
+            return []
+        }
+    }
+
+    function savePresets(list) {
+        VLCConfig.setUiValue("Player/SubtitlePresets", JSON.stringify(list))
+    }
+
+    function currentSubtitleSettings(name) {
+        const values = {}
+        for (const option of presetOptions)
+            if (VLCConfig.exists(option))
+                values[option] = VLCConfig.value(option)
+        return { "name": name, "values": values, "textScale": textScale,
+                 "delay": Player.subtitleDelayMS, "sizeValues": subtitleSizeScale ? "scale" : "relative" }
+    }
+
+    function applyPreset(preset) {
+        for (const option in preset.values)
+            if (VLCConfig.exists(option))
+                VLCConfig.setValue(option, preset.values[option])
+        if (preset.textScale !== undefined)
+            setTextScale(preset.textScale)
+        if (preset.delay !== undefined)
+            Player.subtitleDelayMS = preset.delay
+        subtitleSizeScale = preset.sizeValues === "scale"
+        VLCConfig.setUiValue("Player/SubtitleSizeValues", preset.sizeValues ?? "relative")
+        VLCConfig.setUiValue("Player/SubtitlePreset", preset.name)
+        configRevision++
     }
 
     // ===================================================================
@@ -500,7 +654,7 @@ T.Popup {
         color: root.titleColor
         selectionColor: root.accentSurface
         font.pixelSize: 12 * root.dp1
-        text: String(VLCConfig.value(option) ?? "")
+        text: { root.configRevision; return String(VLCConfig.value(option) ?? "") }
         background: Rectangle {
             radius: 4 * root.dp1
             color: root.wellColor
@@ -513,7 +667,7 @@ T.Popup {
     component ColorBox: RowLayout {
         id: colorBox
         property string option
-        property string value: String(VLCConfig.value(option) ?? "#000000")
+        property string value: { root.configRevision; return String(VLCConfig.value(option) ?? "#000000") }
         spacing: 0
         ConfigBox {
             option: colorBox.option
@@ -721,6 +875,228 @@ T.Popup {
         }
     }
 
+    // number field with a unit ("px", "%")
+    component UnitBox: Rectangle {
+        id: ub
+        property int value: 0
+        property string unit: "px"
+        property int maxValue: 10000
+        signal edited(int value)
+        Layout.fillWidth: true
+        implicitHeight: 28 * root.dp1
+        radius: 4 * root.dp1
+        color: root.wellColor
+        border.width: ubField.activeFocus ? 1 : 0
+        border.color: root.accentColor
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 10 * root.dp1
+            anchors.rightMargin: 10 * root.dp1
+            T.TextField {
+                id: ubField
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                verticalAlignment: TextInput.AlignVCenter
+                color: root.titleColor
+                selectionColor: root.accentSurface
+                font.pixelSize: 12 * root.dp1
+                text: String(ub.value)
+                validator: IntValidator { bottom: 0; top: ub.maxValue }
+                background: null
+                onEditingFinished: ub.edited(parseInt(text) || 0)
+            }
+            Text { text: ub.unit; color: root.faintColor; font.pixelSize: 12 * root.dp1 }
+        }
+    }
+
+    // two-way choice ("Relative" | "Scale"), the chosen one in the accent
+    component Segmented: Row {
+        id: seg
+        property var options: []
+        property int current: 0
+        signal chosen(int index)
+        spacing: 0
+        Repeater {
+            model: seg.options
+            T.Button {
+                id: segButton
+                required property var modelData
+                required property int index
+                readonly property bool selected: index === seg.current
+                implicitWidth: 68 * root.dp1
+                implicitHeight: 28 * root.dp1
+                background: Rectangle {
+                    radius: 4 * root.dp1
+                    color: segButton.selected ? root.accentSurface : root.wellColor
+                }
+                contentItem: Text {
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: segButton.modelData
+                    font.pixelSize: 12 * root.dp1
+                    color: segButton.selected ? root.accentColor : root.textColor
+                }
+                onClicked: seg.chosen(index)
+            }
+        }
+    }
+
+    // title, name of the current step on the right, slider over the steps
+    component StepSlider: ColumnLayout {
+        id: ss
+        property string label
+        property var steps: []
+        property var names: []
+        property real value: 0
+        signal chosen(real value)
+        readonly property int index: {
+            let best = 0
+            for (let i = 1; i < steps.length; ++i)
+                if (Math.abs(steps[i] - value) < Math.abs(steps[best] - value))
+                    best = i
+            return best
+        }
+        Layout.fillWidth: true
+        spacing: 6 * root.dp1
+        RowLayout {
+            Layout.fillWidth: true
+            Text {
+                Layout.fillWidth: true
+                text: ss.label
+                color: root.textColor
+                font.pixelSize: 13 * root.dp1
+            }
+            Text {
+                // the exact value when it is between two steps
+                text: ss.steps[ss.index] === ss.value ? (ss.names[ss.index] ?? "") : (Math.round(ss.value) + "")
+                color: root.textColor
+                font.pixelSize: 12 * root.dp1
+            }
+        }
+        FxSlider {
+            from: 0
+            to: Math.max(1, ss.steps.length - 1)
+            stepSize: 1
+            snapMode: T.Slider.SnapAlways
+            value: ss.index
+            onMoved: ss.chosen(ss.steps[Math.round(value)])
+        }
+    }
+
+    // preset of the subtitle settings: name and chevron, a menu to apply,
+    // save, rename or delete presets
+    component SubtitlePresetCard: Rectangle {
+        id: pc
+        property var presets: root.loadPresets()
+        property string current: String(VLCConfig.uiValue("Player/SubtitlePreset", ""))
+        readonly property bool hasCurrent: presets.some((p) => p.name === current)
+
+        Layout.fillWidth: true
+        implicitHeight: 40 * root.dp1
+        radius: 4 * root.dp1
+        color: pcMouse.hovered ? root.cardColor : root.tabsColor
+
+        function _newName() {
+            for (let i = 1; ; ++i) {
+                const name = qsTr("Custom Preset %1").arg(String(i).padStart(2, "0"))
+                if (!presets.some((p) => p.name === name))
+                    return name
+            }
+        }
+
+        function _store(list) {
+            root.savePresets(list)
+            presets = list
+        }
+
+        HoverHandler { id: pcMouse }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 10 * root.dp1
+            anchors.rightMargin: 10 * root.dp1
+
+            T.TextField {
+                id: nameField
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                verticalAlignment: TextInput.AlignVCenter
+                readOnly: !pc.hasCurrent
+                color: pc.hasCurrent ? root.titleColor : root.textColor
+                selectionColor: root.accentSurface
+                font.pixelSize: 13 * root.dp1
+                text: pc.hasCurrent ? pc.current : qsTr("No Subtitle Preset")
+                background: null
+                // rename the current preset
+                onEditingFinished: {
+                    const name = text.trim()
+                    if (!pc.hasCurrent || name === "" || name === pc.current
+                            || pc.presets.some((p) => p.name === name)) {
+                        text = Qt.binding(() => pc.hasCurrent ? pc.current : qsTr("No Subtitle Preset"))
+                        return
+                    }
+                    pc._store(pc.presets.map((p) => p.name === pc.current ? Object.assign({}, p, { "name": name }) : p))
+                    VLCConfig.setUiValue("Player/SubtitlePreset", name)
+                    pc.current = name
+                }
+            }
+
+            T.Button {
+                id: pcChevron
+                implicitWidth: 28 * root.dp1
+                implicitHeight: 28 * root.dp1
+                background: null
+                contentItem: Text {
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.family: VLCIcons.fontFamily
+                    font.pixelSize: 13 * root.dp1
+                    text: VLCIcons.chevron_down
+                    color: root.textColor
+                }
+                Accessible.name: qsTr("Subtitle presets")
+                onClicked: {
+                    const items = pc.presets.map((p) => ({ "text": p.name, "checked": p.name === pc.current }))
+                    if (items.length > 0)
+                        items.push({ "separator": true })
+                    items.push({ "text": qsTr("Save as New Preset") })
+                    if (pc.hasCurrent) {
+                        items.push({ "text": qsTr("Update \"%1\"").arg(pc.current) })
+                        items.push({ "text": qsTr("Delete \"%1\"").arg(pc.current) })
+                    }
+                    presetMenu.popup(pc.mapToGlobal(0, pc.height + 4 * root.dp1), items)
+                }
+            }
+        }
+
+        StringListMenu {
+            id: presetMenu
+            ctx: MainCtx
+            onSelected: (index, _) => {
+                const n = pc.presets.length
+                if (index < n) {
+                    root.applyPreset(pc.presets[index])
+                    pc.current = pc.presets[index].name
+                    return
+                }
+                // the separator is not counted by the menu
+                const action = index - n
+                if (action === 0) {
+                    const name = pc._newName()
+                    pc._store(pc.presets.concat([root.currentSubtitleSettings(name)]))
+                    VLCConfig.setUiValue("Player/SubtitlePreset", name)
+                    pc.current = name
+                } else if (action === 1) {
+                    pc._store(pc.presets.map((p) => p.name === pc.current ? root.currentSubtitleSettings(p.name) : p))
+                } else if (action === 2) {
+                    pc._store(pc.presets.filter((p) => p.name !== pc.current))
+                    VLCConfig.setUiValue("Player/SubtitlePreset", "")
+                    pc.current = ""
+                }
+            }
+        }
+    }
+
     component PixelBox: Rectangle {
         id: pb
         property string label
@@ -737,6 +1113,8 @@ T.Popup {
             Text { text: pb.label; color: root.textColor; font.pixelSize: 12 * root.dp1 }
             T.TextField {
                 Layout.fillWidth: true
+                Layout.fillHeight: true
+                verticalAlignment: TextInput.AlignVCenter
                 horizontalAlignment: TextInput.AlignRight
                 color: root.titleColor
                 font.pixelSize: 12 * root.dp1
