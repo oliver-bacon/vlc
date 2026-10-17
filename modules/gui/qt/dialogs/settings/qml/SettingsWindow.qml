@@ -34,7 +34,8 @@ Window {
     id: root
 
     transientParent: MainCtx.intfMainWindow
-    flags: Qt.Dialog
+    // VLC draws the title bar like the player's top bar (TitleBar below)
+    flags: Qt.Window | Qt.FramelessWindowHint
 
     title: qsTr("Settings")
 
@@ -146,10 +147,96 @@ Window {
         }
     }
 
+    // Title bar in the style of the player's top bar: cone, title in the
+    // middle, minimize / maximize / close (WindowButtons.qml)
+    Rectangle {
+        id: titleBar
+
+        readonly property ColorContext colorContext: ColorContext {
+            id: titleTheme
+            palette: VLCStyle.palette
+            colorSet: ColorContext.Window
+        }
+
+        readonly property bool useWinIcons: ((MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10))
+        readonly property bool maximized: root.visibility === Window.Maximized
+
+        anchors { top: parent.top; left: parent.left; right: parent.right }
+        height: VLCStyle.globalToolbar_height
+        color: titleTheme.bg.primary
+
+        // drag to move, double-click to maximize
+        TapHandler {
+            gesturePolicy: TapHandler.DragThreshold
+            onDoubleTapped: titleBar.toggleMaximized()
+        }
+        DragHandler {
+            target: null
+            grabPermissions: PointerHandler.CanTakeOverFromAnything
+            onActiveChanged: if (active) root.startSystemMove()
+        }
+
+        function toggleMaximized() {
+            if (maximized)
+                root.showNormal()
+            else
+                root.showMaximized()
+        }
+
+        Widgets.BannerCone {
+            anchors.left: parent.left
+            anchors.leftMargin: VLCStyle.margin_small
+            anchors.verticalCenter: parent.verticalCenter
+            sourceSize.width: VLCStyle.icon_normal
+            sourceSize.height: VLCStyle.icon_normal
+            color: titleTheme.accent
+        }
+
+        Text {
+            anchors.centerIn: parent
+            width: Math.min(implicitWidth, parent.width - 2 * windowButtons.width)
+            text: root.title
+            elide: Text.ElideRight
+            color: titleTheme.fg.secondary
+            font.pixelSize: VLCStyle.fontSize_large
+        }
+
+        component TitleButton: Widgets.CSDWindowButton {
+            property bool isClose: false
+            height: titleBar.height
+            isThemeDark: titleTheme.palette.isDark
+            color: (isClose && hovered) ? "white" : titleTheme.fg.primary
+            hoverColor: isClose ? "red" : titleTheme.fg.primary.alpha(0.12)
+        }
+
+        Row {
+            id: windowButtons
+
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            TitleButton {
+                iconTxt: titleBar.useWinIcons ? "\uE921" : VLCIcons.window_minimize
+                onClicked: root.showMinimized()
+            }
+            TitleButton {
+                iconTxt: titleBar.useWinIcons ? (titleBar.maximized ? "\uE923" : "\uE922")
+                                              : (titleBar.maximized ? VLCIcons.window_restore : VLCIcons.window_maximize)
+                onClicked: titleBar.toggleMaximized()
+            }
+            TitleButton {
+                isClose: true
+                iconTxt: titleBar.useWinIcons ? "\uE8BB" : VLCIcons.window_close
+                onClicked: root.close()
+            }
+        }
+    }
+
     Item {
         id: content
 
-        anchors.fill: parent
+        anchors { top: titleBar.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
 
         readonly property ColorContext colorContext: ColorContext {
             id: theme
@@ -527,5 +614,43 @@ Window {
                 }
             }
         }
+    }
+
+    // resize at the edges and corners (no system frame)
+    component ResizeArea: MouseArea {
+        property int edges: 0
+        z: 100
+        enabled: root.visibility !== Window.Maximized
+        cursorShape: {
+            if (edges === (Qt.LeftEdge | Qt.TopEdge) || edges === (Qt.RightEdge | Qt.BottomEdge))
+                return Qt.SizeFDiagCursor
+            if (edges === (Qt.RightEdge | Qt.TopEdge) || edges === (Qt.LeftEdge | Qt.BottomEdge))
+                return Qt.SizeBDiagCursor
+            if (edges & (Qt.LeftEdge | Qt.RightEdge))
+                return Qt.SizeHorCursor
+            return Qt.SizeVerCursor
+        }
+        onPressed: root.startSystemResize(edges)
+    }
+
+    readonly property real _edge: VLCStyle.dp(5, VLCStyle.scale)
+
+    ResizeArea { edges: Qt.LeftEdge; x: 0; y: root._edge; width: root._edge; height: root.height - 2 * root._edge }
+    ResizeArea { edges: Qt.RightEdge; x: root.width - root._edge; y: root._edge; width: root._edge; height: root.height - 2 * root._edge }
+    ResizeArea { edges: Qt.TopEdge; x: root._edge; y: 0; width: root.width - 2 * root._edge; height: root._edge }
+    ResizeArea { edges: Qt.BottomEdge; x: root._edge; y: root.height - root._edge; width: root.width - 2 * root._edge; height: root._edge }
+    ResizeArea { edges: Qt.LeftEdge | Qt.TopEdge; x: 0; y: 0; width: root._edge; height: root._edge }
+    ResizeArea { edges: Qt.RightEdge | Qt.TopEdge; x: root.width - root._edge; y: 0; width: root._edge; height: root._edge }
+    ResizeArea { edges: Qt.LeftEdge | Qt.BottomEdge; x: 0; y: root.height - root._edge; width: root._edge; height: root._edge }
+    ResizeArea { edges: Qt.RightEdge | Qt.BottomEdge; x: root.width - root._edge; y: root.height - root._edge; width: root._edge; height: root._edge }
+
+    // outline instead of the system frame
+    Rectangle {
+        anchors.fill: parent
+        z: 99
+        visible: root.visibility !== Window.Maximized
+        color: "transparent"
+        border.width: VLCStyle.border
+        border.color: titleTheme.border
     }
 }
