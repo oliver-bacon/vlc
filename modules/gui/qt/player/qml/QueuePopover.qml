@@ -24,6 +24,7 @@ import VLC.MainInterface
 import VLC.Player
 import VLC.Playlist
 import VLC.Style
+import VLC.Widgets as Widgets
 
 // Queue / Bookmarks / Chapters popover of the VLC Redesign Figma file
 // (play queue button of the player bar, queue button of the miniplayer).
@@ -168,11 +169,49 @@ T.Popup {
                 color: root.dimColor
                 font.pixelSize: 12 * root.dp1
             }
+            // Queue: sort, repeat, shuffle, -, + (video 2:10)
+            Widgets.SortControl {
+                visible: root.currentTab === 0
+                implicitWidth: 28 * root.dp1
+                implicitHeight: 28 * root.dp1
+                font.pixelSize: 15 * root.dp1
+                description: qsTr("Sort")
+                enabled: MainPlaylistController.count > 1
+                checked: MainPlaylistController.sortKey !== PlaylistController.SORT_KEY_NONE
+                popupAbove: false
+                model: MainPlaylistController.sortKeyTitleList
+
+                onSortSelected: (key) => {
+                    MainPlaylistController.sortKey = key
+                }
+
+                onSortOrderSelected: (type) => {
+                    if (type === Qt.AscendingOrder)
+                        MainPlaylistController.sortOrder = PlaylistController.SORT_ORDER_ASC
+                    else if (type === Qt.DescendingOrder)
+                        MainPlaylistController.sortOrder = PlaylistController.SORT_ORDER_DESC
+
+                    MainPlaylistController.sort()
+                }
+
+                sortOrder: MainPlaylistController.sortOrder === PlaylistController.SORT_ORDER_DESC
+                           ? Qt.DescendingOrder : Qt.AscendingOrder
+                sortKey: MainPlaylistController.sortKey
+            }
             HeaderButton {
                 visible: root.currentTab === 0
-                glyph: VLCIcons.topbar_sort
-                tip: qsTr("Shuffle the queue")
-                onClicked: MainPlaylistController.shuffle()
+                glyph: MainPlaylistController.repeatMode === PlaylistController.PLAYBACK_REPEAT_CURRENT
+                       ? VLCIcons.repeat_one : VLCIcons.repeat_all
+                active: MainPlaylistController.repeatMode !== PlaylistController.PLAYBACK_REPEAT_NONE
+                tip: qsTr("Repeat")
+                onClicked: MainPlaylistController.toggleRepeatMode()
+            }
+            HeaderButton {
+                visible: root.currentTab === 0
+                glyph: VLCIcons.shuffle
+                active: MainPlaylistController.random
+                tip: qsTr("Shuffle")
+                onClicked: MainPlaylistController.toggleRandom()
             }
             HeaderButton {
                 glyph: VLCIcons.remove
@@ -290,6 +329,8 @@ T.Popup {
         id: hb
         property string glyph
         property string tip
+        // on/off state (repeat, shuffle)
+        property bool active: false
         implicitWidth: 28 * root.dp1
         implicitHeight: 28 * root.dp1
         background: Rectangle {
@@ -302,7 +343,7 @@ T.Popup {
             font.family: VLCIcons.fontFamily
             font.pixelSize: 15 * root.dp1
             text: hb.glyph
-            color: hb.enabled ? root.textColor : root.dimColor
+            color: !hb.enabled ? root.dimColor : (hb.active ? root.accentColor : root.textColor)
         }
         Accessible.name: tip
     }
