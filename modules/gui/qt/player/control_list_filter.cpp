@@ -79,6 +79,11 @@ bool ControlListFilter::filterAcceptsRow(int source_row, const QModelIndex &) co
     {
         return m_player->hasPrograms();
     }
+    else if (type == ControlListModel::MENU_BUTTON)
+    {
+        // the menu bar replaces the "..." menu
+        return !m_ctx->hasToolbarMenu();
+    }
     else if (type == ControlListModel::TELETEXT_BUTTONS)
     {
         return m_player->isTeletextAvailable();

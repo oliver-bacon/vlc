@@ -101,8 +101,8 @@ public:
         PLAYLIST_NAME_LABEL,
         AUDIO_TRACKS_BUTTON,
         SUBTITLE_TRACKS_BUTTON,
-        RESERVED_0X3E,
-        RESERVED_0X3F,
+        LIBRARY_BUTTON,      // side panel with the library (top bar)
+        MEDIA_TITLE_LABEL,   // title of the media (top bar)
 
         WIDGET_SPACER = 0x40,
         WIDGET_SPACER_EXTEND,
@@ -112,7 +112,7 @@ public:
 
     static_assert(RESERVED_0X1F == 0x1F, "missaligned");
     static_assert(FAVORITE_BUTTON == 0x2B, "missaligned");
-    static_assert(RESERVED_0X3F == 0x3F, "missaligned");
+    static_assert(MEDIA_TITLE_LABEL == 0x3F, "missaligned");
 
     // Basic functionality:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -127,7 +127,7 @@ public:
 
     QHash<int, QByteArray> roleNames() const override;
 
-    QVector<int> getControls() const;
+    Q_INVOKABLE QVector<int> getControls() const;
     void setControls(const QVector<int>& list);
 
     bool operator==(const ControlListModel& model) const

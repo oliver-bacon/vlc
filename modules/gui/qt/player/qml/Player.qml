@@ -1528,6 +1528,34 @@ FocusScope {
         }
     }
 
+    // VLC Redesign "Customize Player": the bars are edited in place, the
+    // controls that are in none of them are in this panel
+    Loader {
+        // between the bars, which are edited
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: topBar.bottom
+        anchors.bottom: controlBar.top
+        z: 20
+        active: MainCtx.playerCustomizing
+        sourceComponent: CustomizePlayerPanel {
+            barModels: {
+                const profile = MainCtx.controlbarProfileModel.currentModel
+                if (!profile)
+                    return []
+                return [profile.getModel(PlayerControlbarModel.Topbar), profile.getModel(controlBar.identifier)]
+            }
+        }
+    }
+
+    // the bars stay shown while they are customized
+    Connections {
+        target: MainCtx
+        function onPlayerCustomizingChanged() {
+            rootPlayer.lockUnlockAutoHide(MainCtx.playerCustomizing)
+        }
+    }
+
     QmlAudioContextMenu {
         id: audioContextMenu
 

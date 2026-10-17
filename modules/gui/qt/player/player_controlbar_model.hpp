@@ -51,7 +51,8 @@ public:
     enum PlayerIdentifier {
         Videoplayer = 0,
         Audioplayer,
-        Miniplayer
+        Miniplayer,
+        Topbar      // VLC Redesign: top bar of the player
     };
     Q_ENUM(PlayerIdentifier)
     // This enum is iterated through QMetaEnum, and

@@ -44,6 +44,10 @@ FocusScope {
 
     readonly property bool hasCenterControls: !!model?.center && (model.center.count > 0)
 
+    // VLC Redesign "Customize Player": the bar is edited in place
+    readonly property bool editing: MainCtx.playerCustomizing && !!model
+    readonly property real editHeight: editRow.implicitHeight
+
     readonly property PlayerControlbarModel model: {
         if (!!MainCtx.controlbarProfileModel.currentModel)
             return MainCtx.controlbarProfileModel.currentModel.getModel(identifier)
@@ -65,11 +69,13 @@ FocusScope {
 
     // Settings
 
-    implicitWidth: loaderLeftRight.active ? loaderLeftRight.implicitWidth
-                                          : (loaderLeft.implicitWidth + loaderCenter.implicitWidth + loaderRight.implicitWidth)
+    implicitWidth: editing ? editRow.implicitWidth
+                           : loaderLeftRight.active ? loaderLeftRight.implicitWidth
+                                                    : (loaderLeft.implicitWidth + loaderCenter.implicitWidth + loaderRight.implicitWidth)
 
-    implicitHeight: loaderLeftRight.active ? loaderLeftRight.implicitHeight
-                                           : Math.max(loaderLeft.implicitHeight, loaderCenter.implicitHeight, loaderRight.implicitHeight)
+    implicitHeight: editing ? editRow.implicitHeight
+                            : loaderLeftRight.active ? loaderLeftRight.implicitHeight
+                                                     : Math.max(loaderLeft.implicitHeight, loaderCenter.implicitHeight, loaderRight.implicitHeight)
 
     // Events
 
@@ -77,8 +83,35 @@ FocusScope {
 
     // Children
 
+    // left and right parts take the free width, the center one its controls
+    RowLayout {
+        id: editRow
+
+        anchors.fill: parent
+        visible: playerControlLayout.editing
+        spacing: VLCStyle.margin_xsmall
+
+        LiveBarSection {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            model: playerControlLayout.model?.left ?? null
+        }
+        LiveBarSection {
+            Layout.fillHeight: true
+            Layout.preferredWidth: implicitWidth
+            model: playerControlLayout.model?.center ?? null
+        }
+        LiveBarSection {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            model: playerControlLayout.model?.right ?? null
+        }
+    }
+
     Loader {
         id: loaderLeftRight
+
+        visible: !playerControlLayout.editing
 
         anchors.fill: parent
 
@@ -197,6 +230,8 @@ FocusScope {
     Loader {
         id: loaderLeft
 
+        visible: !playerControlLayout.editing
+
         anchors {
             right: loaderCenter.left
             left: parent.left
@@ -243,6 +278,8 @@ FocusScope {
 
     Loader {
         id: loaderCenter
+
+        visible: !playerControlLayout.editing
 
         anchors {
             horizontalCenter: parent.horizontalCenter
@@ -306,6 +343,8 @@ FocusScope {
 
     Loader {
         id: loaderRight
+
+        visible: !playerControlLayout.editing
 
         anchors {
             left: loaderCenter.right

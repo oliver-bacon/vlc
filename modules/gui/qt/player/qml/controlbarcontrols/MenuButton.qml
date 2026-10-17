@@ -36,7 +36,7 @@ Widgets.IconToolButton {
 
     checked: contextMenu.shown
 
-    onClicked: contextMenu.popup(this.mapToGlobal(0, 0))
+    onClicked: contextMenu.popup(this.mapToGlobal(0, height))
 
     QmlGlobalMenu {
         id: contextMenu

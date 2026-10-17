@@ -564,6 +564,15 @@ ControlbarProfileModel::ControlbarProfileModel(QSettings* settings, QObject *par
     }, Qt::QueuedConnection);
 }
 
+// VLC Redesign: top bar of the player ("..." menu, library side panel,
+// folder of the media; title in the middle), the same for every style
+static const std::array<QVector<int>, 3> defaultTopbar {
+    QVector<int> { ControlListModel::MENU_BUTTON, ControlListModel::LIBRARY_BUTTON,
+                   ControlListModel::DIVIDER, ControlListModel::FOLDER_NAME_LABEL },
+    QVector<int> { ControlListModel::MEDIA_TITLE_LABEL },
+    QVector<int> { }
+};
+
 void ControlbarProfileModel::insertDefaults()
 {
     // Add default profiles:
@@ -577,6 +586,7 @@ void ControlbarProfileModel::insertDefaults()
             continue;
 
         ptrNewProfile->injectModel(i.modelData);
+        ptrNewProfile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
         ptrNewProfile->resetDirty(); // default profiles should not be dirty initially
     }
 
@@ -594,6 +604,7 @@ bool ControlbarProfileModel::restoreSelectedDefault()
         if (i.id == Style::EMPTY_STYLE || qfut(i.name) != profile->name())
             continue;
         profile->injectModel(i.modelData);
+        profile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
         return true;
     }
     return false;
@@ -914,6 +925,13 @@ bool ControlbarProfileModel::reload()
 
             ptrNewProfile->setModelData(identifier, data);
             ptrNewProfile->resetDirty(); // Newly loaded model can not be dirty
+        }
+
+        // saved before the top bar could be customized
+        if (!ptrNewProfile->m_models.contains(PlayerControlbarModel::Topbar))
+        {
+            ptrNewProfile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
+            ptrNewProfile->resetDirty();
         }
 
         profiles.append(ptrNewProfile);

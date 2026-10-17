@@ -286,142 +286,37 @@ FocusScope{
                     color: theme.accent
                 }
 
-                Widgets.IconToolButton {
-                    id: menuSelector
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !root.showToolbar
-                    enabled: visible
-                    font.pixelSize: VLCStyle.icon_banner
-
-                    width: VLCStyle.bannerButton_width
-                    height: VLCStyle.bannerButton_height
-
-                    text: VLCIcons.more
-                    description: qsTr("Menu")
-
-                    AccessibleCompat.id: "topBarMenuButton"
-
-                    checked: contextMenu.shown
-
-                    Navigation.parentItem: root
-                    Navigation.rightItem: sidebarBtn
-
-                    onClicked: contextMenu.popup(this.mapToGlobal(0, height))
-
-                    onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-
-                    Menus.QmlGlobalMenu {
-                        id: contextMenu
-
-                        ctx: MainCtx
-
-                        onAboutToShow: root.requestLockUnlockAutoHide(true)
-                        onAboutToHide: root.requestLockUnlockAutoHide(false)
-
-                        onPageRequested: (uri) => {
-                            History.push(uri)
-                            MainCtx.playerView = false
-                        }
-                    }
-
-                    Connections {
-                        target: root
-
-                        function onForceUnlock() {
-                            contextMenu.close()
-                        }
-                    }
-                }
-
-                Widgets.IconToolButton {
-                    id: sidebarBtn
-
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    objectName: "IconToolButton"
-                    font.pixelSize: VLCStyle.icon_banner
-                    text: VLCIcons.panel_left
-                    description: qsTr("Library")
-                    checked: root.libraryVisible
-
-                    AccessibleCompat.id: "topBarSidebarButton"
-
-                    focus: true
-
-                    Navigation.parentItem: root
-                    Navigation.leftItem: menuSelector.visible ? menuSelector : null
-                    Navigation.rightItem: folderBtn.visible ? folderBtn : null
-                    onClicked: root.toggleLibraryRequested()
-
-                    onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-                }
-
-                Rectangle {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: folderBtn.visible
-                    width: VLCStyle.border
-                    height: VLCStyle.icon_normal
-                    color: theme.border
-                }
-
-                // folder of the current media; opens it in the library
-                T.Button {
-                    id: folderBtn
-
-                    readonly property string folderName: {
-                        const url = decodeURIComponent(String(Player.url))
-                        if (!url.startsWith("file://"))
-                            return ""
-                        const parts = url.split("/").filter((p) => p !== "")
-                        return parts.length > 2 ? parts[parts.length - 2] : ""
-                    }
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: folderName !== ""
-
-                    implicitHeight: VLCStyle.bannerButton_height
-                    implicitWidth: folderRow.implicitWidth + leftPadding + rightPadding
-                    leftPadding: VLCStyle.margin_xsmall
-                    rightPadding: VLCStyle.margin_xsmall
-
-                    Accessible.name: qsTr("Open the folder in the library")
-                    AccessibleCompat.id: "topBarFolderButton"
-
-                    Navigation.parentItem: root
-                    Navigation.leftItem: sidebarBtn
-
-                    background: Rectangle {
-                        radius: VLCStyle.dp(4, VLCStyle.scale)
-                        color: folderBtn.hovered ? theme.bg.secondary : "transparent"
-                    }
-
-                    contentItem: Row {
-                        id: folderRow
-                        spacing: VLCStyle.margin_xsmall
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            font.family: VLCIcons.fontFamily
-                            font.pixelSize: VLCStyle.icon_normal
-                            text: VLCIcons.topbar_network
-                            color: theme.fg.secondary
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: Math.min(implicitWidth, VLCStyle.dp(220, VLCStyle.scale))
-                            text: folderBtn.folderName
-                            elide: Text.ElideMiddle
-                            color: theme.fg.secondary
-                            font.pixelSize: VLCStyle.fontSize_normal
-                        }
-                    }
-
-                    onClicked: root.folderRequested()
-                    onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
-                }
+                // the rest of the bar comes from the "Top bar" layout of
+                // the player bars (customizable, see topBarControls)
             }
+        }
+    }
+
+    // VLC Redesign: "..." menu, library panel, folder, title... from the
+    // "Top bar" layout of the player bars (Customize Player)
+    PlayerControlLayout {
+        id: topBarControls
+
+        anchors.left: logoOrResume.right
+        anchors.leftMargin: VLCStyle.margin_xsmall
+        anchors.right: csdDecorations.visible ? csdDecorations.left : parent.right
+        anchors.rightMargin: VLCStyle.margin_xsmall
+        anchors.verticalCenter: logoOrResume.verticalCenter
+
+        height: VLCStyle.globalToolbar_height
+        visible: logoGroup.visible
+
+        identifier: PlayerControlbarModel.Topbar
+        spacing: VLCStyle.margin_xxsmall
+        layoutSpacing: VLCStyle.margin_normal
+
+        Navigation.parentItem: root
+
+        onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
+
+        Connections {
+            target: root
+            function onForceUnlock() { topBarControls.forceUnlock() }
         }
     }
 
@@ -436,7 +331,8 @@ FocusScope{
         readonly property bool _alignHCenter: _centerX > _leftLimit
                                               && _centerX + centerTitleText.implicitWidth < _rightLimit
 
-        visible: _showCenterText
+        // the title is the "Title" control of the top bar layout
+        visible: false
 
         enabled: visible
 

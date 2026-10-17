@@ -144,6 +144,8 @@ class MainCtx : public QObject
 
     // Expose Property Minimal View for Player View
     Q_PROPERTY(bool minimalView READ isMinimalView WRITE setMinimalView NOTIFY mainInterfaceModesChanged FINAL)
+    /// VLC Redesign "Customize Player": the player bars are edited in place
+    Q_PROPERTY(bool playerCustomizing MEMBER m_playerCustomizing NOTIFY playerCustomizingChanged FINAL)
     Q_PROPERTY(bool playerView READ isPlayerView WRITE setPlayerView NOTIFY mainInterfaceModesChanged FINAL)
 
     // This Property only works if hasAcrylicSurface is set
@@ -454,6 +456,7 @@ protected:
     bool                 m_windowTitlebar = true;
     // NOTE: Ideally this should be a QVLCBool.
     bool                 m_hasToolbarMenu = false;
+    bool                 m_playerCustomizing = false;
     bool                 m_canShowVideoPIP = false;
 
     /* Pinned */
@@ -554,6 +557,7 @@ protected slots:
     void onVOutChanged( bool );
 
 signals:
+    void playerCustomizingChanged();
     void fullscreenInterfaceToggled( bool );
     void setInterfaceVisibible(bool, bool requestActivate = false);
     void setInterfaceFullScreen( bool );

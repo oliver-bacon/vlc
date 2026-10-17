@@ -365,8 +365,12 @@ T.Pane {
 
             inlineItems: root._inline ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
 
-            implicitHeight: (MainCtx.pinVideoControls || root._inline) ? VLCStyle.controlLayoutHeightPinned
-                                                                       : VLCStyle.controlLayoutHeight
+            implicitHeight: {
+                const h = (MainCtx.pinVideoControls || root._inline) ? VLCStyle.controlLayoutHeightPinned
+                                                                     : VLCStyle.controlLayoutHeight
+                // the dashed boxes of Customize Player need a bit more
+                return editing ? Math.max(h, editHeight) : h
+            }
 
             visible: !model?.empty ?? false
 

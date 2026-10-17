@@ -637,6 +637,12 @@ Item {
         target: DialogsProvider
 
         function onShowFigmaDialog(name, args) {
+            // the player bars are customized in place, in the player
+            if (name === "customize") {
+                MainCtx.playerView = true
+                MainCtx.playerCustomizing = true
+                return
+            }
             let dialog = root._figmaDialogInstances[name]
             if (!dialog) {
                 const component = Qt.createComponent("qrc:///qt/qml/VLC/Dialogs/" + root._figmaDialogs[name])

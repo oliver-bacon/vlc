@@ -1564,6 +1564,8 @@ libqml_module_player_a_QML = \
 	player/qml/PIPPlayer.qml \
 	player/qml/Player.qml \
 	player/qml/PlayerControlLayout.qml \
+	player/qml/LiveBarSection.qml \
+	player/qml/CustomizePlayerPanel.qml \
 	player/qml/PlayerPlaylistVisibilityFSM.qml \
 	player/qml/PlayerToolbarVisibilityFSM.qml \
 	player/qml/MinimalView.qml \
@@ -1621,6 +1623,8 @@ libqml_module_playercontrols_a_QML = \
 	player/qml/controlbarcontrols/PropertiesButton.qml \
 	player/qml/controlbarcontrols/ReplayButton.qml \
 	player/qml/controlbarcontrols/SidebarButton.qml \
+	player/qml/controlbarcontrols/LibraryButton.qml \
+	player/qml/controlbarcontrols/MediaTitleLabel.qml \
 	player/qml/controlbarcontrols/ZoomButton.qml \
 	player/qml/controlbarcontrols/DividerWidget.qml \
 	player/qml/controlbarcontrols/FileNameLabel.qml \
