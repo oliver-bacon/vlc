@@ -25,6 +25,8 @@
 #include "medialib.hpp"
 #include "mlmedia.hpp"
 
+#include <QSet>
+
 static const char *UPDATE_QUEUE = "MLMEDIASTORE_UPDATEQUEUE";
 
 MLMediaStore::~MLMediaStore() = default;
@@ -128,6 +130,21 @@ void MLMediaStore::onVlcMlEvent(void *data, const vlc_ml_event_t *event)
         break;
     }
 
+    // a thumbnail asked for by setMedia() is ready
+    case VLC_ML_EVENT_MEDIA_THUMBNAIL_GENERATED:
+    {
+        if (!event->media_thumbnail_generated.b_success
+            || event->media_thumbnail_generated.p_media == nullptr)
+            break;
+        const MLItemId id(event->media_thumbnail_generated.p_media->i_id, VLC_ML_PARENT_UNKNOWN);
+        QMetaObject::invokeMethod(self, [self, id] () mutable
+        {
+            self->update(id);
+        });
+
+        break;
+    }
+
     case VLC_ML_EVENT_MEDIA_DELETED:
     {
         const MLItemId id{ event->deletion.i_entity_id, VLC_ML_PARENT_UNKNOWN };
@@ -179,5 +196,26 @@ void MLMediaStore::setMedia(const QString &mrl, MLMedia media)
         return;
 
     m_mrls[media.getId()] = mrl;
+
+    // the browse views (e.g. the Videos folders) show the thumbnail of the
+    // media library: ask for it when the video has none yet, like the
+    // video views of the library do (once per media and session)
+    vlc_ml_thumbnail_status_t status;
+    media.smallCover(&status);
+    if (media.type() == VLC_ML_MEDIA_TYPE_VIDEO
+        && (status == VLC_ML_THUMBNAIL_STATUS_MISSING || status == VLC_ML_THUMBNAIL_STATUS_FAILURE))
+    {
+        static QSet<int64_t> requested;
+        const int64_t id = media.getId().id;
+        if (!requested.contains(id))
+        {
+            requested.insert(id);
+            m_ml->runOnMLThread(this, [id](vlc_medialibrary_t *ml)
+            {
+                vlc_ml_media_generate_thumbnail(ml, id, VLC_ML_THUMBNAIL_SMALL, 512, 320, .15);
+            });
+        }
+    }
+
     emit updated(mrl, media);
 }
