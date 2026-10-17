@@ -858,7 +858,7 @@ T.ProgressBar {
         }
     }
 
-    // seek preview (Figma "thumbnail": 272 x 189 card, 252 x 142 frame)
+    // seek preview (Figma "thumbnail": 272 x 189 card, 252 x 142 frame for 16:9)
     Rectangle {
         id: previewCard
 
@@ -867,8 +867,18 @@ T.ProgressBar {
         visible: control._previewEnabled && hoverHandler.hovered && SeekPreview.source !== ""
         z: 11
 
-        width: 272 * dp1
-        height: 189 * dp1
+        // the card fits the frame: at most 252 x 142 (16:9), narrower or
+        // lower for other aspect ratios (wide films, portrait videos)
+        readonly property real _maxW: 252 * dp1
+        readonly property real _maxH: 142 * dp1
+        readonly property real _aspect: (previewImage.implicitWidth > 0 && previewImage.implicitHeight > 0)
+                                        ? previewImage.implicitWidth / previewImage.implicitHeight
+                                        : 16 / 9
+        readonly property real _frameW: Math.round(Math.min(_maxW, _maxH * _aspect))
+        readonly property real _frameH: Math.round(Math.min(_maxH, _maxW / _aspect))
+
+        width: Math.max(_frameW + 20 * dp1, timeText.implicitWidth + 40 * dp1)
+        height: _frameH + 47 * dp1
         radius: 14 * dp1
         color: Qt.alpha((theme.palette?.isDark ?? true) ? "#191919" : "#F0F0F0", 0.95)
 
@@ -876,10 +886,12 @@ T.ProgressBar {
         y: -height - 12 * dp1
 
         Image {
-            x: 10 * previewCard.dp1
+            id: previewImage
+
+            anchors.horizontalCenter: parent.horizontalCenter
             y: 10 * previewCard.dp1
-            width: 252 * previewCard.dp1
-            height: 142 * previewCard.dp1
+            width: previewCard._frameW
+            height: previewCard._frameH
             fillMode: Image.PreserveAspectFit
             asynchronous: false
             cache: false
@@ -889,6 +901,8 @@ T.ProgressBar {
         }
 
         Text {
+            id: timeText
+
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 10 * previewCard.dp1
