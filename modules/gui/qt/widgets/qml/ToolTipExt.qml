@@ -27,7 +27,12 @@ T.ToolTip {
     id: control
 
     x: 0
-    y: -implicitHeight - VLCStyle.margin_xxxsmall
+    // above the item, or below it when the item is at the top of the
+    // window: a tool tip window pushed back onto the screen would cover the
+    // cursor, take the hover from the item and flicker (VLC Redesign top bar)
+    y: (parent && parent.mapToItem(null, 0, 0).y < implicitHeight + 2 * VLCStyle.margin_xxxsmall)
+       ? parent.height + VLCStyle.margin_xxxsmall
+       : -implicitHeight - VLCStyle.margin_xxxsmall
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
                             implicitContentWidth + leftPadding + rightPadding)
