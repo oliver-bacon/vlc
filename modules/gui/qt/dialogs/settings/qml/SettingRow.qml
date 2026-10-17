@@ -123,7 +123,7 @@ FocusScope {
     Connections {
         target: VLCConfig
         function onValueChanged(name) {
-            if (name === root.option || name === root.row.list)
+            if (name === "" || name === root.option || name === root.row.list)
                 root.value = root._read()
         }
     }

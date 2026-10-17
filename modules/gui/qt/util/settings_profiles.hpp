@@ -28,8 +28,10 @@
  *
  * A profile is a complete set of VLC settings: every option that differs
  * from its default value, saved in its own file of the user config folder.
- * Switching profile saves the current settings into the current profile,
- * then resets all options and applies the other profile.
+ * The profile also keeps the Qt interface settings (look, player bars,
+ * subtitle presets...), see isProfileKey(). Switching profile saves the
+ * current settings into the current profile, then resets all options and
+ * applies the other profile to the open interface.
  */
 namespace SettingsProfiles
 {

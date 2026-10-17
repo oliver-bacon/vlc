@@ -190,7 +190,7 @@ FocusScope {
     Connections {
         target: VLCConfig
         function onUiValueChanged(key) {
-            if (key === root._pinsKey)
+            if (key === "" || key === root._pinsKey)
                 root._loadPins()
         }
     }

@@ -45,6 +45,7 @@
 #include "qt.hpp"
 #include "util/vlchotkeyconverter.hpp"
 #include "network/networkmediamodel.hpp"
+#include "maininterface/mainctx.hpp"
 
 #include <vlc_media_source.h>
 #include <vlc_input_item.h>
@@ -97,6 +98,12 @@ ConfigBridge::ConfigBridge(qt_intf_t* intf, QObject* parent)
     , m_intf(intf)
 {
     assert(m_intf);
+    // a settings profile changes any option: "" = all of them
+    if (m_intf->p_mi)
+        connect(m_intf->p_mi, &MainCtx::settingsProfileChanged, this, [this]() {
+            emit valueChanged({});
+            emit uiValueChanged({});
+        });
 }
 
 bool ConfigBridge::exists(const QString& name) const

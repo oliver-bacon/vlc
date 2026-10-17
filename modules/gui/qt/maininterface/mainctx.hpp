@@ -558,6 +558,8 @@ protected slots:
 
 signals:
     void playerCustomizingChanged();
+    /// a settings profile was applied (VLC Redesign), see SettingsProfiles
+    void settingsProfileChanged();
     void fullscreenInterfaceToggled( bool );
     void setInterfaceVisibible(bool, bool requestActivate = false);
     void setInterfaceFullScreen( bool );

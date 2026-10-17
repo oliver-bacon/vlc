@@ -21,6 +21,9 @@
 
 #include "settings_profiles.hpp"
 
+#include "maininterface/mainctx.hpp"
+#include "dialogs/toolbar/controlbar_profile_model.hpp"
+
 #include <QDir>
 #include <QSettings>
 
@@ -32,6 +35,30 @@
 namespace {
 
 const char* const kGroup = "SettingsProfiles";
+
+// group of the profile file with the Qt interface settings
+const QString kInterfaceGroup = QStringLiteral("Interface");
+
+/* Whether an interface setting (key of vlc-qt-interface.conf) belongs to a
+ * profile: the look, the player bars and the other choices do; the window
+ * state, the profile list itself and what the user keeps in the library
+ * (pins, hidden Home items, recent media, sorting of the views) and the
+ * crash recovery file don't. */
+bool isProfileKey(const QString& key)
+{
+    if (!key.contains(QLatin1Char('/')))
+        return false; // [General]: recovery file, dialog folder, graphics API...
+    static const char* const excludedGroups[] = {
+        "SettingsProfiles/", "Library/", "LibraryPanel/", "Home/", "HomeHidden/",
+        "RecentsMRL/", "sortCriteria/", "sortOrder/",
+    };
+    for (const char* group : excludedGroups)
+        if (key.startsWith(QLatin1String(group)))
+            return false;
+    return !key.endsWith(QLatin1String("RecoveryFilePath"))
+        && !key.contains(QLatin1String("geometry"), Qt::CaseInsensitive)
+        && !key.contains(QLatin1String("windowState"), Qt::CaseInsensitive);
+}
 
 QString profileFile(const QString& name)
 {
@@ -65,11 +92,22 @@ void forEachOption(F&& f)
     module_list_free(modules);
 }
 
-/* writes every option that differs from its default value */
-void saveProfile(const QString& name)
+/* writes every option that differs from its default value, and the
+ * interface settings */
+void saveProfile(qt_intf_t* intf, const QString& name)
 {
     QSettings file(profileFile(name), QSettings::IniFormat);
     file.clear();
+
+    if (intf->p_mi)
+        intf->p_mi->controlbarProfileModel()->save(false);
+    QSettings& settings = *intf->mainSettings;
+    file.beginGroup(kInterfaceGroup);
+    for (const QString& key : settings.allKeys())
+        if (isProfileKey(key))
+            file.setValue(key, settings.value(key));
+    file.endGroup();
+
     forEachOption([&file](const module_config_t& item) {
         const char* option = item.psz_name;
         if (IsConfigIntegerType(item.i_type))
@@ -97,9 +135,25 @@ void saveProfile(const QString& name)
 }
 
 /* resets all options, then applies the saved ones */
-void loadProfile(const QString& name)
+void loadProfile(qt_intf_t* intf, const QString& name)
 {
     QSettings file(profileFile(name), QSettings::IniFormat);
+
+    // profiles saved before they kept the interface settings leave them as they are
+    if (file.childGroups().contains(kInterfaceGroup))
+    {
+        QSettings& settings = *intf->mainSettings;
+        for (const QString& key : settings.allKeys())
+            if (isProfileKey(key))
+                settings.remove(key);
+        file.beginGroup(kInterfaceGroup);
+        for (const QString& key : file.allKeys())
+            if (isProfileKey(key))
+                settings.setValue(key, file.value(key));
+        file.endGroup();
+        settings.sync();
+    }
+
     config_ResetAll();
     forEachOption([&file](const module_config_t& item) {
         const QString key = QString::fromUtf8(item.psz_name);
@@ -130,7 +184,7 @@ void ensureDefaults(qt_intf_t* intf)
     // the profiles of the design, all starting from the current settings
     const QStringList defaults { qtr("Movies"), qtr("Shows"), qtr("Music"), qtr("Work") };
     for (const QString& name : defaults)
-        saveProfile(name);
+        saveProfile(intf, name);
     settings.beginGroup(kGroup);
     settings.setValue(QStringLiteral("names"), defaults);
     settings.setValue(QStringLiteral("current"), defaults.first());
@@ -158,11 +212,20 @@ bool SettingsProfiles::switchTo(qt_intf_t* intf, const QString& name)
     if (name == previous || !names(intf).contains(name))
         return false;
 
-    saveProfile(previous);
-    loadProfile(name);
+    saveProfile(intf, previous);
+    loadProfile(intf, name);
     config_SaveConfigFile(intf);
     intf->mainSettings->setValue(QStringLiteral("%1/current").arg(kGroup), name);
     msg_Info(intf, "settings profile changed to %s", qtu(name));
+
+    // apply the profile to the open interface
+    if (MainCtx* const mainCtx = intf->p_mi)
+    {
+        mainCtx->reloadPrefs();
+        mainCtx->reloadFromSettings();
+        mainCtx->controlbarProfileModel()->reload();
+        emit mainCtx->settingsProfileChanged();
+    }
     return true;
 }
 
@@ -172,8 +235,8 @@ bool SettingsProfiles::create(qt_intf_t* intf, const QString& name)
     if (name.trimmed().isEmpty() || list.contains(name))
         return false;
 
-    saveProfile(current(intf));
-    saveProfile(name);
+    saveProfile(intf, current(intf));
+    saveProfile(intf, name);
     list.append(name);
     QSettings& settings = *intf->mainSettings;
     settings.setValue(QStringLiteral("%1/names").arg(kGroup), list);

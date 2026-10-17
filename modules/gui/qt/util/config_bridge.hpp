@@ -102,6 +102,7 @@ public:
     Q_INVOKABLE void setUiValue(const QString& key, const QVariant& value);
 
 signals:
+    /// `name` / `key` is empty when a settings profile changed all of them
     void valueChanged(const QString& name);
     void uiValueChanged(const QString& key);
 
