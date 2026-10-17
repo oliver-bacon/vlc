@@ -28,3 +28,4 @@ First public pre-release, based on VLC master `1176b56` (4.0 development version
 ### Fixed
 - Windows: VLC kept running after closing (libupnp built with MinGW looped forever in
   `strncasecmp`), and the UPnP plugin no longer ends libupnp while holding a lock
+- The media library no longer ends VLC when a saved subtitle or audio track cannot be read

@@ -23,12 +23,11 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 
 ## Screenshots
 
-<!-- Screenshots are added before the release; see the list in the release checklist. -->
+![Player with the one-row player bar](docs/screenshots/player.png)
 
-| Player | Library |
+| Library home | Seek bar preview |
 |---|---|
-| ![Player](docs/screenshots/player.png) | ![Library home](docs/screenshots/library-home.png) |
-| ![Seek bar preview](docs/screenshots/seek-preview.png) | ![Videos by folder](docs/screenshots/library-videos.png) |
+| ![Library home with Continue Watching and the mini player](docs/screenshots/library-home.png) | ![Preview thumbnail while hovering the seek bar](docs/screenshots/seek-preview.png) |
 
 ## Features
 
@@ -132,8 +131,6 @@ No Linux packages. Linux: build from source (experimental), see below.
   `plugins\services_discovery\libupnp_plugin.dll` (you lose UPnP discovery).
 - **Linux test build:** quitting can crash on exit; unmodified upstream VLC does the same
   with Qt 6.8.3.
-- One crash after clicking the library button many times in a row was seen once and
-  could not be reproduced.
 
 Please report problems in the [issue tracker](https://github.com/oliver-bacon/vlc/issues) of this repository.
 
