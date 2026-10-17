@@ -29,6 +29,8 @@
 #include <vlc_url.h>            /* vlc_uri_decode */
 #include <vlc_strings.h>        /* vlc_strfplayer */
 #include <vlc_aout.h>           /* audio_output_t */
+#include <vlc_configuration.h>
+#include <cstring>
 #include <vlc_es.h>
 #include <vlc_cxx_helpers.hpp>
 #include <vlc_vout.h>
@@ -361,6 +363,24 @@ static  void on_player_current_media_changed(vlc_player_t *, input_item_t *new_m
     SharedInputItem newMediaPtr = SharedInputItem( new_media );
     that->callAsync([that,newMediaPtr] () {
         PlayerController* q = that->q_func();
+
+        // a visualization turned on in the player (audio player button,
+        // menu) is for that media only: the audio output keeps its "visual"
+        // variable, so every next file opened with it. Off again, back to
+        // the visualizer of the settings ("audio-visual", none by default).
+        if (SharedAOut aout = q->getAout())
+        {
+            char* current = var_GetString(aout.get(), "visual");
+            if (current && *current)
+            {
+                var_SetString(aout.get(), "visual", ""); // sets "audio-visual" to "none"
+                char* wanted = config_GetPsz("audio-visual");
+                if (wanted && *wanted && strcmp(wanted, "none") != 0)
+                    var_SetString(aout.get(), "audio-visual", wanted);
+                free(wanted);
+            }
+            free(current);
+        }
 
         that->m_syltRaw.reset();
         that->m_syltLyrics.reset();
