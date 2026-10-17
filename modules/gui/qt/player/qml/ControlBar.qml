@@ -27,6 +27,7 @@ import VLC.Style
 import VLC.Widgets as Widgets
 import VLC.Player
 import VLC.Util
+import VLC.Dialogs
 
 T.Pane {
     id: root
@@ -53,7 +54,8 @@ T.Pane {
 
     // In the single-row layout the seek bar sits inside the controls row, so
     // the bar starts at the top of the pane (used to place the play queue).
-    readonly property real sliderY: _inline ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
+    // (Customize Player: also from the top, the seek bar row is a dashed box)
+    readonly property real sliderY: (_inline || MainCtx.playerCustomizing) ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
     property int textPosition: ControlBar.TimeTextPosition.AboveSlider
 
     // Whether the current control layout can use TimeTextPosition.Inline
@@ -253,8 +255,8 @@ T.Pane {
             SliderBar {
                 id: trackPositionSlider
 
-                barHeight: root._inline ? root.inlineSliderHeight : root.sliderHeight
-                trackStyle: root._inline
+                barHeight: (root._inline || MainCtx.playerCustomizing) ? root.inlineSliderHeight : root.sliderHeight
+                trackStyle: root._inline || MainCtx.playerCustomizing
                 Layout.alignment: Qt.AlignVCenter
 
                 Accessible.role: Accessible.Slider
@@ -274,6 +276,20 @@ T.Pane {
                 Keys.onPressed: (event) => {
                     Navigation.defaultKeyAction(event)
                 }
+            },
+            // Customize Player: the seek bar row as a dashed box (Figma
+            // "Player - customize"); the seek bar itself is not movable
+            DashedBorder {
+                parent: root
+                visible: MainCtx.playerCustomizing && row2.visible
+                x: root.leftPadding + row2.x - VLCStyle.margin_xsmall
+                y: root.topPadding + row2.y - VLCStyle.margin_xxsmall
+                width: row2.width + 2 * VLCStyle.margin_xsmall
+                height: row2.height + 2 * VLCStyle.margin_xxsmall
+                radius: VLCStyle.dp(4, VLCStyle.scale)
+                dash: 4
+                gap: 3
+                color: Qt.alpha(theme.fg.secondary, 0.6)
             },
             Loader {
                 id: bookmarksLoader
@@ -347,7 +363,9 @@ T.Pane {
 
             Layout.fillWidth: true
             Layout.fillHeight: false
-            Layout.leftMargin: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.margin_xsmall
+            // Customize Player: in line with the dashed boxes of the bar below
+            Layout.leftMargin: MainCtx.playerCustomizing ? VLCStyle.margin_large + VLCStyle.margin_xsmall
+                             : (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.margin_xsmall
                                                                                               : 0
 
             Layout.rightMargin: Layout.leftMargin

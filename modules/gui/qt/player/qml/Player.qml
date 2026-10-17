@@ -1005,6 +1005,13 @@ FocusScope {
         }
     }
 
+    // Customize Player opened without media: plain grey behind the bars
+    Rectangle {
+        anchors.fill: parent
+        visible: MainCtx.playerCustomizing && Player.playingState === Player.PLAYING_STATE_STOPPED
+        color: windowTheme.palette.isDark ? "#2D2D2D" : "#D5D5D5"
+    }
+
     TopBar {
         id: topBar
 
@@ -1442,14 +1449,16 @@ FocusScope {
         rightPadding: VLCStyle.applicationHorizontalMargin
         leftPadding: VLCStyle.applicationHorizontalMargin
         bottomPadding: VLCStyle.applicationVerticalMargin + VLCStyle.margin_xsmall
-        topPadding: (textPosition === ControlBar.TimeTextPosition.Inline) ? VLCStyle.margin_xsmall : 0
+        topPadding: (textPosition === ControlBar.TimeTextPosition.Inline || MainCtx.playerCustomizing) ? VLCStyle.margin_xsmall : 0
 
         // Single-row bar when the control layout allows it (no center
         // controls, e.g. the "Modern Style" profile); otherwise the
         // classic two-row bar.
-        textPosition: (canInline)
+        // Customize Player shows the seek bar in a row of its own (Figma
+        // "Player - customize")
+        textPosition: (canInline && !MainCtx.playerCustomizing)
                       ? ControlBar.TimeTextPosition.Inline
-                      : (MainCtx.pinVideoControls)
+                      : (MainCtx.pinVideoControls || MainCtx.playerCustomizing)
                         ? ControlBar.TimeTextPosition.LeftRightSlider
                         : ControlBar.TimeTextPosition.AboveSlider
 
@@ -1481,15 +1490,19 @@ FocusScope {
 
         onRequestLockUnlockAutoHide: (lock) => rootPlayer.lockUnlockAutoHide(lock)
 
-        identifier: (Player.hasVideoOutput) ? PlayerControlbarModel.Videoplayer
-                                            : PlayerControlbarModel.Audioplayer
+        // Customize Player without media edits the video player bar
+        identifier: (Player.hasVideoOutput || (MainCtx.playerCustomizing && Player.playingState === Player.PLAYING_STATE_STOPPED))
+                    ? PlayerControlbarModel.Videoplayer
+                    : PlayerControlbarModel.Audioplayer
 
         onHoveredChanged: rootPlayer.lockUnlockAutoHide(hovered)
 
         background: Rectangle {
             id: controlBarBackground
 
+            // (Customize Player draws the bar like the single-row one)
             readonly property bool _inline: (controlBar.textPosition === ControlBar.TimeTextPosition.Inline)
+                                            || MainCtx.playerCustomizing
 
             // The single-row bar is always drawn on a solid surface (Figma:
             // BG/A3 at 95%), instead of fading into the video.

@@ -83,27 +83,34 @@ FocusScope {
 
     // Children
 
-    // left and right parts take the free width, the center one its controls
-    RowLayout {
+    // as in the normal bar: the center part in the middle, the left and
+    // right parts take the free width on each side
+    Item {
         id: editRow
+
+        readonly property real gap: VLCStyle.margin_xsmall
 
         anchors.fill: parent
         visible: playerControlLayout.editing
-        spacing: VLCStyle.margin_xsmall
+
+        implicitWidth: editLeft.implicitWidth + editCenter.implicitWidth + editRight.implicitWidth + 2 * gap
+        implicitHeight: Math.max(editLeft.implicitHeight, editCenter.implicitHeight, editRight.implicitHeight)
 
         LiveBarSection {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            id: editLeft
+            anchors { left: parent.left; right: editCenter.left; rightMargin: editRow.gap; top: parent.top; bottom: parent.bottom }
             model: playerControlLayout.model?.left ?? null
         }
         LiveBarSection {
-            Layout.fillHeight: true
-            Layout.preferredWidth: implicitWidth
+            id: editCenter
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; bottom: parent.bottom }
+            width: implicitWidth
             model: playerControlLayout.model?.center ?? null
         }
         LiveBarSection {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            id: editRight
+            anchors { left: editCenter.right; leftMargin: editRow.gap; right: parent.right; top: parent.top; bottom: parent.bottom }
+            alignRight: true
             model: playerControlLayout.model?.right ?? null
         }
     }

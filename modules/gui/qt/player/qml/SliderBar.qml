@@ -77,7 +77,7 @@ T.ProgressBar {
     Connections {
         target: VLCConfig
         function onUiValueChanged(key) {
-            if (key === "Player/SubtitleTimeline")
+            if (key === "" || key === "Player/SubtitleTimeline")
                 control._readTimelineSetting()
         }
     }
@@ -679,7 +679,9 @@ T.ProgressBar {
                 },
                 State {
                     name: "buffering not started"
+                    // not in Customize Player opened without media
                     when: control.visible && Player.buffering === 0
+                          && !(MainCtx.playerCustomizing && Player.playingState === Player.PLAYING_STATE_STOPPED)
                     PropertyChanges {
                         target: bufferRect
                         width: bufferAnimWidth

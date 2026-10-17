@@ -40,6 +40,9 @@ Item {
     // ControlListModel
     property var model: null
 
+    // the controls at the right end (right part of a bar)
+    property bool alignRight: false
+
     readonly property ColorContext colorContext: ColorContext {
         id: theme
         colorSet: ColorContext.Window
@@ -106,7 +109,7 @@ Item {
         // a control of this row shows its own drop marker
         property bool childDrop: false
 
-        x: section._pad
+        x: section.alignRight ? section.width - section._pad - width : section._pad
         anchors.verticalCenter: parent.verticalCenter
         spacing: VLCStyle.dp(4, VLCStyle.scale)
 
