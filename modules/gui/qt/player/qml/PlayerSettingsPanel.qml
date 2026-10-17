@@ -171,6 +171,9 @@ T.Popup {
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: 6 * root.dp1
             Layout.bottomMargin: 8 * root.dp1
+            // T.Button has no implicit width of its own: without it the
+            // layout centres a zero-wide button and the text hangs right
+            implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
             implicitHeight: 32 * root.dp1
             background: null
             contentItem: Row {
