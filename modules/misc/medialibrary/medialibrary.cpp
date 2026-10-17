@@ -672,6 +672,7 @@ int MediaLibrary::Control( int query, va_list args )
         case VLC_ML_MEDIA_REMOVE_BOOKMARK:
         case VLC_ML_MEDIA_REMOVE_ALL_BOOKMARKS:
         case VLC_ML_MEDIA_UPDATE_BOOKMARK:
+        case VLC_ML_MEDIA_REMOVE_FROM_HISTORY:
         {
             auto priorityAccess = m_ml->acquirePriorityAccess();
 
@@ -1961,6 +1962,11 @@ int MediaLibrary::controlMedia( int query, va_list args )
                 return VLC_EGENERIC;
             return VLC_SUCCESS;
         }
+        case VLC_ML_MEDIA_REMOVE_FROM_HISTORY:
+            // sends VLC_ML_EVENT_HISTORY_CHANGED
+            if ( m->removeFromHistory() == false )
+                return VLC_EGENERIC;
+            return VLC_SUCCESS;
         case VLC_ML_MEDIA_SET_FAVORITE:
         {
             bool favorite = va_arg( args, int );

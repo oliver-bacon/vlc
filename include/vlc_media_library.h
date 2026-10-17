@@ -646,6 +646,7 @@ enum vlc_ml_control
     VLC_ML_MEDIA_REMOVE_BOOKMARK,           /**< arg1: media id; arg2: int64_t */
     VLC_ML_MEDIA_REMOVE_ALL_BOOKMARKS,      /**< arg1: media id */
     VLC_ML_MEDIA_UPDATE_BOOKMARK,           /**< arg1: media id; arg2: int64_t; arg3: const char*; arg4: const char* */
+    VLC_ML_MEDIA_REMOVE_FROM_HISTORY,       /**< arg1: media id; the media is as if never played (no play count, no progress) */
 
     /* Playlist management */
     VLC_ML_PLAYLIST_CREATE, /**< arg1: const char*; arg2(out): vlc_ml_playlist_t**; can fail */
@@ -1204,6 +1205,11 @@ static inline int vlc_ml_media_set_favorite( vlc_medialibrary_t* p_ml, int64_t i
                                              bool b_favorite )
 {
     return vlc_ml_control( p_ml, VLC_ML_MEDIA_SET_FAVORITE, i_media_id, (int) b_favorite );
+}
+
+static inline int vlc_ml_media_remove_from_history( vlc_medialibrary_t* p_ml, int64_t i_media_id )
+{
+    return vlc_ml_control( p_ml, VLC_ML_MEDIA_REMOVE_FROM_HISTORY, i_media_id );
 }
 
 static inline vlc_ml_bookmark_list_t*
