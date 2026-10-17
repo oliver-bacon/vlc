@@ -963,6 +963,43 @@ FocusScope {
         }
     }
 
+    // Rounded frame around the video (Figma "Player": a 20px #1B1B1B
+    // stroke, rx 19, centred on the window edge, so 10px at the sides and
+    // 9px round corners under the top bar and above the control bar). The
+    // border of a Rectangle stays inside it, its inner corners have the
+    // radius minus the border width. The side panels are drawn over it.
+    Item {
+        id: videoFrame
+
+        readonly property real _border: VLCStyle.dp(10, VLCStyle.scale)
+
+        // between the bars only: the bars are not fully opaque
+        x: 0
+        width: parent.width
+        y: topBar.y + topBar.height
+        height: controlBar.y - y
+        clip: true
+
+        visible: MainCtx.hasEmbededVideo
+                 && MainCtx.intfMainWindow.visibility !== Window.FullScreen
+                 && !MainCtx.minimalView
+                 && topBar.visible && controlBar.visible
+        opacity: rootPlayer._controlsUnderVideo ? 1.0 : controlBar.opacity
+
+        Rectangle {
+            x: 0
+            y: -videoFrame._border
+            width: videoFrame.width
+            height: videoFrame.height + 2 * videoFrame._border
+
+            color: "transparent"
+            border.width: videoFrame._border
+            border.color: windowTheme.bg.primary
+            radius: VLCStyle.dp(19, VLCStyle.scale)
+            antialiasing: true
+        }
+    }
+
     TopBar {
         id: topBar
 
