@@ -17,6 +17,8 @@
  *****************************************************************************/
 #include "qml_menu_wrapper.hpp"
 #include "menus.hpp"
+
+#include <vlc_intf_strings.h>
 #include "medialibrary/medialib.hpp"
 #include "medialibrary/mlplaylistlistmodel.hpp"
 #include "medialibrary/mlplaylistmodel.hpp"
@@ -418,6 +420,45 @@ void QmlGlobalMenu::popup(QPoint pos)
 
     submenu = more->addMenu(qtr( "&Help" ));
     HelpMenu( p_intf, submenu );
+
+    /* leave out what the main menu above already has */
+    const auto plain = [](QString text) {
+        text = text.section('\t', 0, 0);
+        text.remove('&');
+        if (text.endsWith(QLatin1String("...")))
+            text.chop(3);
+        return text.trimmed();
+    };
+    const QStringList duplicates = {
+        plain(qtr("Open &File...")), plain(qtr("&Open Multiple Files...")),
+        plain(qfut(I_OP_OPDIR)), plain(qtr("Open &Disc...")),
+        plain(qtr("Open &Network Stream...")), plain(qtr("Open &Capture Device...")),
+        plain(qtr("Open &Recent Media")), plain(qtr("Conve&rt / Save...")),
+        plain(qtr("Customi&ze Interface...")), plain(qtr("&Preferences")),
+        plain(qfut(I_MENU_ABOUT)),
+    };
+    for (QAction *entry : more->actions())
+    {
+        QMenu *classic = entry->menu();
+        if (!classic)
+            continue;
+        for (QAction *item : classic->actions())
+        {
+            if (!item->isSeparator() && duplicates.contains(plain(item->text())))
+                classic->removeAction(item);
+        }
+        // no separator left at the top, at the end or twice in a row
+        QAction *previous = nullptr;
+        for (QAction *item : classic->actions())
+        {
+            if (item->isSeparator() && (!previous || previous->isSeparator()))
+                classic->removeAction(item);
+            else
+                previous = item;
+        }
+        if (previous && previous->isSeparator())
+            classic->removeAction(previous);
+    }
 
     m_menu->popup(pos);
 }
