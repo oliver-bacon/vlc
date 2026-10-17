@@ -46,6 +46,17 @@ FocusScope {
     // the library uses its own navigation as the rail (rail mode)
     property bool showRail: true
 
+    // width of the browser part (without the rail); NaN until it is resized
+    // once, then saved (interface setting LibraryPanel/width) and shared by
+    // the player and the rail mode of the library
+    property real panelWidth: NaN
+    readonly property real effectivePanelWidth: isNaN(panelWidth)
+        ? VLCStyle.dp(showRail ? 260 : 284, VLCStyle.scale)
+        : panelWidth
+    readonly property real minimumPanelWidth: VLCStyle.dp(200, VLCStyle.scale)
+    readonly property real maximumPanelWidth: Math.max(minimumPanelWidth,
+        Math.min(VLCStyle.dp(640, VLCStyle.scale), MainCtx.intfMainWindow.width / 2))
+
     // open the folder of the media being played (top bar folder button)
     function showFolder(folderUrl) {
         const levels = []
@@ -495,11 +506,35 @@ FocusScope {
     }
 
     Component.onCompleted: {
+        const saved = Number(MainCtx.settingValue("LibraryPanel/width", NaN))
+        if (saved > 0)
+            panelWidth = Helpers.clamp(saved, minimumPanelWidth, maximumPanelWidth)
         _loadPins()
         showSection("video")
     }
 
-    implicitWidth: (rail.visible ? rail.width : 0) + VLCStyle.dp(260, VLCStyle.scale)
+    implicitWidth: (rail.visible ? rail.width : 0) + effectivePanelWidth
+
+    // drag the right edge to resize the panel
+    Widgets.HorizontalResizeHandle {
+        id: resizeHandle
+
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        z: 10
+
+        atRight: true
+        currentWidth: root.effectivePanelWidth
+        minimumWidth: root.minimumPanelWidth
+        maximumWidth: root.maximumPanelWidth
+
+        onRequestedWidthChanged: {
+            if (pressed)
+                root.panelWidth = requestedWidth
+        }
+        onReleased: MainCtx.setSettingValue("LibraryPanel/width", root.panelWidth)
+    }
 
     Loader {
         id: mlLoader

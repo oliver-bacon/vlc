@@ -84,7 +84,11 @@ T.Pane {
     })
 
     // added to the pane's width by MainDisplay.qml
-    readonly property real sectionWidth: sectionShown ? VLCStyle.dp(300, VLCStyle.scale) : 0
+    // the panel's own width (it can be resized, PlayerLibraryPanel.qml)
+    readonly property real sectionWidth: sectionShown
+        ? (sidePanelLoader.item ? sidePanelLoader.item.effectivePanelWidth + 2 * panelInset
+                                : VLCStyle.dp(300, VLCStyle.scale))
+        : 0
 
     function toggleSection(section) {
         panelSection = (panelSection === section) ? "" : section
