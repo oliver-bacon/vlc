@@ -18,6 +18,7 @@
 
 import QtQuick
 import QtQuick.Templates as T
+import QtQuick.Window
 
 import VLC.MainInterface
 import VLC.Style
@@ -51,7 +52,10 @@ T.ToolTip {
     Component.onCompleted: {
         if (control.popupType !== undefined) {
             console.assert(typeof control.popupType === "number")
-            control.popupType = 1 // Popup.Window
+            // Popup.Window, but Popup.Item in fullscreen (VLC Redesign): on
+            // Windows a separate tool tip window over the fullscreen player
+            // kept the top bar's library button from reacting
+            control.popupType = Qt.binding(() => (MainCtx.intfMainWindow?.visibility === Window.FullScreen) ? 0 : 1)
         }
     }
 
