@@ -31,8 +31,7 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 
 ## Features
 
-What is in the code today. Items marked *(Linux only so far)* have only been tried on
-the Linux test build; see [Known issues](#known-issues-and-not-yet-tested).
+What is in the code today.
 
 **Look and feel**
 - Colours, accent (#D37918, user-selectable), icon set and two-tone menu icons from the design
@@ -54,14 +53,14 @@ the Linux test build; see [Known issues](#known-issues-and-not-yet-tested).
 - Preview thumbnails while hovering (local video files)
 - Subtitle timeline on the seek bar with delay and zoom buttons (external .srt, .vtt,
   .ass, .ssa files; turned on in the Playback tab)
-- Waveform for local audio files *(Linux only so far)*
+- Waveform for local audio files
 
 **Playback settings panel** (gear button)
 - Playback, Video, Audio and Subtitles tabs: speed, reverse, sleep timer; video effects
   (essential, crop, colours); equalizer with preset icons, compressor, spatializer,
   stereo widener; audio and subtitle delays
 - Subtitle appearance: font, colours, offset, size as named steps or as a percentage,
-  outline thickness, background opacity, and saved subtitle presets *(Linux only so far)*
+  outline thickness, background opacity, and saved subtitle presets
 - "Open Advanced Settings" opens the matching page of the settings window
 
 **Library**
@@ -111,17 +110,13 @@ Notes:
 
 No Linux packages. Linux: build from source (experimental), see below.
 
-## Known issues and not yet tested
+## Known issues
 
-- **Testing:** only the author has tested this, on one Windows PC and on a Linux test
-  build. No independent tester yet.
-- **Newest features not yet tried on Windows:** waveform seek bar, subtitle size values
-  and presets, "Open Advanced Settings" opening the settings page, Add Subtitles from
-  a link or for the queue, the new window buttons.
+- **Testing:** tested by the author only; no independent tester yet.
 - **Light theme:** not reviewed screen by screen. Over video, VLC always uses the dark
   colours (upstream behaviour).
-- **Subtitle timeline:** works with external .srt / .vtt / .ass / .ssa files (checked on
-  Linux with sample files); embedded subtitle tracks get no timeline.
+- **Subtitle timeline:** works with external .srt / .vtt / .ass / .ssa files; embedded
+  subtitle tracks get no timeline.
 - **Not implemented:** subtitles from OpenSubtitles (shown but disabled); the key that was
   pressed in on-screen messages; picture-in-picture outside the main window; parts of the
   Customize Player drag-and-drop design.
@@ -129,7 +124,7 @@ No Linux packages. Linux: build from source (experimental), see below.
   closing, and the next start had no media library. This build includes a fix (libupnp
   miscompiled with MinGW). If it still happens: end `vlc.exe` in Task Manager and delete
   `plugins\services_discovery\libupnp_plugin.dll` (you lose UPnP discovery).
-- **Linux test build:** quitting can crash on exit; unmodified upstream VLC does the same
+- **Linux (built from source):** quitting can crash on exit; unmodified upstream VLC does the same
   with Qt 6.8.3.
 
 Please report problems in the [issue tracker](https://github.com/oliver-bacon/vlc/issues) of this repository.
@@ -153,7 +148,7 @@ VLC's dependencies. Output: `win64/vlc-4.0.0-dev/vlc.exe` and the packages
 
 ### Linux (experimental)
 
-Used only for testing. Tested on Ubuntu with Qt 6.8.3 (installed with
+Known to build on Ubuntu with Qt 6.8.3 (installed with
 [aqtinstall](https://github.com/miurahr/aqtinstall)) and libmedialibrary 0.13:
 
 ```sh
