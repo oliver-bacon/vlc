@@ -583,8 +583,10 @@ input_item_t* MediaToInputItem( const medialibrary::IMedia* media )
             if ( slave != nullptr && input_item_AddSlave( inputItem.get(), slave ) != VLC_SUCCESS )
                 input_item_slave_Delete( slave );
         }
-        catch ( const medialibrary::fs::errors::DeviceRemoved& )
+        catch ( const std::exception& )
         {
+            /* a saved track that cannot be found or read (removed device,
+             * unknown scheme of a link, ...) is skipped, playback goes on */
         }
     }
     auto thumbnailStatus = media->thumbnailStatus( medialibrary::ThumbnailSizeType::Thumbnail );
