@@ -37,6 +37,11 @@ import VLC.Style
 //   scale     optional: the stored value is `scale` times the shown one
 //             (e.g. 1000 to show milliseconds as seconds)
 //   list/module  for kind "filter": toggles `module` in the `list` option
+//   live      apply to the audio that is playing too (audio options/filters)
+//   greyIfMissing  shown greyed out (not hidden) when `module` is missing
+//   kind "eqPreset": the preset also sets the bands; "equalizer": the bands
+//   (EqualizerPanel.qml); "spatial"/"spatialMode": spatial audio on/off and
+//   its filter (headphone virtualization or room effect)
 //   action    for kind "action": name of a function of the window
 QtObject {
     id: root
@@ -230,15 +235,20 @@ QtObject {
                     { label: qsTr("Replay gain"), option: "audio-replay-gain-mode" },
                     { label: qsTr("Replay gain preamp"), option: "audio-replay-gain-preamp", kind: "number", unit: "dB" }
                 ]},
+                // Figma "Settings - audio": the effects apply at once to the
+                // audio that is playing (live), and are greyed out when the
+                // build has no such filter
                 { title: qsTr("Effects"), rows: [
-                    { label: qsTr("Equalizer"), kind: "filter", list: "audio-filter", module: "equalizer" },
-                    { label: qsTr("Equalizer preset"), option: "equalizer-preset" },
-                    { label: qsTr("Two-pass"), option: "equalizer-2pass" },
-                    { label: qsTr("Spatial audio"), kind: "filter", list: "audio-filter", module: "spatializer" },
-                    { label: qsTr("Stereo widening"), kind: "filter", list: "audio-filter", module: "stereo_widen" },
-                    { label: qsTr("Compressor"), kind: "filter", list: "audio-filter", module: "compressor" },
-                    { label: qsTr("Chorus/flanger"), kind: "filter", list: "audio-filter", module: "chorus_flanger" },
-                    { label: qsTr("Karaoke"), kind: "filter", list: "audio-filter", module: "karaoke" }
+                    { label: qsTr("Equalizer"), kind: "filter", list: "audio-filter", module: "equalizer", live: true, greyIfMissing: true },
+                    { label: qsTr("Equalizer preset"), option: "equalizer-preset", kind: "eqPreset", module: "equalizer", greyIfMissing: true },
+                    { label: qsTr("Equalizer bands"), kind: "equalizer", module: "equalizer", greyIfMissing: true },
+                    { label: qsTr("Two-pass"), option: "equalizer-2pass", module: "equalizer", live: true, greyIfMissing: true },
+                    { label: qsTr("Spatial audio"), kind: "spatial", list: "audio-filter", greyIfMissing: true },
+                    { label: qsTr("Spatial audio mode"), kind: "spatialMode", greyIfMissing: true },
+                    { label: qsTr("Stereo widening"), kind: "filter", list: "audio-filter", module: "stereo_widen", live: true, greyIfMissing: true },
+                    { label: qsTr("Compressor"), kind: "filter", list: "audio-filter", module: "compressor", live: true, greyIfMissing: true },
+                    { label: qsTr("Chorus/flanger"), kind: "filter", list: "audio-filter", module: "chorus_flanger", live: true, greyIfMissing: true },
+                    { label: qsTr("Karaoke"), kind: "filter", list: "audio-filter", module: "karaoke", live: true, greyIfMissing: true }
                 ]},
                 { title: qsTr("Tracks"), rows: [
                     { label: qsTr("Preferred audio language"), option: "audio-language" },

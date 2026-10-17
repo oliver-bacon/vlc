@@ -37,17 +37,41 @@ FocusScope {
     readonly property string option: row.option ?? ""
     readonly property string kind: row.kind ?? ""
 
-    // Whether the row can be shown in this build
-    readonly property bool available: {
+    // filters behind "Spatial audio" (kind "spatial" / "spatialMode")
+    readonly property var spatialModes: [
+        { text: qsTr("Headphone virtualization"), value: "headphone_channel_mixer" },
+        { text: qsTr("Room effect"), value: "spatializer" }
+    ].filter((m) => VLCConfig.moduleExists(m.value))
+
+    function _spatialMode() {
+        const mode = String(VLCConfig.uiValue("Audio/SpatialMode", ""))
+        return spatialModes.some((m) => m.value === mode) ? mode : (spatialModes[0]?.value ?? "")
+    }
+
+    // Whether this build can do what the row sets
+    readonly property bool supported: {
         if (kind === "colorScheme" || kind === "action")
             return true
         if (kind === "filter")
             return VLCConfig.exists(row.list) && VLCConfig.moduleExists(row.module)
+        if (kind === "equalizer")
+            return VLCConfig.moduleExists(row.module)
+        if (kind === "spatial" || kind === "spatialMode")
+            return VLCConfig.exists("audio-filter") && spatialModes.length > 0
+        if (row.module && !VLCConfig.moduleExists(row.module))
+            return false
         return VLCConfig.exists(option)
     }
 
+    // Whether the row is shown: rows marked greyIfMissing stay, greyed out
+    readonly property bool available: supported || !!row.greyIfMissing
+
     readonly property string type: (option !== "") ? VLCConfig.type(option) : ""
-    readonly property var choices: (option !== "" && kind !== "accent") ? VLCConfig.choices(option) : []
+    readonly property var choices: {
+        if (kind === "spatialMode")
+            return spatialModes
+        return (option !== "" && kind !== "accent") ? VLCConfig.choices(option) : []
+    }
     readonly property var range: (option !== "") ? VLCConfig.range(option) : ({})
 
     // Current value, refreshed when the option changes from anywhere
@@ -56,16 +80,44 @@ FocusScope {
     function _read() {
         if (kind === "filter")
             return VLCConfig.hasModule(row.list, row.module)
+        if (kind === "spatial")
+            return spatialModes.some((m) => VLCConfig.hasModule("audio-filter", m.value))
+        if (kind === "spatialMode")
+            return _spatialMode()
         if (option === "")
             return undefined
         return VLCConfig.value(option)
     }
 
+    // turns spatial audio on with `mode`, or off
+    function _setSpatial(on, mode) {
+        for (const m of spatialModes) {
+            const enable = on && m.value === mode
+            VLCConfig.setModule("audio-filter", m.value, enable)
+            VLCEffects.applyAudioFilter(m.value, enable)
+        }
+    }
+
     function write(newValue) {
-        if (kind === "filter")
+        if (kind === "filter") {
             VLCConfig.setModule(row.list, row.module, newValue)
-        else if (option !== "")
+            if (row.live)
+                VLCEffects.applyAudioFilter(row.module, newValue)
+        } else if (kind === "spatial") {
+            _setSpatial(!!newValue, _spatialMode())
+        } else if (kind === "spatialMode") {
+            const on = spatialModes.some((m) => VLCConfig.hasModule("audio-filter", m.value))
+            VLCConfig.setUiValue("Audio/SpatialMode", newValue)
+            root.value = newValue
+            if (on)
+                _setSpatial(true, newValue)
+        } else if (option !== "") {
             VLCConfig.setValue(option, newValue)
+            if (kind === "eqPreset")
+                VLCEffects.applyEqualizerPreset(newValue) // the bands of the preset
+            else if (row.live)
+                VLCEffects.applyAudioValue(option, newValue)
+        }
     }
 
     Connections {
@@ -82,6 +134,10 @@ FocusScope {
         case "colorScheme": return colorSchemeComponent
         case "accent": return accentComponent
         case "filter": return toggleComponent
+        case "spatial": return toggleComponent
+        case "spatialMode": return dropdownComponent
+        case "eqPreset": return dropdownComponent
+        case "equalizer": return null
         case "action": return actionComponent
         case "slider": return sliderComponent
         case "number": return numberComponent
@@ -102,9 +158,34 @@ FocusScope {
     }
 
     visible: available
+    enabled: supported
+    opacity: supported ? 1.0 : 0.4
 
     implicitWidth: rowLayout.implicitWidth
-    implicitHeight: available ? Math.max(VLCStyle.dp(46, VLCStyle.scale), rowLayout.implicitHeight) : 0
+    implicitHeight: {
+        if (!available)
+            return 0
+        if (kind === "equalizer")
+            return equalizerLoader.implicitHeight + 2 * VLCStyle.dp(6, VLCStyle.scale)
+        return Math.max(VLCStyle.dp(46, VLCStyle.scale), rowLayout.implicitHeight)
+    }
+
+    // the equalizer bands take the whole width (Figma "EQ")
+    Loader {
+        id: equalizerLoader
+
+        active: root.kind === "equalizer"
+        anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+
+        sourceComponent: EqualizerPanel {
+            wellColor: root._well
+            surfaceColor: root._surface
+            fillColor: root._selected
+            handleColor: Qt.darker(theme.accent, 1.23)
+            textColor: root._text
+            labelColor: root._mutedText
+        }
+    }
 
     readonly property real controlWidth: VLCStyle.dp(320, VLCStyle.scale)
 
@@ -136,6 +217,7 @@ FocusScope {
         id: rowLayout
 
         anchors.fill: parent
+        visible: root.kind !== "equalizer"
         spacing: VLCStyle.margin_normal
 
         RowLayout {

@@ -203,6 +203,20 @@ void EffectsBridge::setAudioValue(const QString& option, const QVariant& value)
     putConfig(option, value);
 }
 
+void EffectsBridge::applyAudioFilter(const QString& module, bool enabled)
+{
+    vlc_player_aout_EnableFilter(m_intf->p_player, qtu(module), enabled);
+    emit changed();
+}
+
+void EffectsBridge::applyAudioValue(const QString& option, const QVariant& value)
+{
+    const QByteArray name = option.toUtf8();
+    if (SharedAOut aout = m_intf->p_mainPlayerController->getAout())
+        setVar(VLC_OBJECT(aout.get()), name.constData(), value);
+    emit changed();
+}
+
 QVariant EffectsBridge::videoValue(const QString& option) const
 {
     const QByteArray name = option.toUtf8();

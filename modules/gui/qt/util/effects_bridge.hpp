@@ -53,6 +53,10 @@ public:
     /// filter options: current value (live object first, then config)
     Q_INVOKABLE QVariant audioValue(const QString& option) const;
     Q_INVOKABLE void setAudioValue(const QString& option, const QVariant& value);
+    // only on the audio output that is playing, not saved (the settings
+    // window saves the option itself)
+    Q_INVOKABLE void applyAudioFilter(const QString& module, bool enabled);
+    Q_INVOKABLE void applyAudioValue(const QString& option, const QVariant& value);
     Q_INVOKABLE QVariant videoValue(const QString& option) const;
     Q_INVOKABLE void setVideoValue(const QString& option, const QVariant& value);
 
