@@ -36,6 +36,7 @@
 #include "util/shared_input_item.hpp"
 
 #include <utility>
+#include <cstring>
 
 #include <QQmlEngine>
 
@@ -759,6 +760,15 @@ void MediaLib::setMediaFavorite(const QUrl& mrl, bool favorite)
     //ML thread
     [mrl = mrl.toString(QUrl::FullyEncoded).toUtf8(), favorite](vlc_medialibrary_t* ml, Ctx& ctx){
         ml_unique_ptr<vlc_ml_media_t> media { vlc_ml_get_media_by_mrl(ml, mrl.constData()) };
+        // a file played from outside the library folders (or a stream) is
+        // added to the media library when its playback ends: add it now
+        if (!media && favorite)
+        {
+            if (strncmp(mrl.constData(), "file://", 7) == 0)
+                media.reset(vlc_ml_new_external_media(ml, mrl.constData()));
+            else
+                media.reset(vlc_ml_new_stream(ml, mrl.constData()));
+        }
         if (media && vlc_ml_media_set_favorite(ml, media->i_id, favorite) == VLC_SUCCESS)
             ctx.known = true;
     },

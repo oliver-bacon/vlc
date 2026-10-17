@@ -26,7 +26,7 @@ import VLC.Widgets as Widgets
 import VLC.Style
 
 // Adds the current media to the media library favorites, or removes it.
-// Disabled for media that are not part of the media library.
+// Media that are not part of the media library yet are added to it.
 Widgets.IconToolButton {
     id: root
 
@@ -37,8 +37,8 @@ Widgets.IconToolButton {
     description: _favorite ? qsTr("Remove from favorites") : qsTr("Add to favorites")
     checked: _favorite
 
-    // disabled (dimmed) for media that are not part of the media library
-    enabled: !paintOnly && MainCtx.mediaLibraryAvailable && _known
+    // media not in the media library yet are added to it on the first click
+    enabled: !paintOnly && MainCtx.mediaLibraryAvailable && String(Player.url) !== ""
 
     onClicked: MainCtx.mediaLibrary.setMediaFavorite(Player.url, !_favorite)
 
@@ -59,7 +59,9 @@ Widgets.IconToolButton {
     Connections {
         target: MainCtx.mediaLibrary
         function onMediaFavoriteState(mrl, known, favorite) {
-            if (mrl !== Player.url)
+            // compared as text: the two URLs are separate objects, and the
+            // media library's one is percent-encoded
+            if (decodeURIComponent(String(mrl)) !== decodeURIComponent(String(Player.url)))
                 return
             root._known = known
             root._favorite = favorite
