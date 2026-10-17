@@ -56,6 +56,15 @@ Window {
         requestActivate()
     }
 
+    // a page with its advanced options shown ("Open Advanced Settings" of
+    // the player's settings panel)
+    function openPage(page) {
+        searchField.text = ""
+        currentPage = page
+        showAdvanced = true
+        open()
+    }
+
     function openAdvancedSettings() {
         DialogsProvider.prefsDialog()
     }

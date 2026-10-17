@@ -665,6 +665,11 @@ Item {
                 settingsWindowLoader.active = true
                 settingsWindowLoader.item.open()
             }
+
+            function onShowSettingsPage(page) {
+                settingsWindowLoader.active = true
+                settingsWindowLoader.item.openPage(page)
+            }
         }
     }
 

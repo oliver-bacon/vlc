@@ -192,9 +192,11 @@ T.Popup {
                     color: advanced.hovered ? root.titleColor : root.textColor
                 }
             }
+            // the settings window on the page of the current tab
             onClicked: {
+                const page = ["playback", "video", "audio", "subtitles"][root.currentTab] ?? "playback"
                 root.close()
-                DialogsProvider.extendedDialog()
+                DialogsProvider.settingsPageDialog(page)
             }
         }
     }

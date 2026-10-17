@@ -219,6 +219,9 @@ public slots:
     /// Opens the settings window of the QML interface, or the classic
     /// preferences dialog when no settings window is available
     void settingsDialog();
+    /// VLC Redesign "Open Advanced Settings": the settings window on a page
+    /// ("playback", "video", "audio", "subtitles") with its advanced options
+    void settingsPageDialog(const QString& page);
     /// Shows a dialog of the Figma redesign, returns false when the QML
     /// interface is not there to show it
     bool figmaDialog(const QString& name, const QVariant& args = {});
@@ -299,6 +302,8 @@ signals:
     void releaseMouseEvents();
     void showToolbarEditorDialog();
     void showSettingsWindow();
+    /// show the settings window on @p page with its advanced options open
+    void showSettingsPage(const QString& page);
     /// Asks the QML interface to show one of the dialogs of the Figma
     /// redesign ("network", "newPlaylist", "shortcuts", "subtitles",
     /// "customize"); args depend on the dialog
