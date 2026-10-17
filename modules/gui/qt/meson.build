@@ -794,6 +794,7 @@ qml_modules += {
        'player/qml/SliderBar.qml',
        'player/qml/SubtitleTimeline.qml',
        'player/qml/TopBar.qml',
+       'player/qml/WindowButtons.qml',
        'player/qml/TracksMenu.qml',
        'player/qml/PlayerSettingsPanel.qml',
        'player/qml/TracksPopover.qml',

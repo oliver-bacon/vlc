@@ -501,9 +501,10 @@ FocusScope{
         active: root.showCSD
         enabled: root.showCSD
         visible: root.showCSD
+        // VLC Redesign: minimize, PiP, maximize, fullscreen, close
         source:  VLCStyle.palette.hasCSDImage
             ? "qrc:///qt/qml/VLC/Widgets/CSDThemeButtonSet.qml"
-            : "qrc:///qt/qml/VLC/Widgets/CSDWindowButtonSet.qml"
+            : "qrc:///qt/qml/VLC/Player/WindowButtons.qml"
 
         Connections {
             target: csdDecorations.item
@@ -528,13 +529,17 @@ FocusScope{
 
         // VLC Redesign video: picture-in-picture and fullscreen up here
         // (user's choice); the queue stays on the control bar
+        // with VLC's own title bar they are among the window buttons
+        // (WindowButtons.qml)
         PipButton {
+            visible: !root.showCSD || VLCStyle.palette.hasCSDImage
             anchors.verticalCenter: parent.verticalCenter
             font.pixelSize: VLCStyle.icon_banner
             onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
         }
 
         FullscreenButton {
+            visible: !root.showCSD || VLCStyle.palette.hasCSDImage
             anchors.verticalCenter: parent.verticalCenter
             font.pixelSize: VLCStyle.icon_banner
             onHoveredChanged: root.requestLockUnlockAutoHide(hovered)
