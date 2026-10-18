@@ -10,8 +10,8 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
   had already unloaded (patch in `contrib/src/medialibrary`)
 
 ### Changed
-- Linux build instructions in the README: Arch Linux packages, building medialibrary,
-  running from the build folder
+- Linux build instructions in the README: Arch Linux packages, dependencies on other
+  distributions, Qt 6.8 or newer, meson 1.10, building medialibrary, running without installing
 
 ## redesign-v0.2.5 (beta)
 
