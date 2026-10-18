@@ -176,11 +176,12 @@ sudo pacman -S --needed base-devel git meson ninja pkgconf cmake nasm \
 On other distributions, install the same libraries under their own names (the development
 packages, usually ending in `-dev` or `-devel`). A shortcut that covers most of them:
 
-- Debian / Ubuntu: `sudo apt build-dep vlc` (needs the source repositories enabled), then
-  `sudo apt install meson ninja-build`
+- Debian / Ubuntu: `sudo apt build-dep vlc` (needs the source repositories enabled)
 - Fedora: `sudo dnf builddep vlc` (VLC is in RPM Fusion)
 
 These install what the distribution's own VLC 3 needs, but not Qt 6: see the Qt note below.
+VLC also needs meson 1.10 or newer, which most distributions don't have yet; install it with
+pipx: `pipx install meson ninja`.
 
 Only Qt 6 (with Qt Quick, Qt SVG and Qt ShaderTools) and medialibrary (step 2) are required.
 Any other missing library only turns off the feature that uses it: `meson setup` lists each
