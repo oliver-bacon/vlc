@@ -43,7 +43,7 @@ Widgets.IconToolButton {
         id: panel
 
         x: extdSettingsBtn.width - width
-        y: -height - VLCStyle.margin_small
+        y: -height - VLCStyle.margin_small - VLCStyle.margin_large // gap above the player bar
 
         onOpened: extdSettingsBtn.requestLockUnlockAutoHide(true)
         onClosed: extdSettingsBtn.requestLockUnlockAutoHide(false)

@@ -38,7 +38,7 @@ T.Popup {
     property int currentTab: 2 // Audio, as in the design
 
     width: VLCStyle.dp(400, VLCStyle.scale)
-    height: Math.min(VLCStyle.dp(640, VLCStyle.scale), (parent?.Window.height ?? 800) - VLCStyle.dp(120, VLCStyle.scale))
+    height: Math.min(VLCStyle.dp(640, VLCStyle.scale), (parent?.Window.height ?? 800) - VLCStyle.dp(144, VLCStyle.scale)) // 120 + the gap above the bar
     padding: 0
     modal: false
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent

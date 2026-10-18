@@ -41,7 +41,7 @@ Widgets.IconToolButton {
         id: popover
 
         x: playlistBtn.width - width
-        y: -height - VLCStyle.margin_small
+        y: -height - VLCStyle.margin_small - VLCStyle.margin_large // gap above the player bar
 
         onOpened: playlistBtn.requestLockUnlockAutoHide(true)
         onClosed: playlistBtn.requestLockUnlockAutoHide(false)
