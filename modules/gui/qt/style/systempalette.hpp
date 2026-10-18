@@ -197,6 +197,8 @@ signals:
 
 private:
     void updatePalette();
+    /// reads the accent color setting (qt-accent-color)
+    void loadAccent();
 
     void makeLightPalette();
     void makeDarkPalette();

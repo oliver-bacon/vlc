@@ -211,6 +211,10 @@ void ConfigBridge::setValue(const QString& name, const QVariant& value)
 
     save();
     emit valueChanged(name);
+
+    // the interface colors follow the accent at once
+    if (name == QLatin1String("qt-accent-color") && m_intf->p_mi)
+        emit m_intf->p_mi->accentColorChanged();
 }
 
 void ConfigBridge::resetValue(const QString& name)

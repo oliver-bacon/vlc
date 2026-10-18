@@ -586,17 +586,6 @@ FocusScope {
                 }
             }
 
-            T.Label {
-                anchors.top: parent.bottom
-                anchors.right: parent.right
-                anchors.topMargin: VLCStyle.dp(2, VLCStyle.scale)
-                visible: String(root.value) !== String(swatches._initial)
-                text: qsTr("Applies after restarting VLC")
-                font.pixelSize: VLCStyle.fontSize_small
-                color: root._mutedText
-            }
-
-            readonly property var _initial: VLCConfig.value(root.option)
         }
     }
 

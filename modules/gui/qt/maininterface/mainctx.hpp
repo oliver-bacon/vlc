@@ -560,6 +560,8 @@ signals:
     void playerCustomizingChanged();
     /// a settings profile was applied (VLC Redesign), see SettingsProfiles
     void settingsProfileChanged();
+    /// the qt-accent-color setting changed (VLC Redesign)
+    void accentColorChanged();
     void fullscreenInterfaceToggled( bool );
     void setInterfaceVisibible(bool, bool requestActivate = false);
     void setInterfaceFullScreen( bool );

@@ -303,8 +303,15 @@ SystemPalette::SystemPalette(QObject* parent)
 
 }
 
-void SystemPalette::componentComplete()
+void SystemPalette::loadAccent()
 {
+    // the design's accents, replaced below by a custom one
+    orange500 = QColor("#D37918");
+    orange800 = QColor("#E8851A");
+    accentDim = QColor("#AB6314");
+    accentBrightDark = QColor("#371F06");
+    accentBrightLight = QColor("#D8BA9A");
+
     {
         assert(m_ctx);
         char* accentColor = var_InheritString(m_ctx->getIntf(), "qt-accent-color");
@@ -321,13 +328,13 @@ void SystemPalette::componentComplete()
             const auto palette = qApp->palette();
 
             orange500 = palette.color(QPalette::Normal, QPalette::Accent);
-            orange800 = orange500.lighter(150);
+            orange800 = orange500.lighter(110); // as #E8851A for #D37918
         }
 #endif
         else
         {
             orange500 = QColor(accentColor);
-            orange800 = orange500.lighter(150);
+            orange800 = orange500.lighter(110); // as #E8851A for #D37918
         }
 
         if (strcmp(accentColor, "default"))
@@ -348,6 +355,22 @@ void SystemPalette::componentComplete()
 
         free(accentColor);
     }
+
+}
+
+void SystemPalette::componentComplete()
+{
+    loadAccent();
+
+    // VLC Redesign: the accent follows the setting while VLC runs
+    connect(m_ctx, &MainCtx::accentColorChanged, this, [this]() {
+        loadAccent();
+        updatePalette();
+    });
+    connect(m_ctx, &MainCtx::settingsProfileChanged, this, [this]() {
+        loadAccent();
+        updatePalette();
+    });
 
     updatePalette();
 }
