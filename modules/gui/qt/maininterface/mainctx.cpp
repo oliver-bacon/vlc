@@ -543,6 +543,15 @@ void MainCtx::onVOutChanged( bool video )
 #endif
 void MainCtx::sendHotkey(Qt::Key key , Qt::KeyboardModifiers modifiers)
 {
+    // VLC Redesign: Esc also leaves the fullscreen interface (F11), not only
+    // the video's fullscreen
+    if (key == Qt::Key_Escape && modifiers == Qt::NoModifier
+        && m_windowVisibility == QWindow::FullScreen)
+    {
+        toggleInterfaceFullScreen();
+        return;
+    }
+
     QKeyEvent event(QEvent::KeyPress, key, modifiers );
     int vlckey = qtEventToVLCKey(&event);
     var_SetInteger(vlc_object_instance(p_intf), "key-pressed", vlckey);
@@ -877,7 +886,13 @@ void MainCtx::toggleToolbarMenu()
 
 void MainCtx::toggleInterfaceFullScreen()
 {
-    emit setInterfaceFullScreen( m_windowVisibility != QWindow::FullScreen );
+    QWindow* window = intfMainWindow();
+    const bool fullscreen = (window ? window->visibility() : m_windowVisibility) == QWindow::FullScreen;
+    // VLC Redesign: leaving goes all the way back to the window; the video's
+    // fullscreen would otherwise keep the window fullscreen (WindowStateHolder)
+    if (fullscreen && THEMIM->isFullscreen())
+        THEMIM->setFullscreen(false);
+    emit setInterfaceFullScreen( !fullscreen );
 }
 
 void MainCtx::emitBoss()

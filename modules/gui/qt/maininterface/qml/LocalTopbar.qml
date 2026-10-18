@@ -47,6 +47,11 @@ T.ToolBar {
         && !(MainCtx.intfMainWindow.visibility === Window.FullScreen)
         && !MainCtx.hasToolbarMenu
 
+    // VLC Redesign: the window buttons also show in fullscreen, with "exit
+    // fullscreen" instead of maximize (WindowButtons.qml)
+    readonly property bool _fullscreen: MainCtx.intfMainWindow.visibility === Window.FullScreen
+    property bool _showWindowButtons: _showCSD || (_fullscreen && !MainCtx.hasToolbarMenu)
+
     //whether the navigation pannel is actually visible or not
     property alias navigationVisible: navigationVisibilty.checked
     property alias playqueueVisible: playlistBtn.checked
@@ -60,7 +65,7 @@ T.ToolBar {
                              implicitContentHeight + topPadding + bottomPadding)
 
     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
-                             implicitContentWidth + leftPadding + rightPadding + (_showCSD ? csdButtons.implicitWidth : 0))
+                             implicitContentWidth + leftPadding + rightPadding + (_showWindowButtons ? csdButtons.implicitWidth : 0))
 
     readonly property ColorContext colorContext: ColorContext {
         id: theme
@@ -191,7 +196,7 @@ T.ToolBar {
                 bottom: parent.bottom
                 //put the buttons below the CSD if we have enough space
                 rightMargin: VLCStyle.margin_xsmall
-                    + ((root._showCSD && root.topPadding < csdButtons.height)
+                    + ((root._showWindowButtons && root.topPadding < csdButtons.height)
                         ? Math.max(csdButtons.width - root.rightPadding, 0)
                         : 0)
             }
@@ -245,8 +250,10 @@ T.ToolBar {
         }
 
         height: VLCStyle.globalToolbar_height
-        active: root._showCSD
-        source: VLCStyle.palette.hasCSDImage
+        active: root._showWindowButtons
+        source: root._fullscreen
+                  ? "qrc:///qt/qml/VLC/Player/WindowButtons.qml"
+                  : VLCStyle.palette.hasCSDImage
                   ? "qrc:///qt/qml/VLC/Widgets/CSDThemeButtonSet.qml"
                   : "qrc:///qt/qml/VLC/Widgets/CSDWindowButtonSet.qml"
     }

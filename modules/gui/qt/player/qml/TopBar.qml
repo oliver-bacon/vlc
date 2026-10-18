@@ -50,6 +50,9 @@ FocusScope{
     property string title
 
     property bool showCSD: false
+    // VLC Redesign: the window buttons also show in fullscreen (with "exit
+    // fullscreen"), where the title bar itself (showCSD) is off
+    property bool showWindowButtons: showCSD
     property bool showToolbar: false
     property bool pinControls: false
 
@@ -174,7 +177,7 @@ FocusScope{
                 left = menubar
             }
 
-            if (showCSD) {
+            if (showWindowButtons) {
                 right = csdDecorations
                 if (!left) {
                     left = logoOrResume
@@ -394,11 +397,12 @@ FocusScope{
 
         focus: false
         height: VLCStyle.icon_normal
-        active: root.showCSD
-        enabled: root.showCSD
-        visible: root.showCSD
-        // VLC Redesign: minimize, maximize, close
-        source:  VLCStyle.palette.hasCSDImage
+        active: root.showWindowButtons
+        enabled: root.showWindowButtons
+        visible: root.showWindowButtons
+        // VLC Redesign: minimize, maximize, close (the theme's buttons have no
+        // "exit fullscreen")
+        source:  (VLCStyle.palette.hasCSDImage && MainCtx.intfMainWindow.visibility !== Window.FullScreen)
             ? "qrc:///qt/qml/VLC/Widgets/CSDThemeButtonSet.qml"
             : "qrc:///qt/qml/VLC/Player/WindowButtons.qml"
 

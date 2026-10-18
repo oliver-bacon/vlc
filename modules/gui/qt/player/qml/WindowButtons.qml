@@ -24,7 +24,8 @@ import VLC.Style
 import VLC.Widgets as Widgets
 
 // Top right corner of the VLC Redesign player when VLC draws its own title
-// bar: minimize, maximize, close (fullscreen is on the control bar).
+// bar: minimize, maximize, close (fullscreen is on the control bar). In
+// fullscreen the maximize button becomes "exit fullscreen".
 // Replaces CSDWindowButtonSet.qml in TopBar.qml.
 Row {
     id: root
@@ -40,8 +41,11 @@ Row {
 
     readonly property bool useWinIcons: ((MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10))
 
+    readonly property bool fullscreen: MainCtx.intfMainWindow.visibility === Window.FullScreen
+
     readonly property bool buttonHovered: minimize.hovered || minimize.showHovered
                                           || maximize.hovered || maximize.showHovered
+                                          || exitFullscreen.hovered
                                           || close.hovered || close.showHovered
 
     readonly property ColorContext colorContext: ColorContext {
@@ -143,9 +147,26 @@ Row {
         iconTxt: root.useWinIcons ? "" : VLCIcons.window_minimize
     }
 
+    // not a window system button: Windows would maximize or restore the
+    // window itself on a click in a maximize button's rectangle
+    Widgets.CSDWindowButton {
+        id: exitFullscreen
+
+        visible: root.fullscreen
+        height: root.height
+
+        color: root.color
+        hoverColor: root.hoverColor
+        isThemeDark: theme.palette.isDark
+        iconTxt: root.useWinIcons ? "\uE73F" : VLCIcons.defullscreen // Segoe: BackToWindow
+
+        onClicked: MainCtx.toggleInterfaceFullScreen()
+    }
+
     WindowButton {
         id: maximize
         modelData: root._button(CSDButton.MaximizeRestore)
+        visible: !!modelData && !root.fullscreen
         iconTxt: {
             const maximized = MainCtx.intfMainWindow.visibility === Window.Maximized
             if (root.useWinIcons)

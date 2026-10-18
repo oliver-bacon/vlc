@@ -1043,6 +1043,7 @@ FocusScope {
         pinControls: MainCtx.pinVideoControls
 
         showCSD: MainCtx.clientSideDecoration && (MainCtx.intfMainWindow.visibility !== Window.FullScreen)
+        showWindowButtons: MainCtx.clientSideDecoration || (MainCtx.intfMainWindow.visibility === Window.FullScreen)
         showToolbar: MainCtx.hasToolbarMenu && (MainCtx.intfMainWindow.visibility !== Window.FullScreen)
         playlistVisible: playlistVisibility.isPlaylistVisible
 
