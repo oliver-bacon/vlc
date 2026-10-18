@@ -23,13 +23,11 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 
 ## Screenshots
 
-![Player](docs/screenshots/player.png)
-
-| Library home | Seek bar preview |
+| Player | Settings |
 |---|---|
+| ![Player with the one-row player bar](docs/screenshots/player.png) | ![Settings window over the player](docs/screenshots/settings.png) |
+| **Library home** | **Seek bar preview** |
 | ![Library home with Continue Watching and the mini player](docs/screenshots/library-home.png) | ![Preview thumbnail while hovering the seek bar, with the playback settings panel open](docs/screenshots/seek-preview.png) |
-
-![Settings window over the player](docs/screenshots/settings.png)
 
 ## Features
 
