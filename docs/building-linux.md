@@ -95,10 +95,13 @@ cd "$VLC_SRC"
 PREFIX=/opt/vlc-redesign
 ninja -C build-linux
 sudo ninja -C build-linux install
-printf '%s\n' $PREFIX/lib $PREFIX/lib/vlc | sudo tee /etc/ld.so.conf.d/vlc-redesign.conf
-sudo ldconfig
-sudo $PREFIX/libexec/vlc/vlc-cache-gen $PREFIX/lib/vlc/plugins
-sudo ln -sf $PREFIX/bin/vlc /usr/local/bin/vlc-redesign
+sudo tee /usr/local/bin/vlc-redesign > /dev/null <<EOF
+#!/bin/sh
+export LD_LIBRARY_PATH=$PREFIX/lib:$PREFIX/lib/vlc\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}
+exec $PREFIX/bin/vlc "\$@"
+EOF
+sudo chmod 755 /usr/local/bin/vlc-redesign
+sudo env LD_LIBRARY_PATH=$PREFIX/lib $PREFIX/libexec/vlc/vlc-cache-gen $PREFIX/lib/vlc/plugins
 sudo install -Dm644 share/vlc512x512.png $PREFIX/share/icons/vlc-redesign.png
 MIMETYPES=$(grep -o '^[a-z][^ #]*' share/vlc.desktop.mimetypes | paste -sd';')
 sudo mkdir -p /usr/local/share/applications
@@ -115,14 +118,19 @@ MimeType=$MIMETYPES;
 EOF
 ```
 
-- `ld.so.conf.d` + `ldconfig`: lets the installed VLC find its own libraries (`libvlc`,
-  `libvlccore`) in `/opt/vlc-redesign`.
+- `vlc-redesign` is a small launcher script: it lets the installed VLC find its own
+  libraries (`libvlc`, `libvlccore`) in `/opt/vlc-redesign` without registering them
+  system-wide. VLC 4's `libvlccore.so.9` has the same name as the one of the regular VLC 3,
+  so a system-wide entry would make the regular VLC load the wrong library.
+- **Installed with an earlier version of these steps?** Remove the system-wide entry it
+  created: `sudo rm /etc/ld.so.conf.d/vlc-redesign.conf && sudo ldconfig`, then run step 6
+  again (it replaces the old `vlc-redesign` link with the launcher script).
 - `vlc-cache-gen`: writes the plugin cache (`plugins.dat`), so VLC starts faster.
 - medialibrary is still loaded from `~/vlc-deps`; don't delete that folder.
 - **Update:** `cd ~/vlc && git pull && ninja -C build-linux && sudo ninja -C build-linux install`,
   then run the `vlc-cache-gen` line again.
 - **Uninstall:**
-  `sudo rm -rf /opt/vlc-redesign /usr/local/bin/vlc-redesign /usr/local/share/applications/vlc-redesign.desktop /etc/ld.so.conf.d/vlc-redesign.conf && sudo ldconfig`
+  `sudo rm -rf /opt/vlc-redesign /usr/local/bin/vlc-redesign /usr/local/share/applications/vlc-redesign.desktop`
 
 Notes:
 - **Qt:** use Qt 6.8 or newer. The system Qt works on Arch (6.12). If your distribution has an
