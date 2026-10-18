@@ -25,6 +25,7 @@ import QtQuick.Templates as T
 import VLC.MainInterface
 import VLC.Style
 import VLC.Dialogs
+import VLC.Util
 
 // Onboarding of the VLC Redesign Figma file, shown on first start instead
 // of the classic wizard: welcome + media folder, theme and accent color
@@ -108,7 +109,7 @@ Window {
 
                     Image {
                         Layout.alignment: Qt.AlignHCenter
-                        source: "qrc:///misc/cone.svg"
+                        source: SVGColorImage.colorize("qrc:///misc/cone.svg").accent(root.accent).uri()
                         sourceSize: Qt.size(120 * root.dp1, 120 * root.dp1)
                     }
                     Text {

@@ -48,7 +48,7 @@ T.Popup {
     readonly property color titleColor: dark ? "#C6C6C6" : "#161616"
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
     readonly property color dimColor: "#6B6B6B"
-    readonly property color accentColor: "#D37918"
+    readonly property color accentColor: VLCStyle.palette.orange500
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     property int selectedRow: -1

@@ -35,8 +35,8 @@ Item {
     property var cues: []
 
     property color trackColor: "#0D0D0D"
-    property color playedColor: "#371F06"
-    property color accentColor: "#D37918"
+    property color playedColor: VLCStyle.palette.accentBrightDark
+    property color accentColor: VLCStyle.palette.orange500
     // drawn over the track and the played part (Figma: white at 14 %)
     property color cueColor: Qt.rgba(1, 1, 1, 0.14)
     property real radius: VLCStyle.dp(6, VLCStyle.scale)

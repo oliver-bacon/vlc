@@ -195,7 +195,7 @@ Item {
 
                         background: Rectangle {
                             radius: 5 * root.dp1
-                            color: modeButton.selected ? "#371F06"
+                            color: modeButton.selected ? VLCStyle.palette.accentBrightDark
                                  : modeButton.hovered ? Qt.alpha(theme.fg.primary, 0.06) : "transparent"
                         }
                         contentItem: Text {
@@ -411,8 +411,8 @@ Item {
             PanelButton {
                 anchors.right: parent.right
                 text: qsTr("Save")
-                fill: "#371F06"
-                textColor: "#D37918"
+                fill: VLCStyle.palette.accentBrightDark
+                textColor: VLCStyle.palette.orange500
                 onClicked: root.close(true)
             }
         }

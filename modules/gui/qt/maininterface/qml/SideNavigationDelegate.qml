@@ -33,7 +33,7 @@ T.ItemDelegate {
 
     property string iconTxt: ""
 
-    // VLC Redesign: filled orange Figma icon shown instead of the glyph when
+    // VLC Redesign: filled accent-coloured Figma icon shown instead of the glyph when
     // the entry is selected (rail and navigation)
     property url selectedIconSource: ""
 
@@ -110,7 +110,7 @@ T.ItemDelegate {
 
         radius: control.radius
 
-        // VLC Redesign: no side indicator, the selected icon is filled orange
+        // VLC Redesign: no side indicator, the selected icon is filled with the accent
     }
 
     contentItem: RowLayout {
@@ -127,7 +127,10 @@ T.ItemDelegate {
                 height: VLCStyle.icon_normal
                 sourceSize: Qt.size(width * 2, height * 2)
                 visible: control._selected && control.selectedIconSource.toString() !== ""
-                source: visible ? control.selectedIconSource : ""
+                // the SVG's #FF8800 becomes the accent colour
+                source: visible ? SVGColorImage.colorize(control.selectedIconSource.toString())
+                                                .accent(theme.accent).uri()
+                                : ""
             }
 
             Widgets.IconLabel {

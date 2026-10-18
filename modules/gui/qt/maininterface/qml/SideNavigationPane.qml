@@ -74,7 +74,7 @@ T.Pane {
         "streams": "network", "playlists": "playlists", "recent": "recent"
     })
 
-    // filled orange Figma icons of the selected entries (no Figma one for Recent)
+    // filled Figma icons (in the accent colour) of the selected entries (no Figma one for Recent)
     readonly property var _selectedIcons: ({
         "home": "qrc:///misc/rail_home_selected.svg",
         "video": "qrc:///misc/rail_video_selected.svg",

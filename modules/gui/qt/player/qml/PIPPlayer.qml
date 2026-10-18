@@ -272,14 +272,14 @@ T.Control {
                 width: Math.max(height, parent.width * Player.position)
                 height: parent.height
                 radius: parent.radius
-                color: root.dark ? "#371F06" : "#D8BA9A"
+                color: root.dark ? VLCStyle.palette.accentBrightDark : VLCStyle.palette.accentBrightLight
             }
             Rectangle {
                 x: Math.max(0, parent.width * Player.position - width)
                 width: VLCStyle.dp(4, VLCStyle.scale)
                 height: parent.height
                 radius: width / 2
-                color: "#D37918"
+                color: VLCStyle.palette.orange500
             }
         }
 

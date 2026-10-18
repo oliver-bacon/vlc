@@ -33,7 +33,7 @@ Image {
 
     mipmap: MainCtx.useXmasCone()
     source: MainCtx.useXmasCone() ? "qrc:///logo/vlc48-xmas.png" // TODO: new xmas cone for designs?
-                                  : "qrc:///misc/cone_flat.svg"
+                                  : SVGColorImage.colorize("qrc:///misc/cone_flat.svg").accent(root.color).uri()
 
     focus: false
 }

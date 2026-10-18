@@ -99,7 +99,7 @@ FocusScope {
     readonly property color titleColor: dark ? "#C6C6C6" : "#161616"
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
     readonly property color dimColor: "#6B6B6B"
-    readonly property color accentColor: "#D37918"
+    readonly property color accentColor: VLCStyle.palette.orange500
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     readonly property var _musicRoot: [
@@ -635,7 +635,7 @@ FocusScope {
                 // Figma "sidebar" frame: Home, Videos, Music, Network,
                 // Playlists, Recent, then the pins and "+"
                 model: [
-                    // selected: the filled orange Figma icon (none for Recent)
+                    // selected: the filled Figma icon in the accent colour (none for Recent)
                     { section: "home", glyph: VLCIcons.home, text: qsTr("Home"), selected: "qrc:///misc/rail_home_selected.svg" },
                     { section: "video", glyph: VLCIcons.topbar_video, text: qsTr("Videos"), selected: "qrc:///misc/rail_video_selected.svg" },
                     { section: "music", glyph: VLCIcons.songs, text: qsTr("Music"), selected: "qrc:///misc/rail_music_selected.svg" },
@@ -674,7 +674,9 @@ FocusScope {
                             height: VLCStyle.icon_normal
                             sourceSize: Qt.size(width * 2, height * 2)
                             visible: railButton._filled
-                            source: visible ? railButton.modelData.selected : ""
+                            source: visible ? SVGColorImage.colorize(railButton.modelData.selected)
+                                                .accent(root.accentColor).uri()
+                                    : ""
                         }
                         Text {
                             anchors.fill: parent

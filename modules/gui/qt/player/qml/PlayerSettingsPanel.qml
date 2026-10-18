@@ -54,8 +54,8 @@ T.Popup {
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
     readonly property color dimColor: "#6B6B6B"
     readonly property color faintColor: dark ? "#404040" : "#9B9B9B"
-    readonly property color accentColor: "#D37918"
-    readonly property color accentSurface: dark ? "#371F06" : "#D8BA9A"
+    readonly property color accentColor: VLCStyle.palette.orange500
+    readonly property color accentSurface: dark ? VLCStyle.palette.accentBrightDark : VLCStyle.palette.accentBrightLight
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     background: Rectangle {

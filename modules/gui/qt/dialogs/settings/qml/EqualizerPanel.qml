@@ -33,8 +33,8 @@ Item {
     // colours of the settings window (SettingRow.qml)
     property color wellColor: "#090909"
     property color surfaceColor: "#191919"
-    property color fillColor: "#371F06"
-    property color handleColor: "#AB6314"
+    property color fillColor: VLCStyle.palette.accentBrightDark
+    property color handleColor: VLCStyle.palette.accentDim
     property color textColor: "#8F8F8F"
     property color labelColor: "#6B6B6B"
 

@@ -33,7 +33,7 @@ Item {
     readonly property bool dark: VLCStyle.palette?.isDark ?? true
     readonly property color titleColor: dark ? "#C6C6C6" : "#161616"
     readonly property color dimColor: "#6B6B6B"
-    readonly property color accentColor: "#D37918"
+    readonly property color accentColor: VLCStyle.palette.orange500
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     implicitHeight: 44 * dp1
