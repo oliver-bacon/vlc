@@ -43,6 +43,7 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
 - "Show Preferences" in the track popover opens the settings page of its tab (Video, Audio,
   Subtitles)
 - The settings' info tool tips open above the info icon instead of over it
+- The queue's sort button shows its icon instead of a magenta square
 
 ## redesign-v0.1.0 (pre-release)
 
