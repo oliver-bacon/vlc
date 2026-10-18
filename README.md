@@ -211,8 +211,9 @@ VLC_LIB_PATH=build-linux/modules ./build-linux/bin/vlc-static -I qt
 ```
 
 Notes:
-- **Qt:** the system Qt 6 works on Arch (6.12). On distributions with an older Qt, install
-  Qt 6.8.3 with aqtinstall: `aqt install-qt linux desktop 6.8.3 linux_gcc_64 -O ~/Qt -m qtshadertools`.
+- **Qt:** use Qt 6.8 or newer. The system Qt works on Arch (6.12). If your distribution has an
+  older Qt (for example Ubuntu 24.04 and Debian 12 have 6.4), install Qt 6.8.3, the version VLC's
+  Windows build uses, with aqtinstall: `aqt install-qt linux desktop 6.8.3 linux_gcc_64 -O ~/Qt -m qtshadertools`.
   Then prefix the `meson setup` command with `PATH=~/Qt/6.8.3/gcc_64/bin:$PATH` and add
   `~/Qt/6.8.3/gcc_64/lib/pkgconfig` to `PKG_CONFIG_PATH`
   (`PKG_CONFIG_PATH=$DEPS/lib/pkgconfig:$HOME/Qt/6.8.3/gcc_64/lib/pkgconfig`).
