@@ -72,12 +72,13 @@ Widgets.IconToolButton {
     Loader {
         id: menuLoader
 
-        // Figma track popover, above the button, right aligned
+        // Figma track popover, above the button, right aligned, with a gap
+        // above the player bar (margin_small alone reaches the bar's top)
         sourceComponent: TracksPopover {
             id: menu
 
             x: root.width - width
-            y: -height - VLCStyle.margin_small
+            y: -height - VLCStyle.margin_small - VLCStyle.margin_large
 
             onOpened: {
                 root.requestLockUnlockAutoHide(true)
