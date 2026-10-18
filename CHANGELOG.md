@@ -34,6 +34,9 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
 
 ### Fixed
 - A minimized settings window comes back when the settings are opened again
+- The chosen accent colour replaces the orange everywhere: the cone logo, the selected
+  icons in the library side panel, the player's popovers, side panel and subtitle
+  timeline, the dialogs and the equalizer
 
 ## redesign-v0.1.0 (pre-release)
 

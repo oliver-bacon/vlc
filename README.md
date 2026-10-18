@@ -83,7 +83,8 @@ What is in the code today.
   own options; equalizer with 10 bands and audio effects applied while playing
 - Settings profiles (Movies, Shows, Music, Work, …): each keeps all settings, including
   the player bars, theme and subtitle presets
-- Theme and accent colour change at once, also over a playing video
+- Theme and accent colour change at once, also over a playing video; the accent replaces
+  the orange everywhere, including the cone logo
 - Open Network Stream, New Playlist (with picture), Playlist Properties, Keyboard Shortcuts
 - Add Subtitles / Add Audio Tracks: to this file, folder or playlist; from the computer
   or from a link. Tracks are saved in the media library and loaded every time
@@ -122,7 +123,6 @@ No Linux packages. Linux: build from source (experimental), see below.
 
 - **Testing:** tested by the author only; no independent tester yet.
 - **Light theme:** not reviewed screen by screen.
-- **Accent colour:** the library side panel and the cone logo keep the default orange.
 - **Subtitle timeline:** works with external .srt / .vtt / .ass / .ssa files; embedded
   subtitle tracks get no timeline.
 - **Not implemented:** subtitles from OpenSubtitles (shown but disabled); the key that was
