@@ -94,11 +94,11 @@ decltype (ControlbarProfileModel::m_defaults)
                 }
             },
             {
-                // Layout of the VLC Redesign Figma file. Listed first so that
-                // it is selected by default on new configurations. Video
-                // player: seek bar in a row above, playback controls in the
-                // middle; audio player: one row with the seek bar in the
-                // middle (SEEK_BAR alone in the center, see ControlBar.qml).
+                // Single-row layout of the VLC Redesign Figma file ("Player",
+                // "Player - Music"). Listed first so that it is selected by
+                // default on new configurations. The seek bar is in the bar,
+                // between the left and right controls (SEEK_BAR alone in the
+                // center, see ControlBar.qml).
                 Style::MODERN_STYLE,
                 N_("Modern Style"),
                 {
@@ -106,7 +106,6 @@ decltype (ControlbarProfileModel::m_defaults)
                         PlayerControlbarModel::Videoplayer,
                         {
                             {
-                                {},
                                 {
                                     ControlListModel::PREVIOUS_BUTTON,
                                     ControlListModel::SKIP_BACK_BUTTON,
@@ -114,6 +113,7 @@ decltype (ControlbarProfileModel::m_defaults)
                                     ControlListModel::SKIP_FW_BUTTON,
                                     ControlListModel::NEXT_BUTTON
                                 },
+                                { ControlListModel::SEEK_BAR },
                                 {
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
@@ -574,8 +574,10 @@ static const std::array<QVector<int>, 3> defaultTopbar {
     QVector<int> { }
 };
 
-// Settings key: set once the saved layouts have the SEEK_BAR control
+// Settings key: version of the saved layouts (VLC Redesign): 1 = they have
+// the SEEK_BAR control, 2 = the centered video bar of 1 is back to one row
 constexpr QLatin1String SETTINGS_KEY_SEEKBAR {"SeekBarControl"};
+constexpr int SEEKBAR_LAYOUT_VERSION = 2;
 
 // Bars of the styles have no center controls where the seek bar is in the
 // bar (VLC Redesign): it is there as SEEK_BAR
@@ -824,7 +826,7 @@ void ControlbarProfileModel::save(bool clearDirty) const
     m_settings->remove(""); // clear the group before save
 
     m_settings->setValue(SETTINGS_KEY_SELECTEDPROFILE, selectedProfile());
-    m_settings->setValue(SETTINGS_KEY_SEEKBAR, true);
+    m_settings->setValue(SETTINGS_KEY_SEEKBAR, SEEKBAR_LAYOUT_VERSION);
 
     m_settings->beginWriteArray(SETTINGS_ARRAYNAME_PROFILES);
 
@@ -890,8 +892,9 @@ bool ControlbarProfileModel::reload()
     }
 
     m_settings->endArray();
-    // saved before the seek bar was a control (VLC Redesign)
-    const bool oldLayouts = !m_settings->value(SETTINGS_KEY_SEEKBAR).toBool();
+    // saved by an earlier version (VLC Redesign); "true" was version 1
+    const int layoutVersion = m_settings->value(SETTINGS_KEY_SEEKBAR).toInt();
+    const bool oldLayouts = layoutVersion < SEEKBAR_LAYOUT_VERSION;
     m_settings->beginReadArray(SETTINGS_ARRAYNAME_PROFILES);
 
     beginResetModel();
@@ -962,20 +965,21 @@ bool ControlbarProfileModel::reload()
 
         if (oldLayouts)
         {
-            // the former single-row "Modern Style" video bar becomes the new one
-            // (playback controls in the middle, seek bar above)
             const QVector<int> playback { ControlListModel::PREVIOUS_BUTTON, ControlListModel::SKIP_BACK_BUTTON,
                                           ControlListModel::PLAY_BUTTON, ControlListModel::SKIP_FW_BUTTON,
                                           ControlListModel::NEXT_BUTTON };
+            // an empty center meant the seek bar in the bar
+            if (layoutVersion < 1)
+                addInlineSeekBar(ptrNewProfile);
+            // version 1 had the "Modern Style" video controls in the middle
+            // with the seek bar above: back to one row
             auto video = ptrNewProfile->getModelData(PlayerControlbarModel::Videoplayer);
-            if (ptrNewProfile->name() == qfut("Modern Style") && video[0] == playback && video[1].isEmpty())
+            if (ptrNewProfile->name() == qfut("Modern Style") && video[0].isEmpty() && video[1] == playback)
             {
-                video[0].clear();
-                video[1] = playback;
+                video[0] = playback;
+                video[1] = { ControlListModel::SEEK_BAR };
                 ptrNewProfile->setModelData(PlayerControlbarModel::Videoplayer, video);
             }
-            // an empty center meant the seek bar in the bar
-            addInlineSeekBar(ptrNewProfile);
             ptrNewProfile->resetDirty();
         }
 
