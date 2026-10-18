@@ -117,16 +117,20 @@ Notes:
 
 ### Linux (64-bit)
 
-Download `VLC_Redesign-<version>-x86_64.AppImage` from the
-[Releases](https://github.com/oliver-bacon/vlc/releases) page. It is one file that runs
-without installing, on most distributions from 2022 on (glibc 2.35 or newer: for example
-Ubuntu 22.04, Debian 12, Fedora 36, Linux Mint 21, current Arch).
+VLC Redesign is available for Linux as an AppImage: a single executable file that requires
+no installation or compilation. Download `VLC_Redesign-<version>-x86_64.AppImage` from the
+[Releases](https://github.com/oliver-bacon/vlc/releases) page. It runs on 64-bit
+distributions with glibc 2.35 or newer (released 2022 or later), for example Ubuntu 22.04,
+Debian 12, Fedora 36, Linux Mint 21 and current Arch Linux.
+
+Tested on Arch Linux with KDE Plasma (in a virtual machine). In automated tests without a
+desktop it also starts and plays video on Debian 12, Fedora 44 and Arch Linux.
 
 1. Make it executable: right-click › Properties › "Allow executing file as program", or
    `chmod +x VLC_Redesign-*-x86_64.AppImage`.
 2. Double-click it, or run `./VLC_Redesign-*-x86_64.AppImage` (add a file to play it).
 
-Nothing is installed, and an installed VLC stays as it is; delete the file to remove it.
+Nothing is installed and an installed VLC is not modified; to remove it, delete the file.
 Optional: compare the SHA-256 with `SHA256SUMS.txt` from the same release
 (`sha256sum -c SHA256SUMS.txt --ignore-missing`).
 
@@ -140,8 +144,8 @@ Notes:
 - If it doesn't start because FUSE is missing (some minimal or container setups), run it
   with `--appimage-extract-and-run`.
 
-To build it yourself or to build and install from source, see
-[Building on Linux](docs/building-linux.md).
+To build the AppImage yourself, or to build and install from source (experimental), see
+[VLC Redesign on Linux](docs/building-linux.md).
 
 ## Known issues
 
@@ -178,8 +182,9 @@ VLC's dependencies. Output: `win64/vlc-4.0.0-dev/vlc.exe` and the packages
 
 ### Linux
 
-See [Building on Linux](docs/building-linux.md): build and install from source
-(experimental), or build the AppImage.
+For running VLC Redesign, the AppImage is sufficient (see [Linux](#linux-64-bit)).
+Instructions for building the AppImage, or for building and installing from source
+(experimental), are in [VLC Redesign on Linux](docs/building-linux.md).
 
 ## Credits and attribution
 

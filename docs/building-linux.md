@@ -1,9 +1,42 @@
-# Building VLC Redesign on Linux
+# VLC Redesign on Linux
 
-Most users don't need to build anything: download the AppImage from the
-[Releases](https://github.com/oliver-bacon/vlc/releases) page (see the
-[README](../README.md#linux)). This page is for building from source, either to run and
-install it directly (experimental) or to build the AppImage.
+## AppImage (recommended)
+
+The recommended way to run VLC Redesign on Linux is the AppImage, a single executable file
+that requires no installation or compilation. Download
+`VLC_Redesign-<version>-x86_64.AppImage` from the
+[Releases](https://github.com/oliver-bacon/vlc/releases) page, make it executable
+(right-click › Properties › "Allow executing file as program", or `chmod +x` on the file)
+and run it. It does not modify an installed VLC; to remove it, delete the file. It runs on
+64-bit distributions with glibc 2.35 or newer (released 2022 or later), for example
+Ubuntu 22.04, Debian 12, Fedora 36 and Linux Mint 21.
+
+Tested on Arch Linux with KDE Plasma (in a virtual machine). In automated tests without a
+desktop it also starts and plays video on Debian 12, Fedora 44 and Arch Linux.
+
+For further notes (settings folder, app menu entry), see the [README](../README.md#linux-64-bit).
+
+The following sections describe how to build the AppImage and how to build and install
+VLC Redesign from source.
+
+## Building the AppImage
+
+The AppImage is built in an Ubuntu 22.04 container, so that it runs on distributions with
+glibc 2.35 or newer. From the repository root, with Docker:
+
+```sh
+docker run --rm --user root -v "$PWD":/vlc -w /vlc ubuntu:22.04 \
+  bash extras/package/appimage/build.sh
+```
+
+The script installs the build tools, Qt 6.8.3 (aqtinstall), meson 1.10, newer Wayland build
+tools and medialibrary 0.13.2 inside the container, builds VLC and packages it with
+[linuxdeploy](https://github.com/linuxdeploy/linuxdeploy). All downloads are pinned and
+checked against SHA-256 / SHA-512 checksums. Output:
+`build-appimage/VLC_Redesign-<version>-x86_64.AppImage`. The first run takes long; later
+runs reuse the downloads and the VLC build in `build-appimage/`. It needs about 1.3 GB of
+RAM per compile job (4 jobs by default; add `-e JOBS=2` to `docker run` to use fewer). Add
+`-e VERSION=0.2.6` to set the version in the file name.
 
 ## Build and install from source (experimental)
 
@@ -146,22 +179,3 @@ Notes:
   `ninja -C build-linux -j2`.
 - **Virtual machines:** without GPU access, VLC logs Mesa / VA-API errors and falls back to
   software rendering; playback still works.
-
-## Building the AppImage
-
-The AppImage is built in an Ubuntu 22.04 container, so that it runs on distributions with
-glibc 2.35 or newer. From the repository root, with Docker:
-
-```sh
-docker run --rm --user root -v "$PWD":/vlc -w /vlc ubuntu:22.04 \
-  bash extras/package/appimage/build.sh
-```
-
-The script installs the build tools, Qt 6.8.3 (aqtinstall), meson 1.10, newer Wayland build
-tools and medialibrary 0.13.2 inside the container, builds VLC and packages it with
-[linuxdeploy](https://github.com/linuxdeploy/linuxdeploy). All downloads are pinned and
-checked against SHA-256 / SHA-512 checksums. Output:
-`build-appimage/VLC_Redesign-<version>-x86_64.AppImage`. The first run takes long; later
-runs reuse the downloads and the VLC build in `build-appimage/`. It needs about 1.3 GB of
-RAM per compile job (4 jobs by default; add `-e JOBS=2` to `docker run` to use fewer). Add
-`-e VERSION=0.2.6` to set the version in the file name.
