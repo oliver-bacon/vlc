@@ -115,9 +115,33 @@ Notes:
 - If you used an earlier build: open **Customize Player** and click **Restore Default**
   to get the new player bar.
 
-### Linux
+### Linux (64-bit)
 
-No Linux packages. Build from source (experimental), see [Building on Linux](docs/building-linux.md).
+Download `VLC_Redesign-<version>-x86_64.AppImage` from the
+[Releases](https://github.com/oliver-bacon/vlc/releases) page. It is one file that runs
+without installing, on most distributions from 2022 on (glibc 2.35 or newer: for example
+Ubuntu 22.04, Debian 12, Fedora 36, Linux Mint 21, current Arch).
+
+1. Make it executable: right-click › Properties › "Allow executing file as program", or
+   `chmod +x VLC_Redesign-*-x86_64.AppImage`.
+2. Double-click it, or run `./VLC_Redesign-*-x86_64.AppImage` (add a file to play it).
+
+Nothing is installed, and an installed VLC stays as it is; delete the file to remove it.
+Optional: compare the SHA-256 with `SHA256SUMS.txt` from the same release
+(`sha256sum -c SHA256SUMS.txt --ignore-missing`).
+
+Notes:
+- **App menu and "Open with":** the AppImage doesn't add itself. Tools like
+  [Gear Lever](https://flathub.org/apps/it.mijorus.gearlever) or
+  [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) add it with one click.
+- It uses the same settings folder as an installed VLC (`~/.config/vlc`) and the same media
+  library (`~/.local/share/vlc`). If you use your distribution's VLC, back up those folders
+  first.
+- If it doesn't start because FUSE is missing (some minimal or container setups), run it
+  with `--appimage-extract-and-run`.
+
+To build it yourself or to build and install from source, see
+[Building on Linux](docs/building-linux.md).
 
 ## Known issues
 
