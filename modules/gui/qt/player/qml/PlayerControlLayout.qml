@@ -42,7 +42,16 @@ FocusScope {
     property list<Item> inlineItems
     property real inlineMinimumWidth: VLCStyle.dp(120, VLCStyle.scale)
 
-    readonly property bool hasCenterControls: !!model?.center && (model.center.count > 0)
+    // the center controls, without the seek bar (ControlListModel.SEEK_BAR)
+    readonly property var _centerIds: {
+        if (!model?.center)
+            return []
+        void model.center.count
+        return model.center.getControls()
+    }
+    readonly property bool hasCenterControls: _centerIds.some((id) => id !== ControlListModel.SEEK_BAR)
+    // the seek bar is in this bar, between the left and right controls
+    readonly property bool seekBarInline: !hasCenterControls && _centerIds.includes(ControlListModel.SEEK_BAR)
 
     // VLC Redesign "Customize Player": the bar is edited in place
     readonly property bool editing: MainCtx.playerCustomizing && !!model
@@ -96,20 +105,28 @@ FocusScope {
         implicitWidth: editLeft.implicitWidth + editCenter.implicitWidth + editRight.implicitWidth + 2 * gap
         implicitHeight: Math.max(editLeft.implicitHeight, editCenter.implicitHeight, editRight.implicitHeight)
 
+        // with the seek bar in the bar, the left and right parts take their
+        // controls and the seek bar the rest (as loaderLeftRight)
+        readonly property bool seekInline: playerControlLayout.seekBarInline
+
         LiveBarSection {
             id: editLeft
-            anchors { left: parent.left; right: editCenter.left; rightMargin: editRow.gap; top: parent.top; bottom: parent.bottom }
+            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+            width: editRow.seekInline ? implicitWidth : (editCenter.x - editRow.gap)
             model: playerControlLayout.model?.left ?? null
         }
         LiveBarSection {
             id: editCenter
-            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; bottom: parent.bottom }
-            width: implicitWidth
+            anchors { top: parent.top; bottom: parent.bottom }
+            x: editRow.seekInline ? editLeft.width + editRow.gap : (parent.width - width) / 2
+            width: editRow.seekInline ? Math.max(implicitWidth, editRight.x - editRow.gap - x) : implicitWidth
             model: playerControlLayout.model?.center ?? null
         }
         LiveBarSection {
             id: editRight
-            anchors { left: editCenter.right; leftMargin: editRow.gap; right: parent.right; top: parent.top; bottom: parent.bottom }
+            anchors { top: parent.top; bottom: parent.bottom }
+            width: editRow.seekInline ? implicitWidth : (parent.width - x)
+            x: editRow.seekInline ? parent.width - width : editCenter.x + editCenter.width + editRow.gap
             alignRight: true
             model: playerControlLayout.model?.right ?? null
         }
@@ -295,7 +312,7 @@ FocusScope {
         }
 
         // TODO: "ControlListFilter"'s count......
-        active: !!playerControlLayout.model && !!playerControlLayout.model.center && (playerControlLayout.model.center.count > 0)
+        active: playerControlLayout.hasCenterControls
 
         Binding on width {
             delayed: true

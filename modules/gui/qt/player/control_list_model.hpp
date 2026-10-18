@@ -69,7 +69,9 @@ public:
         PLAYBACK_SPEED_BUTTON,
         HIGH_RESOLUTION_TIME_WIDGET,
         FRAME_PREV_BUTTON,
-        RESERVED_0X1F,
+        // VLC Redesign: the seek bar. Alone in the center of a player bar it
+        // is shown in the bar (single row), else in a row above the bar.
+        SEEK_BAR,
 
         SPLITTER = 0x20,
         VOLUME,
@@ -110,7 +112,7 @@ public:
     };
     Q_ENUM(ControlType)
 
-    static_assert(RESERVED_0X1F == 0x1F, "missaligned");
+    static_assert(SEEK_BAR == 0x1F, "missaligned");
     static_assert(FAVORITE_BUTTON == 0x2B, "missaligned");
     static_assert(MEDIA_TITLE_LABEL == 0x3F, "missaligned");
 

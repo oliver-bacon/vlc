@@ -1449,18 +1449,16 @@ FocusScope {
         rightPadding: VLCStyle.applicationHorizontalMargin
         leftPadding: VLCStyle.applicationHorizontalMargin
         bottomPadding: VLCStyle.applicationVerticalMargin + VLCStyle.margin_xsmall
-        topPadding: (textPosition === ControlBar.TimeTextPosition.Inline || MainCtx.playerCustomizing) ? VLCStyle.margin_xsmall : 0
+        topPadding: VLCStyle.margin_xsmall
 
         // Single-row bar when the control layout allows it (no center
         // controls, e.g. the "Modern Style" profile); otherwise the
         // classic two-row bar.
-        // Customize Player shows the seek bar in a row of its own (Figma
-        // "Player - customize")
-        textPosition: (canInline && !MainCtx.playerCustomizing)
-                      ? ControlBar.TimeTextPosition.Inline
-                      : (MainCtx.pinVideoControls || MainCtx.playerCustomizing)
-                        ? ControlBar.TimeTextPosition.LeftRightSlider
-                        : ControlBar.TimeTextPosition.AboveSlider
+        // Seek bar in the bar when it is alone in the center of the layout,
+        // else in a row of its own with the times on its sides (VLC
+        // Redesign: video player of the Figma file)
+        textPosition: canInline ? ControlBar.TimeTextPosition.Inline
+                                : ControlBar.TimeTextPosition.LeftRightSlider
 
         // hide right text so that it won't overlap with play queue
         showRemainingTime: (textPosition !== ControlBar.TimeTextPosition.AboveSlider)
@@ -1490,19 +1488,18 @@ FocusScope {
 
         onRequestLockUnlockAutoHide: (lock) => rootPlayer.lockUnlockAutoHide(lock)
 
-        // Customize Player without media edits the video player bar
-        identifier: (Player.hasVideoOutput || (MainCtx.playerCustomizing && Player.playingState === Player.PLAYING_STATE_STOPPED))
-                    ? PlayerControlbarModel.Videoplayer
-                    : PlayerControlbarModel.Audioplayer
+        // Customize Player shows the bar chosen in its Video / Music switch
+        identifier: MainCtx.playerCustomizing ? rootPlayer.customizedBar
+                    : (Player.hasVideoOutput) ? PlayerControlbarModel.Videoplayer
+                                              : PlayerControlbarModel.Audioplayer
 
         onHoveredChanged: rootPlayer.lockUnlockAutoHide(hovered)
 
         background: Rectangle {
             id: controlBarBackground
 
-            // (Customize Player draws the bar like the single-row one)
-            readonly property bool _inline: (controlBar.textPosition === ControlBar.TimeTextPosition.Inline)
-                                            || MainCtx.playerCustomizing
+            // (the bar with the seek bar row is drawn the same way)
+            readonly property bool _inline: true
 
             // The single-row bar is always drawn on a solid surface (Figma:
             // BG/A3 at 95%), instead of fading into the video.
@@ -1558,13 +1555,26 @@ FocusScope {
                     return []
                 return [profile.getModel(PlayerControlbarModel.Topbar), profile.getModel(controlBar.identifier)]
             }
+            videoBar: rootPlayer.customizedBar === PlayerControlbarModel.Videoplayer
+            onVideoBarRequested: (video) => {
+                rootPlayer.customizedBar = video ? PlayerControlbarModel.Videoplayer
+                                                 : PlayerControlbarModel.Audioplayer
+            }
         }
     }
+
+    // bar edited by Customize Player: the one of the playing media at first
+    // (video without media), then the one of its Video / Music switch
+    property int customizedBar: PlayerControlbarModel.Videoplayer
 
     // the bars stay shown while they are customized
     Connections {
         target: MainCtx
         function onPlayerCustomizingChanged() {
+            if (MainCtx.playerCustomizing)
+                rootPlayer.customizedBar = (Player.hasVideoOutput || Player.playingState === Player.PLAYING_STATE_STOPPED)
+                                           ? PlayerControlbarModel.Videoplayer
+                                           : PlayerControlbarModel.Audioplayer
             rootPlayer.lockUnlockAutoHide(MainCtx.playerCustomizing)
         }
     }

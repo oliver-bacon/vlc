@@ -94,10 +94,11 @@ decltype (ControlbarProfileModel::m_defaults)
                 }
             },
             {
-                // Single-row layout from the VLC Redesign Figma file. Listed
-                // first so that it is selected by default on new
-                // configurations. It has no center controls, which lets the
-                // video player put the seek bar inline (see ControlBar.qml).
+                // Layout of the VLC Redesign Figma file. Listed first so that
+                // it is selected by default on new configurations. Video
+                // player: seek bar in a row above, playback controls in the
+                // middle; audio player: one row with the seek bar in the
+                // middle (SEEK_BAR alone in the center, see ControlBar.qml).
                 Style::MODERN_STYLE,
                 N_("Modern Style"),
                 {
@@ -105,6 +106,7 @@ decltype (ControlbarProfileModel::m_defaults)
                         PlayerControlbarModel::Videoplayer,
                         {
                             {
+                                {},
                                 {
                                     ControlListModel::PREVIOUS_BUTTON,
                                     ControlListModel::SKIP_BACK_BUTTON,
@@ -112,7 +114,6 @@ decltype (ControlbarProfileModel::m_defaults)
                                     ControlListModel::SKIP_FW_BUTTON,
                                     ControlListModel::NEXT_BUTTON
                                 },
-                                {},
                                 {
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
@@ -136,7 +137,7 @@ decltype (ControlbarProfileModel::m_defaults)
                                     ControlListModel::SKIP_FW_BUTTON,
                                     ControlListModel::NEXT_BUTTON
                                 },
-                                {},
+                                { ControlListModel::SEEK_BAR },
                                 {
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
@@ -573,6 +574,23 @@ static const std::array<QVector<int>, 3> defaultTopbar {
     QVector<int> { }
 };
 
+// Settings key: set once the saved layouts have the SEEK_BAR control
+constexpr QLatin1String SETTINGS_KEY_SEEKBAR {"SeekBarControl"};
+
+// Bars of the styles have no center controls where the seek bar is in the
+// bar (VLC Redesign): it is there as SEEK_BAR
+static void addInlineSeekBar(ControlbarProfile* profile)
+{
+    for (const int identifier : { PlayerControlbarModel::Videoplayer, PlayerControlbarModel::Audioplayer })
+    {
+        auto data = profile->getModelData(identifier);
+        if (!data[1].isEmpty())
+            continue;
+        data[1] = { ControlListModel::SEEK_BAR };
+        profile->setModelData(identifier, data);
+    }
+}
+
 void ControlbarProfileModel::insertDefaults()
 {
     // Add default profiles:
@@ -587,6 +605,7 @@ void ControlbarProfileModel::insertDefaults()
 
         ptrNewProfile->injectModel(i.modelData);
         ptrNewProfile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
+        addInlineSeekBar(ptrNewProfile);
         ptrNewProfile->resetDirty(); // default profiles should not be dirty initially
     }
 
@@ -605,6 +624,7 @@ bool ControlbarProfileModel::restoreSelectedDefault()
             continue;
         profile->injectModel(i.modelData);
         profile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
+        addInlineSeekBar(profile);
         return true;
     }
     return false;
@@ -804,6 +824,7 @@ void ControlbarProfileModel::save(bool clearDirty) const
     m_settings->remove(""); // clear the group before save
 
     m_settings->setValue(SETTINGS_KEY_SELECTEDPROFILE, selectedProfile());
+    m_settings->setValue(SETTINGS_KEY_SEEKBAR, true);
 
     m_settings->beginWriteArray(SETTINGS_ARRAYNAME_PROFILES);
 
@@ -867,6 +888,11 @@ bool ControlbarProfileModel::reload()
 
         return false;
     }
+
+    m_settings->endArray();
+    // saved before the seek bar was a control (VLC Redesign)
+    const bool oldLayouts = !m_settings->value(SETTINGS_KEY_SEEKBAR).toBool();
+    m_settings->beginReadArray(SETTINGS_ARRAYNAME_PROFILES);
 
     beginResetModel();
 
@@ -934,6 +960,25 @@ bool ControlbarProfileModel::reload()
             ptrNewProfile->resetDirty();
         }
 
+        if (oldLayouts)
+        {
+            // the former single-row "Modern Style" video bar becomes the new one
+            // (playback controls in the middle, seek bar above)
+            const QVector<int> playback { ControlListModel::PREVIOUS_BUTTON, ControlListModel::SKIP_BACK_BUTTON,
+                                          ControlListModel::PLAY_BUTTON, ControlListModel::SKIP_FW_BUTTON,
+                                          ControlListModel::NEXT_BUTTON };
+            auto video = ptrNewProfile->getModelData(PlayerControlbarModel::Videoplayer);
+            if (ptrNewProfile->name() == qfut("Modern Style") && video[0] == playback && video[1].isEmpty())
+            {
+                video[0].clear();
+                video[1] = playback;
+                ptrNewProfile->setModelData(PlayerControlbarModel::Videoplayer, video);
+            }
+            // an empty center meant the seek bar in the bar
+            addInlineSeekBar(ptrNewProfile);
+            ptrNewProfile->resetDirty();
+        }
+
         profiles.append(ptrNewProfile);
     }
 
@@ -955,6 +1000,10 @@ bool ControlbarProfileModel::reload()
         setSelectedProfile(0);
 
     m_settings->endGroup();
+
+    // keep the updated layouts, so that they are not updated twice
+    if (oldLayouts)
+        save(false);
 
     return true;
 }
@@ -1126,6 +1175,7 @@ ControlbarProfile *ControlbarProfileModel::generateProfileFromStyle(const Style 
         {
             const auto ptrNewProfile = new ControlbarProfile();
             ptrNewProfile->injectModel(i.modelData);
+            addInlineSeekBar(ptrNewProfile);
             ptrNewProfile->setName(i.name);
             ptrNewProfile->resetDirty(); // default profiles should not be dirty initially
             return ptrNewProfile;

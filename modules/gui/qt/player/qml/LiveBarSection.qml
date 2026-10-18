@@ -24,6 +24,7 @@ import VLC.MainInterface
 import VLC.Style
 import VLC.PlayerControls
 import VLC.Dialogs
+import VLC.Player
 
 // One part (left, center or right) of a player bar while the player is
 // customized in place (VLC Redesign "Player - customize"): the controls in
@@ -43,6 +44,11 @@ Item {
     // the controls at the right end (right part of a bar)
     property bool alignRight: false
 
+    readonly property bool _hasSeekBar: {
+        void repeater.count
+        return !!model && model.getControls().includes(ControlListModel.SEEK_BAR)
+    }
+
     readonly property ColorContext colorContext: ColorContext {
         id: theme
         colorSet: ColorContext.Window
@@ -54,9 +60,17 @@ Item {
     implicitHeight: row.implicitHeight + 2 * _pad
 
     // moves, adds or takes over the dragged control so that it is at `index`
+    // whether the dragged control can be dropped here: the seek bar
+    // (ControlListModel.SEEK_BAR) is not moved, and nothing goes next to it
+    function accepts(src) {
+        if (!src || src.barControlId === undefined || !section.model)
+            return false
+        return src.barControlId !== ControlListModel.SEEK_BAR && !section._hasSeekBar
+    }
+
     function dropAt(drop, index) {
         const src = drop.source
-        if (!src || src.barControlId === undefined || !section.model)
+        if (!section.accepts(src))
             return
         const target = section.model
         const from = src.barModel
@@ -91,11 +105,12 @@ Item {
         id: endDrop
 
         anchors.fill: parent
+        onEntered: (drag) => { drag.accepted = section.accepts(drag.source) }
         onDropped: (drop) => section.dropAt(drop, repeater.count)
     }
 
     Rectangle {
-        visible: endDrop.containsDrag && !row.childDrop
+        visible: endDrop.containsDrag && !row.childDrop && !section._hasSeekBar
         x: row.x + row.width
         anchors.verticalCenter: parent.verticalCenter
         width: VLCStyle.dp(2, VLCStyle.scale)
@@ -129,12 +144,57 @@ Item {
                 readonly property var barModel: section.model
                 readonly property int barIndex: index
 
-                readonly property var _control: PlayerControlbarControls.control(barControlId)
+                readonly property bool _seekBar: barControlId === ControlListModel.SEEK_BAR
+                readonly property var _control: _seekBar ? { "label": "", "source": "" }
+                                                         : PlayerControlbarControls.control(barControlId)
 
-                implicitWidth: Math.max(loader.implicitWidth, VLCStyle.dp(20, VLCStyle.scale)) + 2 * section._pad
+                implicitWidth: _seekBar ? VLCStyle.dp(160, VLCStyle.scale)
+                                        : Math.max(loader.implicitWidth, VLCStyle.dp(20, VLCStyle.scale)) + 2 * section._pad
                 implicitHeight: Math.max(loader.implicitHeight, VLCStyle.icon_toolbar) + 2 * section._pad
-                width: implicitWidth
+                // the seek bar takes the whole part (it is alone there)
+                width: _seekBar ? Math.max(implicitWidth, section.width - 2 * section._pad) : implicitWidth
                 height: implicitHeight
+
+                // the seek bar: times and track as in the bar
+                Item {
+                    anchors.fill: parent
+                    anchors.margins: VLCStyle.margin_xsmall
+                    visible: entry._seekBar
+
+                    Text {
+                        id: seekTime
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Player.time.formatHMS(0)
+                        color: theme.fg.secondary
+                        font.pixelSize: VLCStyle.fontSize_normal
+                    }
+                    Text {
+                        id: seekLength
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Player.length.formatHMS(0)
+                        color: theme.fg.secondary
+                        font.pixelSize: VLCStyle.fontSize_normal
+                    }
+                    Rectangle {
+                        id: seekTrack
+                        anchors.left: seekTime.right
+                        anchors.right: seekLength.left
+                        anchors.margins: VLCStyle.margin_xsmall
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: VLCStyle.dp(24, VLCStyle.scale)
+                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        color: Qt.alpha(theme.fg.primary, 0.08)
+
+                        Rectangle {
+                            width: Math.max(height, parent.width * Math.max(0, Math.min(1, Player.position)))
+                            height: parent.height
+                            radius: parent.radius
+                            color: Qt.alpha(theme.accent, 0.35)
+                        }
+                    }
+                }
 
                 opacity: mouse.drag.active ? 0.3 : 1.0
 
@@ -142,6 +202,7 @@ Item {
                     id: loader
 
                     anchors.centerIn: parent
+                    active: !entry._seekBar
                     source: entry._control.source
                     onLoaded: {
                         item.paintOnly = true
@@ -162,6 +223,7 @@ Item {
                     id: drop
 
                     anchors.fill: parent
+                    onEntered: (drag) => { drag.accepted = section.accepts(drag.source) }
                     onContainsDragChanged: row.childDrop = containsDrag
                     onDropped: (drop) => section.dropAt(drop, entry.index)
                 }
@@ -179,6 +241,7 @@ Item {
                     id: mouse
 
                     anchors.fill: parent
+                    enabled: !entry._seekBar // the seek bar stays where it is
                     hoverEnabled: true
                     cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                     preventStealing: true

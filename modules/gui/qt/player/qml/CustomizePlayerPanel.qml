@@ -25,6 +25,7 @@ import VLC.Style
 import VLC.PlayerControls
 import VLC.Widgets as Widgets
 import VLC.Dialogs
+import VLC.Player
 
 // "Customize Player" of the VLC Redesign (Figma "Player - customize"),
 // inside the player window while its bars are edited in place
@@ -37,6 +38,11 @@ Item {
 
     // the edited bars (PlayerControlbarModel), e.g. top bar and control bar
     property var barModels: []
+
+    // whether the video player bar is edited (else the music one), and the
+    // request of the Video / Music switch to change it
+    property bool videoBar: true
+    signal videoBarRequested(bool video)
 
     readonly property ColorContext colorContext: ColorContext {
         id: theme
@@ -78,6 +84,9 @@ Item {
         else
             MainCtx.controlbarProfileModel.reload()
         MainCtx.playerCustomizing = false
+        // opened without media: back to the library
+        if (Player.playingState === Player.PLAYING_STATE_STOPPED)
+            MainCtx.playerView = false
     }
 
     Shortcut {
@@ -154,6 +163,54 @@ Item {
             text: qsTr("Customize Player")
             color: "#8F8F8F"
             font.pixelSize: 14 * root.dp1
+        }
+
+        // which player bar is edited: Video or Music
+        Rectangle {
+            id: modeSwitch
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 10 * root.dp1
+            width: modeRow.implicitWidth + 4 * root.dp1
+            height: 30 * root.dp1
+            radius: 6 * root.dp1
+            color: "#1B1B1B"
+
+            Row {
+                id: modeRow
+
+                anchors.centerIn: parent
+
+                Repeater {
+                    model: [{ text: qsTr("Video"), video: true }, { text: qsTr("Music"), video: false }]
+
+                    delegate: T.Button {
+                        id: modeButton
+
+                        required property var modelData
+                        readonly property bool selected: modelData.video === root.videoBar
+
+                        implicitWidth: Math.max(80 * root.dp1, modeLabel.implicitWidth + 24 * root.dp1)
+                        implicitHeight: 26 * root.dp1
+
+                        background: Rectangle {
+                            radius: 5 * root.dp1
+                            color: modeButton.selected ? "#371F06"
+                                 : modeButton.hovered ? Qt.alpha(theme.fg.primary, 0.06) : "transparent"
+                        }
+                        contentItem: Text {
+                            id: modeLabel
+                            text: modeButton.modelData.text
+                            color: modeButton.selected ? theme.accent : "#8F8F8F"
+                            font.pixelSize: 13 * root.dp1
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        onClicked: root.videoBarRequested(modelData.video)
+                    }
+                }
+            }
         }
 
         Widgets.IconToolButton {

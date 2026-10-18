@@ -28,6 +28,7 @@ import VLC.Widgets as Widgets
 import VLC.Player
 import VLC.Util
 import VLC.Dialogs
+import VLC.PlayerControls
 
 T.Pane {
     id: root
@@ -37,7 +38,7 @@ T.Pane {
         AboveSlider,
         LeftRightSlider,
         // Single row: [left controls] time [seek track] length [right controls].
-        // Only valid when the layout has no center controls, see `canInline`.
+        // Only valid when the seek bar is alone in the center, see `canInline`.
         Inline
     }
 
@@ -55,11 +56,16 @@ T.Pane {
     // In the single-row layout the seek bar sits inside the controls row, so
     // the bar starts at the top of the pane (used to place the play queue).
     // (Customize Player: also from the top, the seek bar row is a dashed box)
-    readonly property real sliderY: (_inline || MainCtx.playerCustomizing) ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
+    // (VLC Redesign: also with the times left and right of the seek bar row,
+    // the bar is one solid surface)
+    readonly property real sliderY: (_inline || _redesignRow || MainCtx.playerCustomizing) ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
+    // seek bar in a row of its own above the controls (VLC Redesign look)
+    readonly property bool _redesignRow: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider)
     property int textPosition: ControlBar.TimeTextPosition.AboveSlider
 
     // Whether the current control layout can use TimeTextPosition.Inline
-    readonly property bool canInline: !(contentItem?.playerControlLayout?.hasCenterControls ?? true)
+    // (the seek bar is alone in the center of the layout, ControlListModel.SEEK_BAR)
+    readonly property bool canInline: contentItem?.playerControlLayout?.seekBarInline ?? false
 
     property int identifier: -1
     property real sliderHeight: VLCStyle.heightBar_xxsmall
@@ -122,8 +128,8 @@ T.Pane {
 
     TextMetrics {
         id: timeTextMetrics
-        font.pixelSize: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.fontSize_small
-                                                                                       : VLCStyle.fontSize_normal
+        // (the seek bar row of the redesign uses the size of the single-row bar)
+        font.pixelSize: VLCStyle.fontSize_normal
         text: {
             // This text metrics is used for both the time and length, as we want them to have the same width.
             // Length might not be reported in some cases, for that reason we should check both and use the bigger one.
@@ -173,7 +179,7 @@ T.Pane {
                     return Player.time.formatHMS(length.isSubSecond() ? VLCTick.SubSecondFormattedAsMS : 0)
                 }
                 // The redesign uses the muted text color for both times
-                color: root._inline ? theme.fg.secondary : theme.fg.primary
+                color: (root._inline || root._redesignRow) ? theme.fg.secondary : theme.fg.primary
                 font: timeTextMetrics.font
                 horizontalAlignment: Text.AlignHCenter
 
@@ -255,8 +261,8 @@ T.Pane {
             SliderBar {
                 id: trackPositionSlider
 
-                barHeight: (root._inline || MainCtx.playerCustomizing) ? root.inlineSliderHeight : root.sliderHeight
-                trackStyle: root._inline || MainCtx.playerCustomizing
+                barHeight: (root._inline || root._redesignRow) ? root.inlineSliderHeight : root.sliderHeight
+                trackStyle: root._inline || root._redesignRow
                 Layout.alignment: Qt.AlignVCenter
 
                 Accessible.role: Accessible.Slider
@@ -278,9 +284,10 @@ T.Pane {
                 }
             },
             // Customize Player: the seek bar row as a dashed box (Figma
-            // "Player - customize"); the seek bar itself is not movable
+            // "Player - customize"); the seek bar itself is not moved
             DashedBorder {
                 parent: root
+                z: 10
                 visible: MainCtx.playerCustomizing && row2.visible
                 x: root.leftPadding + row2.x - VLCStyle.margin_xsmall
                 y: root.topPadding + row2.y - VLCStyle.margin_xxsmall
@@ -290,6 +297,12 @@ T.Pane {
                 dash: 4
                 gap: 3
                 color: Qt.alpha(theme.fg.secondary, 0.6)
+
+                // the seek bar is not used while customizing
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: parent.visible
+                }
             },
             Loader {
                 id: bookmarksLoader
@@ -363,9 +376,9 @@ T.Pane {
 
             Layout.fillWidth: true
             Layout.fillHeight: false
-            // Customize Player: in line with the dashed boxes of the bar below
-            Layout.leftMargin: MainCtx.playerCustomizing ? VLCStyle.margin_large + VLCStyle.margin_xsmall
-                             : (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.margin_xsmall
+            // in line with the controls below (and the dashed boxes of
+            // Customize Player)
+            Layout.leftMargin: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider) ? VLCStyle.margin_large + VLCStyle.margin_xsmall
                                                                                               : 0
 
             Layout.rightMargin: Layout.leftMargin
