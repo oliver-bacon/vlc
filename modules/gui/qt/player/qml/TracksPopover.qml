@@ -231,9 +231,11 @@ T.Popup {
                 color: root.dimColor
                 font.pixelSize: 12 * root.dp1
             }
+            // the settings window on the page of the current tab
             onClicked: {
+                const page = ["video", "audio", "subtitles"][root._tab] ?? "audio"
                 root.close()
-                DialogsProvider.settingsDialog()
+                DialogsProvider.settingsPageDialog(page)
             }
         }
     }
