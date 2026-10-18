@@ -5,11 +5,25 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
 
 ## Unreleased
 
+### Added
+- Linux AppImage build script (`extras/package/appimage/build.sh`, Ubuntu 22.04 in Docker)
+- README: how to download and run the Linux AppImage
+
 ### Changed
-- Linux build instructions in the README: optional install to `/opt/vlc-redesign` with a
-  `vlc-redesign` command and an app menu entry, plus update and uninstall steps
+- Linux build instructions moved from the README to `docs/building-linux.md`, with an
+  optional install to `/opt/vlc-redesign` (`vlc-redesign` command, app menu entry, update
+  and uninstall steps)
+
+### Fixed
+- Linux install from source: a launcher script finds VLC's libraries instead of a
+  system-wide `ld.so.conf.d` entry, which made the distribution's VLC 3 load the redesign's
+  `libvlccore.so.9`
 
 ## redesign-v0.2.6 (beta)
+
+### Added
+- Linux AppImage (`VLC_Redesign-0.2.6-x86_64.AppImage`), added to the release on 19 Oct;
+  same code as the Windows build
 
 ### Fixed
 - Quitting no longer crashes at exit: medialibrary kept a logger from a plugin that VLC
