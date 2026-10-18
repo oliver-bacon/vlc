@@ -78,6 +78,13 @@ T.Popup {
     contentItem: ColumnLayout {
         spacing: 0
 
+        // the popup is outside the window's item tree, so VLC's own controls
+        // in it (the sort button) find no palette and paint magenta
+        readonly property ColorContext colorContext: ColorContext {
+            palette: VLCStyle.palette
+            colorSet: ColorContext.Window
+        }
+
         // tabs, or the "Queue" title
         Rectangle {
             Layout.fillWidth: true
