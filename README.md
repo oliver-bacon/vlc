@@ -117,7 +117,7 @@ Notes:
 
 ### Linux
 
-No Linux packages. Linux: build from source (experimental), see below.
+No Linux packages. Build from source (experimental), see [Linux (experimental)](#linux-experimental).
 
 ## Known issues
 
@@ -132,8 +132,6 @@ No Linux packages. Linux: build from source (experimental), see below.
   closing, and the next start had no media library. This build includes a fix (libupnp
   miscompiled with MinGW). If it still happens: end `vlc.exe` in Task Manager and delete
   `plugins\services_discovery\libupnp_plugin.dll` (you lose UPnP discovery).
-- **Linux (built from source):** quitting can crash on exit; unmodified upstream VLC does the same
-  with Qt 6.8.3.
 
 Please report problems in the [issue tracker](https://github.com/oliver-bacon/vlc/issues) of this repository.
 
@@ -156,23 +154,74 @@ VLC's dependencies. Output: `win64/vlc-4.0.0-dev/vlc.exe` and the packages
 
 ### Linux (experimental)
 
-Known to build on Ubuntu with Qt 6.8.3 (installed with
-[aqtinstall](https://github.com/miurahr/aqtinstall)) and libmedialibrary 0.13:
+Tested on Arch Linux with the system Qt 6.12 and medialibrary 0.13.2 built from source.
+It also builds on Ubuntu with Qt 6.8.3 from [aqtinstall](https://github.com/miurahr/aqtinstall)
+(see the notes below).
+
+**1. Install VLC's build dependencies.** On Arch:
 
 ```sh
-aqt install-qt linux desktop 6.8.3 linux_gcc_64 -O ~/Qt -m qtshadertools
-PATH=~/Qt/6.8.3/gcc_64/bin:$PATH PKG_CONFIG_PATH=~/Qt/6.8.3/gcc_64/lib/pkgconfig \
-  meson setup build-linux -Dmedialibrary=enabled -Dqt=enabled -Dlua=disabled
-ninja -C build-linux
-./build-linux/bin/vlc-static -I qt
+sudo pacman -S --needed base-devel git meson ninja pkgconf cmake nasm \
+  qt6-base qt6-declarative qt6-svg qt6-shadertools qt6-wayland qt6-5compat qt6-tools \
+  ffmpeg libass libplacebo freetype2 fribidi harfbuzz fontconfig \
+  libx11 libxcb xcb-util-keysyms xcb-util-renderutil libxkbcommon libxkbcommon-x11 libxinerama libxpm \
+  wayland wayland-protocols mesa libglvnd libdrm libva libvdpau vulkan-headers vulkan-icd-loader \
+  libpulse alsa-lib pipewire libsamplerate \
+  libmatroska libebml taglib libvorbis opus flac libmad libmpeg2 a52dec libdca faad2 libtheora speex speexdsp \
+  libdvbpsi libbluray libdvdnav libdvdread libarchive libnfs gnutls libgcrypt libsecret dbus \
+  libjpeg-turbo libpng librsvg libupnp sqlite zlib zstd srt aribb24 libmodplug libmpcdec twolame lame \
+  avahi libnotify gtk3 xorg-xwayland
 ```
 
-Running from the build folder may need `VLC_LIB_PATH=build-linux/modules` so that
-helpers such as the preparser are found.
+On other distributions, install the equivalent packages; see
+[README.upstream.md](README.upstream.md) and VLC's documentation.
 
-You need VLC's usual build dependencies (meson, ninja, ffmpeg, libmedialibrary, X11/xcb,
-freetype, libass, …). See [README.upstream.md](README.upstream.md) and VLC's
-documentation for the full list.
+**2. Build medialibrary 0.13.2.** It is not packaged on most distributions. This uses the
+same version and checksum as VLC's `contrib/src/medialibrary`, and applies this
+repository's fix for a crash when quitting. Set `VLC_SRC` to your clone of this
+repository; medialibrary is installed to `~/vlc-deps`:
+
+```sh
+VLC_SRC=$HOME/vlc
+DEPS=$HOME/vlc-deps
+curl -fLO https://code.videolan.org/videolan/medialibrary/-/archive/0.13.2/medialibrary-0.13.2.tar.bz2
+echo "ec04cd28a19e547debf1a911fbcd33345a53a3f963e83d6f878c9836ebfefd4045c42a670a2c076ba3767bf91884f542e48dab6a254fc29285041fa9be35fe73  medialibrary-0.13.2.tar.bz2" | sha512sum -c -
+tar xf medialibrary-0.13.2.tar.bz2
+cd medialibrary-0.13.2
+patch -p1 < "$VLC_SRC/contrib/src/medialibrary/0001-reset-logger-on-destroy.patch"
+meson setup build --prefix="$DEPS" --libdir=lib --buildtype=release -Dlibvlc=disabled
+ninja -C build install
+cd ..
+```
+
+**3. Build VLC** from the repository root (in the same shell, so `DEPS` is still set):
+
+```sh
+PKG_CONFIG_PATH=$DEPS/lib/pkgconfig meson setup build-linux --buildtype=release \
+  -Dmedialibrary=enabled -Dqt=enabled -Dlua=disabled \
+  -Dc_link_args="-Wl,-rpath,$DEPS/lib" -Dcpp_link_args="-Wl,-rpath,$DEPS/lib"
+ninja -C build-linux
+```
+
+**4. Run it** from the build folder. `VLC_LIB_PATH` is needed so that VLC finds its
+modules and helpers such as the preparser:
+
+```sh
+VLC_LIB_PATH=build-linux/modules ./build-linux/bin/vlc-static -I qt
+```
+
+Notes:
+- **Qt:** the system Qt 6 works on Arch (6.12). On distributions with an older Qt, install
+  Qt 6.8.3 with aqtinstall: `aqt install-qt linux desktop 6.8.3 linux_gcc_64 -O ~/Qt -m qtshadertools`.
+  Then prefix the `meson setup` command with `PATH=~/Qt/6.8.3/gcc_64/bin:$PATH` and add
+  `~/Qt/6.8.3/gcc_64/lib/pkgconfig` to `PKG_CONFIG_PATH`
+  (`PKG_CONFIG_PATH=$DEPS/lib/pkgconfig:$HOME/Qt/6.8.3/gcc_64/lib/pkgconfig`).
+- **rpath:** the `-Wl,-rpath` link arguments let VLC find medialibrary in `~/vlc-deps`.
+  Leave them out if medialibrary is installed system-wide.
+- **Memory:** building needs about 8 GB of RAM with 6 parallel jobs; with less, use
+  `ninja -C build-linux -j2`.
+- **Virtual machines:** without GPU access, VLC logs Mesa / VA-API errors and falls back to
+  software rendering; playback still works.
 
 ## Credits and attribution
 

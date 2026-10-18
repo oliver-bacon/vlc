@@ -3,6 +3,16 @@
 All notable changes of the VLC Redesign (unofficial). Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
+## Unreleased
+
+### Fixed
+- Quitting no longer crashes at exit: medialibrary kept a logger from a plugin that VLC
+  had already unloaded (patch in `contrib/src/medialibrary`)
+
+### Changed
+- Linux build instructions in the README: Arch Linux packages, building medialibrary,
+  running from the build folder
+
 ## redesign-v0.2.5 (beta)
 
 ### Changed
