@@ -1,0 +1,21 @@
+From: thespine1337 <thespine1337@gmail.com>
+Subject: Reset the logger when the MediaLibrary is destroyed
+
+The logger set by the host is kept in a static (Log::s_logger). In VLC the
+logger's class lives in libmedialibrary_plugin, which is unloaded on shutdown;
+at process exit the static then calls a destructor that is no longer mapped
+and the process crashes. Replace it with an IostreamLogger (Log::doLog() does
+not check for a null logger).
+
+--- a/src/MediaLibrary.cpp
++++ b/src/MediaLibrary.cpp
+@@ -371,6 +371,9 @@
+ MediaLibrary::~MediaLibrary()
+ {
+     stopBackgroundJobs();
++    // The logger provided by the host may live in a plugin that is unloaded
++    // before process exit; do not let the static outlive it.
++    Log::SetLogger( std::make_shared<IostreamLogger>() );
+ }
+ 
+ bool MediaLibrary::createAllTables()
