@@ -3,7 +3,7 @@
 All notable changes of the VLC Redesign (unofficial). Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
-## Unreleased
+## redesign-v0.2.6 (beta)
 
 ### Fixed
 - Quitting no longer crashes at exit: medialibrary kept a logger from a plugin that VLC
