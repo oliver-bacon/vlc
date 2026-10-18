@@ -173,8 +173,19 @@ sudo pacman -S --needed base-devel git meson ninja pkgconf cmake nasm \
   avahi libnotify gtk3 xorg-xwayland
 ```
 
-On other distributions, install the equivalent packages; see
-[README.upstream.md](README.upstream.md) and VLC's documentation.
+On other distributions, install the same libraries under their own names (the development
+packages, usually ending in `-dev` or `-devel`). A shortcut that covers most of them:
+
+- Debian / Ubuntu: `sudo apt build-dep vlc` (needs the source repositories enabled), then
+  `sudo apt install meson ninja-build`
+- Fedora: `sudo dnf builddep vlc` (VLC is in RPM Fusion)
+
+These install what the distribution's own VLC 3 needs, but not Qt 6: see the Qt note below.
+
+Only Qt 6 (with Qt Quick, Qt SVG and Qt ShaderTools) and medialibrary (step 2) are required.
+Any other missing library only turns off the feature that uses it: `meson setup` lists each
+dependency with `found: YES` or `found: NO`. To add a library later, install it and run
+`meson setup --reconfigure build-linux`, then `ninja -C build-linux` again.
 
 **2. Build medialibrary 0.13.2.** It is not packaged on most distributions. This uses the
 same version and checksum as VLC's `contrib/src/medialibrary`, and applies this
