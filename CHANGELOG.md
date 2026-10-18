@@ -3,6 +3,12 @@
 All notable changes of the VLC Redesign (unofficial). Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
+## Unreleased
+
+### Changed
+- Linux build instructions in the README: optional install to `/opt/vlc-redesign` with a
+  `vlc-redesign` command and an app menu entry, plus update and uninstall steps
+
 ## redesign-v0.2.6 (beta)
 
 ### Fixed

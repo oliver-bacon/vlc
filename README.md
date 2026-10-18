@@ -218,6 +218,7 @@ ninja -C build install
 ```sh
 cd "$VLC_SRC"
 PKG_CONFIG_PATH=$DEPS/lib/pkgconfig meson setup build-linux --buildtype=release \
+  --prefix=/opt/vlc-redesign --libdir=lib \
   -Dmedialibrary=enabled -Dqt=enabled -Dlua=disabled \
   -Dc_link_args="-Wl,-rpath,$DEPS/lib" -Dcpp_link_args="-Wl,-rpath,$DEPS/lib"
 ninja -C build-linux
@@ -229,6 +230,46 @@ VLC finds its modules and helpers such as the preparser:
 ```sh
 VLC_LIB_PATH=build-linux/modules ./build-linux/bin/vlc-static -I qt
 ```
+
+**6. Install (optional).** This installs to `/opt/vlc-redesign`, separate from your
+distribution's VLC, adds the command `vlc-redesign` and an app menu entry "VLC Redesign" that
+also appears under "Open with" for video and audio files. `--prefix` in step 4 sets the
+location; if you set up `build-linux` without it, first run
+`meson configure build-linux --prefix=/opt/vlc-redesign --libdir=lib` and `ninja -C build-linux`.
+
+```sh
+cd "$VLC_SRC"
+PREFIX=/opt/vlc-redesign
+ninja -C build-linux
+sudo ninja -C build-linux install
+printf '%s\n' $PREFIX/lib $PREFIX/lib/vlc | sudo tee /etc/ld.so.conf.d/vlc-redesign.conf
+sudo ldconfig
+sudo $PREFIX/libexec/vlc/vlc-cache-gen $PREFIX/lib/vlc/plugins
+sudo ln -sf $PREFIX/bin/vlc /usr/local/bin/vlc-redesign
+sudo install -Dm644 share/vlc512x512.png $PREFIX/share/icons/vlc-redesign.png
+MIMETYPES=$(grep -o '^[a-z][^ #]*' share/vlc.desktop.mimetypes | paste -sd';')
+sudo mkdir -p /usr/local/share/applications
+sudo tee /usr/local/share/applications/vlc-redesign.desktop > /dev/null <<EOF
+[Desktop Entry]
+Type=Application
+Name=VLC Redesign
+GenericName=Media player
+Exec=/usr/local/bin/vlc-redesign --started-from-file %U
+Icon=$PREFIX/share/icons/vlc-redesign.png
+Terminal=false
+Categories=AudioVideo;Player;
+MimeType=$MIMETYPES;
+EOF
+```
+
+- `ld.so.conf.d` + `ldconfig`: lets the installed VLC find its own libraries (`libvlc`,
+  `libvlccore`) in `/opt/vlc-redesign`.
+- `vlc-cache-gen`: writes the plugin cache (`plugins.dat`), so VLC starts faster.
+- medialibrary is still loaded from `~/vlc-deps`; don't delete that folder.
+- **Update:** `cd ~/vlc && git pull && ninja -C build-linux && sudo ninja -C build-linux install`,
+  then run the `vlc-cache-gen` line again.
+- **Uninstall:**
+  `sudo rm -rf /opt/vlc-redesign /usr/local/bin/vlc-redesign /usr/local/share/applications/vlc-redesign.desktop /etc/ld.so.conf.d/vlc-redesign.conf && sudo ldconfig`
 
 Notes:
 - **Qt:** use Qt 6.8 or newer. The system Qt works on Arch (6.12). If your distribution has an
