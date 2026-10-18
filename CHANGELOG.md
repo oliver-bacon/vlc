@@ -3,6 +3,23 @@
 All notable changes of the VLC Redesign (unofficial). Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
+## redesign-v0.2.5 (beta)
+
+### Changed
+- Bug reports use a GitHub issue form with fields for the build, package and system
+
+### Fixed
+- The chosen accent colour replaces the orange everywhere: the cone logo, the selected
+  icons in the library side panel, the player's popovers, side panel and subtitle
+  timeline, the dialogs and the equalizer
+- Fullscreen always has a way out: F11 and Esc leave it (also the video's fullscreen), and
+  the window buttons stay in fullscreen with "exit fullscreen" instead of maximize
+- The track, playback settings and queue popovers keep a gap above the player bar
+- "Show Preferences" in the track popover opens the settings page of its tab (Video, Audio,
+  Subtitles)
+- The settings' info tool tips open above the info icon instead of over it
+- The queue's sort button shows its icon instead of a magenta square
+
 ## redesign-v0.2.0 (beta)
 
 ### Added
@@ -34,16 +51,6 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
 
 ### Fixed
 - A minimized settings window comes back when the settings are opened again
-- The chosen accent colour replaces the orange everywhere: the cone logo, the selected
-  icons in the library side panel, the player's popovers, side panel and subtitle
-  timeline, the dialogs and the equalizer
-- Fullscreen always has a way out: F11 and Esc leave it (also the video's fullscreen), and
-  the window buttons stay in fullscreen with "exit fullscreen" instead of maximize
-- The track, playback settings and queue popovers keep a gap above the player bar
-- "Show Preferences" in the track popover opens the settings page of its tab (Video, Audio,
-  Subtitles)
-- The settings' info tool tips open above the info icon instead of over it
-- The queue's sort button shows its icon instead of a magenta square
 
 ## redesign-v0.1.0 (pre-release)
 
