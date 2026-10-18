@@ -39,8 +39,7 @@ What is in the code today.
 - Onboarding on first start: media folder, theme and accent colour, basic shortcuts
 
 **Player**
-- Video player: playback controls in the middle with a thick seek bar in a row above;
-  music player: one row with the controls on the left and the seek bar in the middle
+- One-row player bar: playback controls on the left, a thick seek bar in the middle
 - On the right: Favorite, the cone-shaped volume, fullscreen, Audio, Subtitles, Playback
   settings and Queue
 - Rounded frame around the video
@@ -112,8 +111,8 @@ Notes:
 - The build is not code-signed, so Windows SmartScreen may warn before the first start.
 - It uses the same settings folder as an installed VLC (`%APPDATA%\vlc`). If you also use
   official VLC 4 builds, back that folder up first.
-- If you used an earlier build: a default video player bar is updated by itself. If you
-  changed it, open **Customize Player** and click **Restore Default** to get the new one.
+- If you used an earlier build: open **Customize Player** and click **Restore Default**
+  to get the new player bar.
 
 ### Linux
 

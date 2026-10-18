@@ -9,8 +9,6 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
 - Customize Player edits the player bars in place: the top bar and the control bar
   become drop zones, a panel over the video holds the controls not in use, and a
   Video / Music switch chooses which player bar is edited
-- Separate video and music player bars: the video player has the playback controls
-  in the middle with the seek bar in a row above, the music player keeps one row
 - Settings window: equalizer with preamp and 10 bands, audio effects applied live,
   spatial audio mode
 - Favorite button for every media (also files outside the library)
