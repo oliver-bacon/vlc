@@ -252,6 +252,13 @@ FocusScope {
                     delay: VLCStyle.delayToolTipAppear
                     text: root.option !== "" ? VLCConfig.longText(root.option) : ""
 
+                    // above the icon, clear of the icon and the mouse pointer
+                    x: 0
+                    y: -height - VLCStyle.dp(6, VLCStyle.scale)
+
+                    // a template ToolTip has no size of its own
+                    implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
+                    implicitHeight: contentItem.implicitHeight + topPadding + bottomPadding
                     width: Math.min(implicitWidth, VLCStyle.dp(360, VLCStyle.scale))
                     padding: VLCStyle.margin_xsmall
 
