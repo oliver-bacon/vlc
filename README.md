@@ -23,7 +23,7 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 
 ## Screenshots
 
-![Player with the one-row player bar](docs/screenshots/player.png)
+![Player](docs/screenshots/player.png)
 
 | Library home | Seek bar preview |
 |---|---|
@@ -39,10 +39,14 @@ What is in the code today.
 - Onboarding on first start: media folder, theme and accent colour, basic shortcuts
 
 **Player**
-- One-row player bar: playback controls on the left, a thick seek bar, the cone-shaped
-  volume, then Audio, Subtitles, Playback settings and Queue
+- Video player: playback controls in the middle with a thick seek bar in a row above;
+  music player: one row with the controls on the left and the seek bar in the middle
+- On the right: Favorite, the cone-shaped volume, fullscreen, Audio, Subtitles, Playback
+  settings and Queue
+- Rounded frame around the video
 - Top bar with the media title, the folder name (opens the library at that folder) and a
-  library button; with VLC's own title bar: minimize, PiP, maximize, fullscreen, close
+  library button; with VLC's own title bar: minimize, maximize, close
+- Favorite button for every media, also for files outside the library
 - Audio / subtitle track popover; Queue / Bookmarks / Chapters popover with sort,
   repeat, shuffle, add and remove
 - "Continue watching" prompt with the time already watched; error messages in the same style
@@ -65,22 +69,27 @@ What is in the code today.
 
 **Library**
 - Side navigation: Home, Videos, Music, Network, Playlists, Recent, pins and "Add item";
-  icon-only rail with side panels on narrow windows
-- Home: Continue Watching, Listen Again, Frequently Visited Folders
+  icon-only rail with side panels on narrow windows; back and forward in the page headers
+- Home: Continue Watching, Listen Again, Frequently Visited Folders; "Remove from Home"
+  in the context menu; music covers from the files' artwork
 - Videos browsed by library folder with previews of what is inside; Music with Songs,
   Albums, Artists and Genres
 - Network: Add Network Stream, Podcasts, Radio (bundled country flags), saved streams
 - Folder and file context menus (play, queue, stream, convert, subtitle and audio tracks,
   resync, show in folder, pin, remove from library)
-- Compact library panel inside the player; mini player card with the play queue
+- Compact library panel inside the player (resizable); mini player card with the play queue
 
 **Dialogs and settings**
 - New settings window (App / Media / System, search, advanced options), backed by VLC's
-  own options; settings profiles (Movies, Shows, Music, Work, …)
+  own options; equalizer with 10 bands and audio effects applied while playing
+- Settings profiles (Movies, Shows, Music, Work, …): each keeps all settings, including
+  the player bars, theme and subtitle presets
+- Theme and accent colour change at once, also over a playing video
 - Open Network Stream, New Playlist (with picture), Playlist Properties, Keyboard Shortcuts
 - Add Subtitles / Add Audio Tracks: to this file, folder or playlist; from the computer
   or from a link. Tracks are saved in the media library and loaded every time
-- Customize Player with new bar items (Favorite, PiP, ±15 s, Chapters, Bookmark, Zoom, …)
+- Customize Player edits the bars in place, for the video and the music player, with new
+  bar items (Favorite, PiP, ±15 s, Chapters, Bookmark, Zoom, …)
 
 ## Download and install
 
@@ -103,8 +112,8 @@ Notes:
 - The build is not code-signed, so Windows SmartScreen may warn before the first start.
 - It uses the same settings folder as an installed VLC (`%APPDATA%\vlc`). If you also use
   official VLC 4 builds, back that folder up first.
-- If you used an earlier build: open **Customize Player** and click **Restore Default**
-  to get the new player bar.
+- If you used an earlier build: a default video player bar is updated by itself. If you
+  changed it, open **Customize Player** and click **Restore Default** to get the new one.
 
 ### Linux
 
@@ -113,13 +122,13 @@ No Linux packages. Linux: build from source (experimental), see below.
 ## Known issues
 
 - **Testing:** tested by the author only; no independent tester yet.
-- **Light theme:** not reviewed screen by screen. Over video, VLC always uses the dark
-  colours (upstream behaviour).
+- **Light theme:** not reviewed screen by screen.
+- **Accent colour:** the library side panel and the cone logo keep the default orange.
 - **Subtitle timeline:** works with external .srt / .vtt / .ass / .ssa files; embedded
   subtitle tracks get no timeline.
 - **Not implemented:** subtitles from OpenSubtitles (shown but disabled); the key that was
-  pressed in on-screen messages; picture-in-picture outside the main window; parts of the
-  Customize Player drag-and-drop design.
+  pressed in on-screen messages; picture-in-picture outside the main window; moving the
+  seek bar in Customize Player.
 - **UPnP shutdown hang on Windows:** VLC's UPnP plugin could keep `vlc.exe` running after
   closing, and the next start had no media library. This build includes a fix (libupnp
   miscompiled with MinGW). If it still happens: end `vlc.exe` in Task Manager and delete
