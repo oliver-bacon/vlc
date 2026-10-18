@@ -158,7 +158,13 @@ Tested on Arch Linux with the system Qt 6.12 and medialibrary 0.13.2 built from 
 It also builds on Ubuntu with Qt 6.8.3 from [aqtinstall](https://github.com/miurahr/aqtinstall)
 (see the notes below).
 
-**1. Install VLC's build dependencies.** On Arch:
+**1. Get the source** (the default branch `ui-redesign` is the redesign):
+
+```sh
+git clone https://github.com/oliver-bacon/vlc.git ~/vlc
+```
+
+**2. Install VLC's build dependencies.** On Arch:
 
 ```sh
 sudo pacman -S --needed base-devel git meson ninja pkgconf cmake nasm \
@@ -179,23 +185,25 @@ packages, usually ending in `-dev` or `-devel`). A shortcut that covers most of 
 - Debian / Ubuntu: `sudo apt build-dep vlc` (needs the source repositories enabled)
 - Fedora: `sudo dnf builddep vlc` (VLC is in RPM Fusion)
 
-These install what the distribution's own VLC 3 needs, but not Qt 6: see the Qt note below.
+These install what the distribution's own VLC 3 needs, but not Qt 6 (see the Qt note below)
+and not SQLite 3.33 or newer, which medialibrary needs (`libsqlite3-dev` / `sqlite-devel`).
 VLC also needs meson 1.10 or newer, which most distributions don't have yet; install it with
 pipx: `pipx install meson ninja`.
 
-Only Qt 6 (with Qt Quick, Qt SVG and Qt ShaderTools) and medialibrary (step 2) are required.
+Only Qt 6 (with Qt Quick, Qt SVG and Qt ShaderTools) and medialibrary (step 3) are required.
 Any other missing library only turns off the feature that uses it: `meson setup` lists each
 dependency with `found: YES` or `found: NO`. To add a library later, install it and run
 `meson setup --reconfigure build-linux`, then `ninja -C build-linux` again.
 
-**2. Build medialibrary 0.13.2.** It is not packaged on most distributions. This uses the
+**3. Build medialibrary 0.13.2.** It is not packaged on most distributions. This uses the
 same version and checksum as VLC's `contrib/src/medialibrary`, and applies this
-repository's fix for a crash when quitting. Set `VLC_SRC` to your clone of this
-repository; medialibrary is installed to `~/vlc-deps`:
+repository's fix for a crash when quitting. `VLC_SRC` is the clone from step 1;
+medialibrary is installed to `~/vlc-deps`:
 
 ```sh
 VLC_SRC=$HOME/vlc
 DEPS=$HOME/vlc-deps
+cd ~
 curl -fLO https://code.videolan.org/videolan/medialibrary/-/archive/0.13.2/medialibrary-0.13.2.tar.bz2
 echo "ec04cd28a19e547debf1a911fbcd33345a53a3f963e83d6f878c9836ebfefd4045c42a670a2c076ba3767bf91884f542e48dab6a254fc29285041fa9be35fe73  medialibrary-0.13.2.tar.bz2" | sha512sum -c -
 tar xf medialibrary-0.13.2.tar.bz2
@@ -203,20 +211,20 @@ cd medialibrary-0.13.2
 patch -p1 < "$VLC_SRC/contrib/src/medialibrary/0001-reset-logger-on-destroy.patch"
 meson setup build --prefix="$DEPS" --libdir=lib --buildtype=release -Dlibvlc=disabled
 ninja -C build install
-cd ..
 ```
 
-**3. Build VLC** from the repository root (in the same shell, so `DEPS` is still set):
+**4. Build VLC** (in the same shell, so `VLC_SRC` and `DEPS` are still set):
 
 ```sh
+cd "$VLC_SRC"
 PKG_CONFIG_PATH=$DEPS/lib/pkgconfig meson setup build-linux --buildtype=release \
   -Dmedialibrary=enabled -Dqt=enabled -Dlua=disabled \
   -Dc_link_args="-Wl,-rpath,$DEPS/lib" -Dcpp_link_args="-Wl,-rpath,$DEPS/lib"
 ninja -C build-linux
 ```
 
-**4. Run it** from the build folder. `VLC_LIB_PATH` is needed so that VLC finds its
-modules and helpers such as the preparser:
+**5. Run it** from the repository root, without installing. `VLC_LIB_PATH` is needed so that
+VLC finds its modules and helpers such as the preparser:
 
 ```sh
 VLC_LIB_PATH=build-linux/modules ./build-linux/bin/vlc-static -I qt
@@ -225,8 +233,9 @@ VLC_LIB_PATH=build-linux/modules ./build-linux/bin/vlc-static -I qt
 Notes:
 - **Qt:** use Qt 6.8 or newer. The system Qt works on Arch (6.12). If your distribution has an
   older Qt (for example Ubuntu 24.04 and Debian 12 have 6.4), install Qt 6.8.3, the version VLC's
-  Windows build uses, with aqtinstall: `aqt install-qt linux desktop 6.8.3 linux_gcc_64 -O ~/Qt -m qtshadertools`.
-  Then prefix the `meson setup` command with `PATH=~/Qt/6.8.3/gcc_64/bin:$PATH` and add
+  Windows build uses, with aqtinstall (`pipx install aqtinstall`):
+  `aqt install-qt linux desktop 6.8.3 linux_gcc_64 -O ~/Qt -m qtshadertools`.
+  Then prefix VLC's `meson setup` command (step 4) with `PATH=~/Qt/6.8.3/gcc_64/bin:$PATH` and add
   `~/Qt/6.8.3/gcc_64/lib/pkgconfig` to `PKG_CONFIG_PATH`
   (`PKG_CONFIG_PATH=$DEPS/lib/pkgconfig:$HOME/Qt/6.8.3/gcc_64/lib/pkgconfig`).
 - **rpath:** the `-Wl,-rpath` link arguments let VLC find medialibrary in `~/vlc-deps`.
