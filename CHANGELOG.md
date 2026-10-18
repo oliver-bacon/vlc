@@ -39,7 +39,9 @@ All notable changes of the VLC Redesign (unofficial). Versions use the tag schem
   timeline, the dialogs and the equalizer
 - Fullscreen always has a way out: F11 and Esc leave it (also the video's fullscreen), and
   the window buttons stay in fullscreen with "exit fullscreen" instead of maximize
-- The track popover keeps a gap above the player bar
+- The track, playback settings and queue popovers keep a gap above the player bar
+- "Show Preferences" in the track popover opens the settings page of its tab (Video, Audio,
+  Subtitles)
 - The settings' info tool tips open above the info icon instead of over it
 
 ## redesign-v0.1.0 (pre-release)
