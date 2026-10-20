@@ -38,6 +38,7 @@ Window {
     property alias headerContent: headerExtra.data
 
     property string saveText: qsTr("Save")
+    property string cancelText: qsTr("Cancel")
     property bool saveEnabled: true
     property bool showButtons: true
     // optional third button next to Cancel (e.g. "Restore Default")
@@ -168,7 +169,7 @@ Window {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: root.contentMargins }
 
             Button {
-                text: qsTr("Cancel")
+                text: root.cancelText
                 onClicked: root.reject()
             }
 

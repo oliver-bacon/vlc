@@ -61,6 +61,7 @@
 #include <vlc_url.h>
 
 #include <QEvent>
+#include <QEventLoop>
 #include <QMetaMethod>
 #include <QTimer>
 #include <QApplication>
@@ -529,8 +530,22 @@ void DialogsProvider::mediaInfoDialog( const MLItemId& itemId )
     }
 }
 
-bool DialogsProvider::questionDialog(const QString& text, const QString &title) const
+bool DialogsProvider::questionDialog(const QString& text, const QString &title)
 {
+    // the redesign's dialog (ConfirmDialog.qml), unless one is already open
+    if (!m_questionLoop
+        && figmaDialog(QStringLiteral("confirm"),
+                       QVariantMap{ { QStringLiteral("text"), text },
+                                    { QStringLiteral("title"), title } }))
+    {
+        QEventLoop loop;
+        m_questionLoop = &loop;
+        m_questionAnswer = false;
+        loop.exec();
+        m_questionLoop = nullptr;
+        return m_questionAnswer;
+    }
+
     QMessageBox messageBox;
     messageBox.setText(text);
     if (!title.isEmpty())
@@ -543,6 +558,14 @@ bool DialogsProvider::questionDialog(const QString& text, const QString &title) 
 
     int result = messageBox.exec();
     return result == QMessageBox::Yes;
+}
+
+void DialogsProvider::answerQuestion(bool yes)
+{
+    if (!m_questionLoop)
+        return;
+    m_questionAnswer = yes;
+    m_questionLoop->quit();
 }
 
 void DialogsProvider::mediaCodecDialog()

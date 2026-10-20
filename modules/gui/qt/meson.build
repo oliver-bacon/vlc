@@ -642,6 +642,7 @@ qml_modules += {
         'dialogs/settings/qml/SettingsWindow.qml',
         'dialogs/figma/qml/FigmaDialog.qml',
         'dialogs/figma/qml/NetworkStreamDialog.qml',
+        'dialogs/figma/qml/ConfirmDialog.qml',
         'dialogs/figma/qml/NewPlaylistDialog.qml',
         'dialogs/figma/qml/PlaylistPropertiesDialog.qml',
         'dialogs/figma/qml/PlaylistThumbnailBox.qml',

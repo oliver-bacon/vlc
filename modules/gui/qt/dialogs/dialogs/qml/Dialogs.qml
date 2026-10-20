@@ -629,7 +629,8 @@ Item {
         "shortcuts": "KeyboardShortcutsDialog.qml",
         "subtitles": "AddSubtitlesDialog.qml",
         "customize": "CustomizePlayerDialog.qml",
-        "onboarding": "OnboardingWindow.qml"
+        "onboarding": "OnboardingWindow.qml",
+        "confirm": "ConfirmDialog.qml"
     })
     property var _figmaDialogInstances: ({})
 
@@ -648,6 +649,9 @@ Item {
                 const component = Qt.createComponent("qrc:///qt/qml/VLC/Dialogs/" + root._figmaDialogs[name])
                 if (component.status !== Component.Ready) {
                     console.warn("cannot load dialog", name, component.errorString())
+                    // DialogsProvider.questionDialog() waits for an answer
+                    if (name === "confirm")
+                        DialogsProvider.answerQuestion(false)
                     return
                 }
                 dialog = component.createObject(root)

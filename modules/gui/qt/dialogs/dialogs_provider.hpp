@@ -194,6 +194,10 @@ private:
     QWidget* root;
     bool b_isDying;
 
+    // questionDialog() waits here for the answer of the QML dialog
+    class QEventLoop* m_questionLoop = nullptr;
+    bool m_questionAnswer = false;
+
     void openDialog( OpenDialog::OpenTab );
 
     template<typename T>
@@ -209,7 +213,11 @@ public slots:
     void mediaInfoDialog( const PlaylistItem& pItem );
     void mediaInfoDialog( const MLItemId& itemId );
     void mediaCodecDialog();
-    bool questionDialog(const QString& text, const QString& title = {}) const;
+    /// Yes/no question; shown with the redesign's dialog frame when the QML
+    /// interface is there, else with a QMessageBox. Waits for the answer.
+    bool questionDialog(const QString& text, const QString& title = {});
+    /// Answer of the QML question dialog (see questionDialog)
+    void answerQuestion(bool yes);
     QMessageBox::StandardButton messageDialog(const QString& text,
                                               const QString& title = {},
                                               const QMessageBox::StandardButtons buttons = QMessageBox::NoButton,
