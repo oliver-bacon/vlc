@@ -804,6 +804,7 @@ qml_modules += {
        'player/qml/PlayerSettingsPanel.qml',
        'player/qml/TracksPopover.qml',
        'player/qml/QueuePopover.qml',
+       'player/qml/PlayerSidePopup.qml',
        'player/qml/MiniQueue.qml',
        'player/qml/TracksPage.qml',
        'player/qml/TracksPageAudio.qml',

@@ -36,14 +36,11 @@ Widgets.IconToolButton {
 
     signal requestLockUnlockAutoHide(bool lock)
 
-    // Figma player settings panel, above the button, right aligned
+    // Figma player settings panel, a card on the right side of the player
     onClicked: panel.opened ? panel.close() : panel.open()
 
     PlayerSettingsPanel {
         id: panel
-
-        x: extdSettingsBtn.width - width
-        y: -height - VLCStyle.margin_small - VLCStyle.margin_large // gap above the player bar
 
         onOpened: extdSettingsBtn.requestLockUnlockAutoHide(true)
         onClosed: extdSettingsBtn.requestLockUnlockAutoHide(false)

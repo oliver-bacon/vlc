@@ -31,17 +31,14 @@ Widgets.IconToolButton {
     text: VLCIcons.playlist
     signal requestLockUnlockAutoHide(bool lock)
 
-    // Queue / Bookmarks / Chapters popover, like the audio / subtitles popover
-    // (user's choice); the docked side panel stays available
-    // through the "Right Sidebar" item
+    // Queue / Bookmarks / Chapters card on the right side of the player, like
+    // the playback settings; the docked side panel stays available through
+    // the "Right Sidebar" item
     onClicked: popover.opened ? popover.close() : popover.open()
     checked: popover.opened
 
     QueuePopover {
         id: popover
-
-        x: playlistBtn.width - width
-        y: -height - VLCStyle.margin_small - VLCStyle.margin_large // gap above the player bar
 
         onOpened: playlistBtn.requestLockUnlockAutoHide(true)
         onClosed: playlistBtn.requestLockUnlockAutoHide(false)

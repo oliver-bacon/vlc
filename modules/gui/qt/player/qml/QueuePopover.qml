@@ -30,15 +30,14 @@ import VLC.Widgets as Widgets
 
 // Queue / Bookmarks / Chapters popover of the VLC Redesign Figma file
 // (play queue button of the player bar, queue button of the miniplayer).
-T.Popup {
+PlayerSidePopup {
     id: root
 
     property int currentTab: 0
     // the miniplayer shows the queue only
     property bool queueOnly: false
 
-    width: VLCStyle.dp(400, VLCStyle.scale)
-    height: VLCStyle.dp(queueOnly ? 300 : 420, VLCStyle.scale)
+    defaultHeight: VLCStyle.dp(queueOnly ? 300 : 420, VLCStyle.scale)
     padding: 0
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent
 
