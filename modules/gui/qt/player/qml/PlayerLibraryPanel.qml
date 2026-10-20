@@ -471,7 +471,7 @@ FocusScope {
                 // the Videos page with the same folder
                 path = ["video", "folders"]
                 const crumbs = _levels.slice(1, _levelIndex + 1).map((l) => l.title)
-                props = crumbs.length > 0 ? { "tree": _level.tree, "crumbs": crumbs } : undefined
+                props = crumbs.length > 0 ? { "url": String(_level.url), "crumbs": crumbs } : undefined
             } else if (_section === "network") {
                 // VLC's services browser under Network
                 const source = _levels[1]?.source ?? ""

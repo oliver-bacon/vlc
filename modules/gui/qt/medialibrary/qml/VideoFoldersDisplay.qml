@@ -28,12 +28,15 @@ import VLC.Widgets as Widgets
 // "Videos" of the VLC Redesign (video 10:48-10:56, Figma "sidebar" frame):
 // the folders added to the library, then their real folder tree with only
 // subfolders and video files ("Videos › Shows › The Wand › S01"). Each
-// folder is a History page, so Back goes up again.
+// folder is a History page, so Back goes up again. Pages keep folder URLs,
+// not tree items: History
+// drops pages whose tree item is gone, which happens once the parent folder
+// is opened again (its entries are then new items).
 Widgets.PageExt {
     id: root
 
-    // set by History.push(["video", "folders"], { tree, crumbs })
-    property var tree: undefined
+    // set by History.push(["video", "folders"], { url, crumbs })
+    property string url: ""
     // names of the folders opened so far, below "Videos"
     property var crumbs: []
 
@@ -41,7 +44,7 @@ Widgets.PageExt {
     readonly property var _singleFolderTree: (libraryFolders.count === 1)
                                              ? VLCConfig.browseNode(String(libraryFolders.data(libraryFolders.index(0, 0), Qt.UserRole + 3)))
                                              : undefined
-    readonly property var _tree: (tree !== undefined && tree !== null) ? tree : _singleFolderTree
+    readonly property var _tree: url !== "" ? VLCConfig.browseNode(url) : _singleFolderTree
 
     // the list of library folders (more than one folder in the library)
     readonly property bool _atRoot: _tree === undefined || _tree === null
@@ -66,8 +69,8 @@ Widgets.PageExt {
     readonly property var _model: _atRoot ? libraryFolders : videoFilter
     readonly property int _count: _atRoot ? libraryFolders.count : videoFilter.count
 
-    function _open(name, tree) {
-        History.push(["video", "folders"], { "tree": tree, "crumbs": root.crumbs.concat([name]) })
+    function _open(name, url) {
+        History.push(["video", "folders"], { "url": url, "crumbs": root.crumbs.concat([name]) })
     }
 
     function _lastSegment(url) {
@@ -130,7 +133,7 @@ Widgets.PageExt {
                 "mrl": String(folderModel.url),
                 "isFolder": true,
                 // Videos opened directly on the only library folder
-                "isLibraryRoot": root._topLevel && root.tree === undefined
+                "isLibraryRoot": root._topLevel && root.url === ""
             }
         }
         if (root._atRoot) {
@@ -312,9 +315,9 @@ Widgets.PageExt {
 
         function open() {
             if (root._atRoot)
-                root._open(name, VLCConfig.browseNode(String(model.url)))
+                root._open(name, String(model.url))
             else if (isFolder)
-                root._open(name, model.tree)
+                root._open(name, String(model.mrl))
             else
                 folderModel.addAndPlay(videoFilter.sourceRow(index))
         }
