@@ -47,8 +47,15 @@ FocusScope {
         else if (Player.hasVideoOutput)
             return VLCStyle.noArtVideoCover
         else
-            return VLCStyle.noArtAlbumCover
+            return noArtCover
     }
+
+    // VLC Redesign: the music placeholder only for audio files; while a
+    // video is starting (no video output or tracks yet) show the cone
+    readonly property bool _audioOnly: Player.audioTracks.count > 0 && Player.videoTracks.count === 0
+    readonly property string noArtCover: _audioOnly
+        ? VLCStyle.noArtAlbumCover
+        : SVGColorImage.colorize("qrc:///misc/cone_flat.svg").accent(windowTheme.accent).uri()
 
     // Only applicable in video mode:
     property bool displayFadeRectangles: !_controlsUnderVideo && (height > (implicitFadeRectangleHeight * 3))
@@ -647,7 +654,10 @@ FocusScope {
 
                                 readonly property real eDPR: MainCtx.effectiveDevicePixelRatio(Window.window)
 
-                                readonly property url targetSource: VLCAccessImage.uri(rootPlayer.coverSource)
+                                // the tinted cone is already an image provider URL
+                                readonly property url targetSource: rootPlayer.coverSource.startsWith("image://")
+                                                                    ? rootPlayer.coverSource
+                                                                    : VLCAccessImage.uri(rootPlayer.coverSource)
 
                                 anchors.top: parent.top
                                 anchors.bottom: parent.bottom
@@ -668,7 +678,7 @@ FocusScope {
 
                                 onStatusChanged: {
                                     if (status === Image.Error) {
-                                        cover.source = VLCStyle.noArtAlbumCover
+                                        cover.source = rootPlayer.noArtCover
                                     }
                                 }
 
