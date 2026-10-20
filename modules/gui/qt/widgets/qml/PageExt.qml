@@ -53,6 +53,11 @@ T.Page {
     readonly property SearchCtx search: _searchCtx
     readonly property SortCtx sort: _sortCtx
 
+    // a folder path shown instead of the title; parents can be clicked
+    property var titleCrumbs: []
+    property var isTitleCrumbClickable: (index) => true
+    signal titleCrumbClicked(int index)
+
 
     SearchCtx {
         id: _searchCtx
@@ -111,6 +116,9 @@ T.Page {
 
     header: DefaultPageHeader {
         text: root.title
+        crumbs: root.titleCrumbs
+        isCrumbClickable: root.isTitleCrumbClickable
+        onCrumbClicked: (index) => root.titleCrumbClicked(index)
 
         leftPadding: VLCStyle.dynamicAppMargins(width) + VLCStyle.layout_left_margin + root.leftPadding
         rightPadding: VLCStyle.dynamicAppMargins(width) + VLCStyle.layout_right_margin + root.rightPadding
@@ -136,6 +144,10 @@ T.Page {
 
         // Properties
         property alias text: label.text
+
+        property var crumbs: []
+        property var isCrumbClickable: (index) => true
+        signal crumbClicked(int index)
 
         property alias sortMenu: gridSortFilter.sortMenu
 
@@ -195,10 +207,24 @@ T.Page {
                 id: label
 
                 Layout.fillWidth: true
+                visible: !crumbBar.visible
 
                 color: theme.fg.secondary
                 font.pixelSize: VLCStyle.fontSize_xlarge
                 font.weight: Font.DemiBold
+            }
+
+            BreadcrumbText {
+                id: crumbBar
+
+                Layout.fillWidth: true
+                visible: defaultPageHeader.crumbs.length > 1
+                crumbs: defaultPageHeader.crumbs
+                isClickable: defaultPageHeader.isCrumbClickable
+                color: theme.fg.secondary
+                hoverColor: theme.fg.primary
+                font: label.font
+                onCrumbClicked: (index) => defaultPageHeader.crumbClicked(index)
             }
 
             GridSortFilterControls {

@@ -28,17 +28,19 @@ import VLC.Widgets as Widgets
 // "Videos" of the VLC Redesign (video 10:48-10:56, Figma "sidebar" frame):
 // the folders added to the library, then their real folder tree with only
 // subfolders and video files ("Videos › Shows › The Wand › S01"). Each
-// folder is a History page, so Back goes up again. Pages keep folder URLs,
-// not tree items: History
+// folder is a History page, so Back goes up again; the parents in the title
+// can be clicked to open them. Pages keep folder URLs, not tree items: History
 // drops pages whose tree item is gone, which happens once the parent folder
 // is opened again (its entries are then new items).
 Widgets.PageExt {
     id: root
 
-    // set by History.push(["video", "folders"], { url, crumbs })
+    // set by History.push(["video", "folders"], { url, crumbs, urls })
     property string url: ""
     // names of the folders opened so far, below "Videos"
     property var crumbs: []
+    // their URLs, to open them again from the title
+    property var urls: []
 
     // with a single library folder, Videos opens directly on its content
     readonly property var _singleFolderTree: (libraryFolders.count === 1)
@@ -52,6 +54,9 @@ Widgets.PageExt {
     readonly property bool _topLevel: crumbs.length === 0
 
     title: [qsTr("Videos")].concat(crumbs).join("  ›  ")
+    titleCrumbs: [qsTr("Videos")].concat(crumbs)
+    isTitleCrumbClickable: (index) => index === 0 || !!urls[index - 1]
+    onTitleCrumbClicked: (index) => _openCrumb(index)
 
     isSearchable: !_atRoot
     hasGridListMode: true
@@ -70,7 +75,22 @@ Widgets.PageExt {
     readonly property int _count: _atRoot ? libraryFolders.count : videoFilter.count
 
     function _open(name, url) {
-        History.push(["video", "folders"], { "url": url, "crumbs": root.crumbs.concat([name]) })
+        // one URL per name (unknown ones stay empty and can't be clicked)
+        const urls = root.crumbs.map((c, i) => root.urls[i] ?? "")
+        urls.push(url)
+        History.push(["video", "folders"], { "url": url, "crumbs": root.crumbs.concat([name]),
+                                             "urls": urls })
+    }
+
+    // index 0 is "Videos", then the folders in crumbs
+    function _openCrumb(index) {
+        if (index === 0) {
+            History.push(["video"])
+            return
+        }
+        History.push(["video", "folders"], { "url": root.urls[index - 1],
+                                             "crumbs": root.crumbs.slice(0, index),
+                                             "urls": root.urls.slice(0, index) })
     }
 
     function _lastSegment(url) {

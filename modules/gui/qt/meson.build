@@ -1001,6 +1001,7 @@ qml_modules += {
         'widgets/qml/StackViewExt.qml',
         'widgets/qml/PageLoader.qml',
         'widgets/qml/PageExt.qml',
+        'widgets/qml/BreadcrumbText.qml',
         'widgets/qml/ButtonExt.qml',
         'widgets/qml/TableColumns.qml',
         'widgets/qml/TextFieldExt.qml',

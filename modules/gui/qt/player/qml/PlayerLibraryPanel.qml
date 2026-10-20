@@ -470,8 +470,9 @@ FocusScope {
             if (_section === "video") {
                 // the Videos page with the same folder
                 path = ["video", "folders"]
-                const crumbs = _levels.slice(1, _levelIndex + 1).map((l) => l.title)
-                props = crumbs.length > 0 ? { "url": String(_level.url), "crumbs": crumbs } : undefined
+                const shown = _levels.slice(1, _levelIndex + 1)
+                props = shown.length > 0 ? { "url": String(_level.url), "crumbs": shown.map((l) => l.title),
+                                             "urls": shown.map((l) => String(l.url ?? "")) } : undefined
             } else if (_section === "network") {
                 // VLC's services browser under Network
                 const source = _levels[1]?.source ?? ""
@@ -771,13 +772,14 @@ FocusScope {
                 onClicked: root._go(1)
             }
 
-            Text {
+            // click a parent to go back to it (Forward still returns)
+            Widgets.BreadcrumbText {
                 Layout.fillWidth: true
                 Layout.leftMargin: VLCStyle.margin_xxsmall
-                text: root._levels.slice(0, root._levelIndex + 1).map((l) => l.title).join("  ›  ")
-                elide: Text.ElideLeft
+                crumbs: root._levels.slice(0, root._levelIndex + 1).map((l) => l.title)
                 color: root.titleColor
                 font.pixelSize: VLCStyle.fontSize_normal
+                onCrumbClicked: (index) => root._go(index - root._levelIndex)
             }
 
             Widgets.IconToolButton {
