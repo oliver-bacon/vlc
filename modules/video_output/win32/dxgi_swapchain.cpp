@@ -139,6 +139,44 @@ static bool canHandleConversion(const dxgi_color_space *src, const dxgi_color_sp
     return false; /* let Windows do the rest */
 }
 
+/* A swapchain made for DirectComposition has no window, so it can't tell which
+ * output it is shown on. Use the output of the primary monitor (or the first
+ * output) instead, so an HDR source still gets tone mapped on an SDR screen. */
+static HRESULT GetFallbackOutput(dxgi_swapchain *display, IDXGIOutput **output)
+{
+    ComPtr<IDXGIFactory1> factory;
+    HRESULT hr = display->dxgiswapChain->GetParent(IID_GRAPHICS_PPV_ARGS(factory.GetAddressOf()));
+    if (FAILED(hr))
+        return hr;
+
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+    HMONITOR primary = MonitorFromPoint(POINT{0, 0}, MONITOR_DEFAULTTOPRIMARY);
+#else
+    HMONITOR primary = NULL;
+#endif
+    ComPtr<IDXGIOutput> first;
+    ComPtr<IDXGIAdapter1> adapter;
+    for (UINT a = 0; SUCCEEDED(factory->EnumAdapters1(a, adapter.ReleaseAndGetAddressOf())); ++a)
+    {
+        ComPtr<IDXGIOutput> out;
+        for (UINT o = 0; SUCCEEDED(adapter->EnumOutputs(o, out.ReleaseAndGetAddressOf())); ++o)
+        {
+            DXGI_OUTPUT_DESC desc;
+            if (SUCCEEDED(out->GetDesc(&desc)) && desc.Monitor == primary)
+            {
+                *output = out.Detach();
+                return S_OK;
+            }
+            if (!first)
+                first = out;
+        }
+    }
+    if (!first)
+        return DXGI_ERROR_NOT_FOUND;
+    *output = first.Detach();
+    return S_OK;
+}
+
 void DXGI_SelectSwapchainColorspace(dxgi_swapchain *display, const libvlc_video_render_cfg_t *cfg, bool match_display)
 {
     HRESULT hr;
@@ -191,7 +229,8 @@ void DXGI_SelectSwapchainColorspace(dxgi_swapchain *display, const libvlc_video_
     display->dxgiswapChain.As(&display->dxgiswapChain4);
 
     if (match_display)
-    if (SUCCEEDED(display->dxgiswapChain->GetContainingOutput(&dxgiOutput)))
+    if (SUCCEEDED(display->dxgiswapChain->GetContainingOutput(&dxgiOutput)) ||
+        SUCCEEDED(GetFallbackOutput(display, dxgiOutput.ReleaseAndGetAddressOf())))
     {
         ComPtr<IDXGIOutput6> dxgiOutput6;
         if (SUCCEEDED(dxgiOutput.As(&dxgiOutput6)))
