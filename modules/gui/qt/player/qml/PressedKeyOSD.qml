@@ -19,8 +19,9 @@ import QtQuick
 
 import VLC.MainInterface
 
-// "Pressed C" under VLC's on-screen message (video 15:28): the key that was
-// just pressed, drawn with the keycaps of the redesign's shortcuts page
+// The key that was just pressed, under VLC's on-screen message (video 15:28,
+// without its "Pressed" word: Oliver's choice), drawn with the keycaps of the
+// redesign's shortcuts page
 // (Figma "Onboarding" shortcuts: 42px high, radius 12, #1B1B1B, 3px #373737
 // outline, #EAEAEA light text). Fill the video surface with it.
 //
@@ -65,17 +66,6 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: root.width * 0.04
         y: root.height * 0.04 + root._fontSize * 1.2
-        spacing: root._fontSize * 0.3
-
-        // like VLC's on-screen text: white with a black outline
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: qsTr("Pressed")
-            color: "white"
-            style: Text.Outline
-            styleColor: "black"
-            font.pixelSize: Math.max(1, root._fontSize)
-        }
 
         Row {
             anchors.verticalCenter: parent.verticalCenter
