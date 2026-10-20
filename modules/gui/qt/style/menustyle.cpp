@@ -144,7 +144,11 @@ int MenuStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const
         case PM_MenuHMargin:
         case PM_MenuVMargin: return kPadding;
         case PM_MenuDesktopFrameWidth: return 0;
-        case PM_SubMenuOverlap: return 2 * kShadow - kPadding;
+        // Qt puts a submenu at the hovered row's right edge + this value. Pull it
+        // back over the shadow margins so the two panels are kPadding apart: on
+        // Windows the fully transparent margin pixels let the mouse through, and
+        // a gap made the submenu close when the pointer moved towards it.
+        case PM_SubMenuOverlap: return -kShadow + 2 * kPadding;
         case PM_SmallIconSize: return kIconSize;
         default: break;
         }
