@@ -2130,6 +2130,16 @@ endif
 EXTRA_DIST += $(libqt_plugin_la_QML)
 
 assets.cpp: $(libqt_plugin_la_RES)
+# logos of assets.qrc kept in share/icons
+assets.cpp: $(top_srcdir)/share/icons/16x16/vlc.png \
+	$(top_srcdir)/share/icons/48x48/vlc.png \
+	$(top_srcdir)/share/icons/48x48/vlc-xmas.png \
+	$(top_srcdir)/share/icons/48x48/vlc-aprilfools.png \
+	$(top_srcdir)/share/icons/128x128/vlc.png \
+	$(top_srcdir)/share/icons/128x128/vlc-xmas.png \
+	$(top_srcdir)/share/icons/128x128/vlc-aprilfools.png \
+	$(top_srcdir)/share/icons/128x128/vlc-kb.png \
+	$(top_srcdir)/share/icons/256x256/vlc.png
 assets.cpp: assets.qrc
 	$(AM_V_GEN)$(RCC) $(RCC_EXTRA_PARAMS) --name assets -o $@ $<
 
