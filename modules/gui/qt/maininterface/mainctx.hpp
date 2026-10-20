@@ -570,6 +570,9 @@ signals:
     void askShow();
     void askBoss();
     void askRaise();
+    /// a key bound to a VLC action was sent to the player (VLC Redesign):
+    /// the key as keycap labels, e.g. ["SHIFT", "S"]
+    void hotkeyPressed(const QStringList& keys);
     void kc_pressed(); /* easter eggs */
 
     void playerPlaylistWidthChanged(double);
@@ -626,7 +629,14 @@ signals:
 
     void usingTouchChanged();
 
+public:
+    /// called for every key VLC receives (VLC Redesign), see hotkeyPressed
+    void onKeyPressed(int vlcKey);
+
 private:
+    bool isActionKey(int vlcKey) const;
+    static QStringList keyLabels(int vlcKey);
+
     void loadPrefs(bool callSignals);
     void loadFromSettingsImpl(bool callSignals);
 };

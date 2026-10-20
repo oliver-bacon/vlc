@@ -336,6 +336,12 @@ FocusScope {
                     }
                 }
 
+                // the pressed key under VLC's on-screen message
+                PressedKeyOSD {
+                    anchors.fill: videoSurface
+                    visible: videoSurface.visible && Player.hasVideoOutput
+                }
+
                 component FadeRectangle : Rectangle {
                     implicitHeight: rootPlayer.implicitFadeRectangleHeight
 

@@ -84,6 +84,9 @@
 
 #include <vlc_interface.h>
 #include <vlc_preparser.h>
+#include <vlc_actions.h>
+
+#include <algorithm>
 
 #define VLC_REFERENCE_SCALE_FACTOR 96.
 
@@ -98,6 +101,8 @@ static int IntfShowCB( vlc_object_t *p_this, const char *psz_variable,
                        vlc_value_t old_val, vlc_value_t new_val, void *param );
 static int IntfBossCB( vlc_object_t *p_this, const char *psz_variable,
                        vlc_value_t old_val, vlc_value_t new_val, void *param );
+static int KeyPressedCB( vlc_object_t *p_this, const char *psz_variable,
+                         vlc_value_t old_val, vlc_value_t new_val, void *param );
 static int IntfRaiseMainCB( vlc_object_t *p_this, const char *psz_variable,
                            vlc_value_t old_val, vlc_value_t new_val,
                            void *param );
@@ -263,6 +268,7 @@ MainCtx::MainCtx(qt_intf_t *_p_intf)
 
     /* Register callback for the intf-popupmenu variable */
     var_AddCallback( libvlc, "intf-popupmenu", PopupMenuCB, p_intf );
+    var_AddCallback( libvlc, "key-pressed", KeyPressedCB, this );
 
     if( var_InheritBool( p_intf, "qt-privacy-ask") )
     {
@@ -358,6 +364,7 @@ MainCtx::~MainCtx()
     var_DelCallback( libvlc, "intf-show", IntfRaiseMainCB, p_intf );
     var_DelCallback( libvlc, "intf-toggle-fscontrol", IntfShowCB, p_intf );
     var_DelCallback( libvlc, "intf-popupmenu", PopupMenuCB, p_intf );
+    var_DelCallback( libvlc, "key-pressed", KeyPressedCB, this );
 
     if (m_medialib)
         delete m_medialib;
@@ -555,6 +562,83 @@ void MainCtx::sendHotkey(Qt::Key key , Qt::KeyboardModifiers modifiers)
     QKeyEvent event(QEvent::KeyPress, key, modifiers );
     int vlckey = qtEventToVLCKey(&event);
     var_SetInteger(vlc_object_instance(p_intf), "key-pressed", vlckey);
+}
+
+// VLC Redesign: show the pressed key under VLC's on-screen message. Keys come
+// from the interface (sendHotkey) and from the video surface, which reports
+// them to the video window directly, so watch VLC's "key-pressed" instead.
+static int KeyPressedCB(vlc_object_t *, const char *,
+                        vlc_value_t, vlc_value_t new_val, void *param)
+{
+    auto mainCtx = static_cast<MainCtx*>(param);
+    const int key = new_val.i_int;
+    QMetaObject::invokeMethod(mainCtx, [mainCtx, key]() { mainCtx->onKeyPressed(key); },
+                              Qt::QueuedConnection);
+    return VLC_SUCCESS;
+}
+
+void MainCtx::onKeyPressed(int vlcKey)
+{
+    switch (vlcKey & ~KEY_MODIFIER)
+    {
+    case KEY_MOUSEWHEELUP: case KEY_MOUSEWHEELDOWN:
+    case KEY_MOUSEWHEELLEFT: case KEY_MOUSEWHEELRIGHT:
+        return;
+    default:
+        break;
+    }
+    if (var_InheritBool(p_intf, "osd") && isActionKey(vlcKey))
+        emit hotkeyPressed(keyLabels(vlcKey));
+}
+
+bool MainCtx::isActionKey(int vlcKey) const
+{
+    if (vlcKey == KEY_UNSET)
+        return false;
+    for (const char* const* name = vlc_actions_get_key_names(p_intf); *name; ++name)
+    {
+        uint_fast32_t* codes = nullptr;
+        const size_t count = vlc_actions_get_keycodes(p_intf, *name, false, &codes);
+        const bool found = std::find(codes, codes + count, uint_fast32_t(vlcKey)) != codes + count;
+        free(codes);
+        if (found)
+            return true;
+    }
+    return false;
+}
+
+QStringList MainCtx::keyLabels(int vlcKey)
+{
+    // written like the keys of the redesign's shortcuts page: "SHIFT", "S", "Space", "←"
+    QStringList keys;
+    if (vlcKey & KEY_MODIFIER_CTRL)
+        keys.append(qtr("CTRL"));
+    if (vlcKey & KEY_MODIFIER_ALT)
+        keys.append(qtr("ALT"));
+    if (vlcKey & KEY_MODIFIER_SHIFT)
+        keys.append(qtr("SHIFT"));
+    if (vlcKey & KEY_MODIFIER_META)
+        keys.append(qtr("META"));
+    if (vlcKey & KEY_MODIFIER_COMMAND)
+        keys.append(qtr("CMD"));
+
+    const int code = vlcKey & ~KEY_MODIFIER;
+    switch (code)
+    {
+    case KEY_LEFT:  keys.append(QStringLiteral("\u2190")); return keys;
+    case KEY_UP:    keys.append(QStringLiteral("\u2191")); return keys;
+    case KEY_RIGHT: keys.append(QStringLiteral("\u2192")); return keys;
+    case KEY_DOWN:  keys.append(QStringLiteral("\u2193")); return keys;
+    default: break;
+    }
+    char* str = vlc_keycode2str(code, true);
+    QString name = qfu(str ? str : "");
+    free(str);
+    if (name.size() == 1)
+        name = name.toUpper();
+    if (!name.isEmpty())
+        keys.append(name);
+    return keys;
 }
 
 void MainCtx::sendVLCHotkey(int vlcHotkey)
