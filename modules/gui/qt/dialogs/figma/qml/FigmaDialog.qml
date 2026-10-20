@@ -24,6 +24,7 @@ import QtQuick.Templates as T
 
 import VLC.MainInterface
 import VLC.Style
+import VLC.Widgets as Widgets
 
 // Dialog frame of the "VLC Redesign" Figma file (Open Network Stream, New
 // Playlist, Keyboard Shortcuts, Add Subtitles...): frameless rounded window
@@ -45,6 +46,14 @@ Window {
     property string extraText: ""
     signal extraClicked()
     property real contentMargins: VLCStyle.dp(20, VLCStyle.scale)
+    // corner radius of the window; 0 with outlined gives the square frame
+    // with a thin outline of the settings window
+    property real frameRadius: VLCStyle.dp(14, VLCStyle.scale)
+    property bool outlined: false
+    // title row of the header; the outlined frame has the height of the
+    // main window's title bar so its close button is the same 40x40 button
+    readonly property real headerHeight: outlined ? VLCStyle.globalToolbar_height
+                                                  : VLCStyle.dp(50, VLCStyle.scale)
 
     signal accepted()
     signal rejected()
@@ -95,7 +104,7 @@ Window {
         id: panel
 
         anchors.fill: parent
-        radius: VLCStyle.dp(14, VLCStyle.scale)
+        radius: root.frameRadius
         color: root.panelColor
         clip: true
 
@@ -112,7 +121,7 @@ Window {
             id: header
 
             anchors { left: parent.left; right: parent.right; top: parent.top }
-            height: VLCStyle.dp(50, VLCStyle.scale)
+            height: root.headerHeight
                     + (headerExtra.children.length > 0 ? headerExtra.childrenRect.height + VLCStyle.dp(15, VLCStyle.scale) : 0)
             color: root.headerColor
             radius: panel.radius
@@ -133,13 +142,13 @@ Window {
                 id: headerExtra
 
                 anchors { left: parent.left; right: parent.right; top: parent.top; margins: VLCStyle.dp(9, VLCStyle.scale) }
-                anchors.topMargin: VLCStyle.dp(53, VLCStyle.scale)
+                anchors.topMargin: root.headerHeight + VLCStyle.dp(3, VLCStyle.scale)
                 height: childrenRect.height
             }
 
             Text {
                 anchors { left: parent.left; leftMargin: VLCStyle.dp(19, VLCStyle.scale); top: parent.top }
-                height: VLCStyle.dp(50, VLCStyle.scale)
+                height: root.headerHeight
                 verticalAlignment: Text.AlignVCenter
                 text: root.title
                 color: root.textColor
@@ -147,7 +156,20 @@ Window {
             }
 
             CloseButton {
+                visible: !root.outlined
                 anchors { right: parent.right; rightMargin: VLCStyle.dp(10, VLCStyle.scale); top: parent.top; topMargin: VLCStyle.dp(10, VLCStyle.scale) }
+                onClicked: root.reject()
+            }
+
+            // the outlined frame uses the close button of the main window
+            Widgets.CSDWindowButton {
+                visible: root.outlined
+                anchors { right: parent.right; top: parent.top }
+                height: root.headerHeight
+                iconTxt: ((MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10)) ? "\uE8BB" : VLCIcons.window_close
+                isThemeDark: root.dark
+                color: hovered ? "white" : panel.colorContext.fg.primary
+                hoverColor: "red"
                 onClicked: root.reject()
             }
         }
@@ -187,6 +209,17 @@ Window {
                 enabled: root.saveEnabled
                 onClicked: root.accept()
             }
+        }
+
+        // thin outline so the dialog stands out from the library behind it
+        Rectangle {
+            anchors.fill: parent
+            z: 99
+            visible: root.outlined
+            radius: parent.radius
+            color: "transparent"
+            border.width: VLCStyle.border
+            border.color: panel.colorContext.border
         }
     }
 

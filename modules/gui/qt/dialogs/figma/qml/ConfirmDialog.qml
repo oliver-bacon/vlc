@@ -34,9 +34,13 @@ FigmaDialog {
     saveText: qsTr("Yes")
     cancelText: qsTr("No")
 
+    // square with a thin outline like the settings window
+    frameRadius: 0
+    outlined: true
+
     width: VLCStyle.dp(440, VLCStyle.scale)
     // header + margins + text + buttons
-    height: VLCStyle.dp(50 + 20 + 20 + 32 + 20, VLCStyle.scale) + message.implicitHeight
+    height: headerHeight + VLCStyle.dp(20 + 20 + 32 + 20, VLCStyle.scale) + message.implicitHeight
 
     function reset(args) {
         message.text = args?.text ?? ""
