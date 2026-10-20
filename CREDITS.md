@@ -20,7 +20,8 @@ from the file (exported, converted to the formats VLC needs, or redrawn from it)
 colours, sizes and layouts were followed in the QML code. These assets are licensed under
 CC BY 4.0 by Juxtopposed, not under the GPL. They are in `modules/gui/qt/pixmaps/`
 (mainly `icons/figma/`, `menu/figma/`, `misc/` and `placeholder/`) and in the icon font
-`VLCIcons.ttf`.
+`VLCIcons.ttf`. The app icon (`share/icons/*/vlc.png`, `vlc.xpm`, `vlc.ico` and
+`share/vlc512x512.png`) is rendered from the Figma file's cone logo.
 
 The VLC cone shown in the interface is a trademark of VideoLAN; `misc/cone_flat.svg` is
 VLC's own `cone.svg` without the white stripes.

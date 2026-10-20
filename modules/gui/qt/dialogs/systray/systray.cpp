@@ -18,6 +18,7 @@
 
 #include "systray.hpp"
 
+#include <QGuiApplication>
 #include <QImageReader>
 
 #include "maininterface/mainctx.hpp"
@@ -43,7 +44,7 @@ VLCSystray::VLCSystray(MainCtx* ctx, QObject* parent)
     if( m_ctx->useXmasCone() )
         iconVLC = QIcon::fromTheme( "vlc-xmas", QIcon( ":/logo/vlc128-xmas.png" ) );
     else
-        iconVLC = QIcon::fromTheme( "vlc", QIcon( ":/logo/vlc256.png" ) );
+        iconVLC = qApp->windowIcon();
 
     setIcon(iconVLC);
     setToolTip( qtr( "VLC media player" ));
