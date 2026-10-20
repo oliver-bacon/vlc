@@ -50,10 +50,13 @@ Window {
     // with a thin outline of the settings window
     property real frameRadius: VLCStyle.dp(14, VLCStyle.scale)
     property bool outlined: false
+    // false: no title bar (yes/no questions); drag the window anywhere
+    property bool showHeader: true
     // title row of the header; the outlined frame has the height of the
     // main window's title bar so its close button is the same 40x40 button
-    readonly property real headerHeight: outlined ? VLCStyle.globalToolbar_height
-                                                  : VLCStyle.dp(50, VLCStyle.scale)
+    readonly property real headerHeight: !showHeader ? 0
+                                       : outlined ? VLCStyle.globalToolbar_height
+                                       : VLCStyle.dp(50, VLCStyle.scale)
 
     signal accepted()
     signal rejected()
@@ -116,9 +119,18 @@ Window {
 
         Keys.onEscapePressed: root.reject()
 
+        // without a title bar the whole window moves
+        DragHandler {
+            enabled: !root.showHeader
+            target: null
+            onActiveChanged: if (active) root.startSystemMove()
+        }
+
         // header: title and close button, drag to move the window
         Rectangle {
             id: header
+
+            visible: root.showHeader
 
             anchors { left: parent.left; right: parent.right; top: parent.top }
             height: root.headerHeight

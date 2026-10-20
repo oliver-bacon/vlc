@@ -17,30 +17,32 @@
  * along with this program; if not, write to the Free Software
  *****************************************************************************/
 import QtQuick
+import QtQuick.Layouts
 
 import VLC.MainInterface
 import VLC.Style
 import VLC.Dialogs
 
-// Yes/no question (delete a file, delete playlists...) in the frame of the
-// redesign's dialogs. DialogsProvider::questionDialog() opens it and waits
-// for DialogsProvider.answerQuestion().
+// Yes/no question (delete a file, delete playlists...): the question with
+// Yes and No under it, left aligned, in a square outlined frame without a
+// title bar (Oliver's choice). DialogsProvider::questionDialog() opens it
+// and waits for DialogsProvider.answerQuestion().
 FigmaDialog {
     id: root
 
     property bool _waiting: false
 
     title: qsTr("VLC media player")
-    saveText: qsTr("Yes")
-    cancelText: qsTr("No")
 
     // square with a thin outline like the settings window
     frameRadius: 0
     outlined: true
+    showHeader: false
+    showButtons: false
 
     width: VLCStyle.dp(440, VLCStyle.scale)
-    // header + margins + text + buttons
-    height: headerHeight + VLCStyle.dp(20 + 20 + 32 + 20, VLCStyle.scale) + message.implicitHeight
+    // margins + text + gap + buttons
+    height: contentMargins * 2 + content.implicitHeight
 
     function reset(args) {
         message.text = args?.text ?? ""
@@ -69,14 +71,36 @@ FigmaDialog {
         focus: true
         Keys.onEscapePressed: root.reject()
 
-        Text {
-            id: message
+        ColumnLayout {
+            id: content
 
             width: parent.width
-            wrapMode: Text.Wrap
-            color: root.titleColor
-            font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-            lineHeight: 1.2
+            spacing: VLCStyle.dp(20, VLCStyle.scale)
+
+            Text {
+                id: message
+
+                Layout.fillWidth: true
+                wrapMode: Text.Wrap
+                color: root.titleColor
+                font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
+                lineHeight: 1.2
+            }
+
+            Row {
+                spacing: VLCStyle.dp(10, VLCStyle.scale)
+
+                FigmaDialog.Button {
+                    text: qsTr("Yes")
+                    primary: true
+                    onClicked: root.accept()
+                }
+
+                FigmaDialog.Button {
+                    text: qsTr("No")
+                    onClicked: root.reject()
+                }
+            }
         }
     }
 }
