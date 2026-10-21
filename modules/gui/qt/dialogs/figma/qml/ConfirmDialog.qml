@@ -32,7 +32,7 @@ FigmaDialog {
 
     property bool _waiting: false
 
-    title: qsTr("VLC media player")
+    title: qsTr("VLC Gold")
 
     // square with a thin outline like the settings window
     frameRadius: 0
@@ -46,7 +46,7 @@ FigmaDialog {
 
     function reset(args) {
         message.text = args?.text ?? ""
-        root.title = args?.title || qsTr("VLC media player")
+        root.title = args?.title || qsTr("VLC Gold")
         root._waiting = true
         keys.forceActiveFocus()
     }

@@ -48,7 +48,7 @@ FirstRunWizard::FirstRunWizard( qt_intf_t *_p_intf, QWidget *parent)
     ui.setupUi( this );
 
     /* Set the privacy and network policy */
-    ui.policy->setHtml( qtr( "<p>In order to protect your privacy, <i>VLC media player</i> "
+    ui.policy->setHtml( qtr( "<p>In order to protect your privacy, <i>VLC Gold</i> "
         "does <b>not</b> collect personal data or transmit them, "
         "not even in anonymized form, to anyone."
         "</p>\n"

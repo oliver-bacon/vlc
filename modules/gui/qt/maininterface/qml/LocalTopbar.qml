@@ -177,7 +177,7 @@ T.ToolBar {
             x: Math.max(_leftLimit, Math.min((parent.width - width) / 2, _rightLimit - width))
             width: Math.min(implicitWidth, Math.max(0, _rightLimit - _leftLimit))
 
-            text: Player.name || qsTr("VLC media player")
+            text: Player.name || qsTr("VLC Gold")
             color: theme.fg.secondary
             font.pixelSize: VLCStyle.fontSize_large
             elide: Text.ElideRight

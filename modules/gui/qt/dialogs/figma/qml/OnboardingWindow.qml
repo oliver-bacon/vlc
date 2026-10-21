@@ -49,7 +49,7 @@ Window {
     color: "transparent"
     width: 1060 * dp1
     height: 740 * dp1
-    title: qsTr("Welcome to VLC")
+    title: qsTr("Welcome to VLC Gold")
 
     function reset() {
         page = 0
@@ -114,14 +114,14 @@ Window {
                     }
                     Text {
                         Layout.alignment: Qt.AlignHCenter
-                        text: qsTr("Welcome to VLC!")
+                        text: qsTr("Welcome to VLC Gold!")
                         color: "#EAEAEA"
                         font.pixelSize: 32 * root.dp1
                     }
                     Text {
                         Layout.fillWidth: true
                         Layout.topMargin: 14 * root.dp1
-                        text: qsTr("VLC is a free and open source cross-platform multimedia player and framework that plays most multimedia files as well as DVDs, Audio CDs, VCDs, and various streaming protocols.")
+                        text: qsTr("VLC Gold is a free and open source cross-platform multimedia player and framework that plays most multimedia files as well as DVDs, Audio CDs, VCDs, and various streaming protocols.")
                         color: "#8F8F8F"
                         font.pixelSize: 14 * root.dp1
                         wrapMode: Text.WordWrap

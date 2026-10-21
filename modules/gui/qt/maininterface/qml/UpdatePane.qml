@@ -88,7 +88,7 @@ T.Pane {
                                                                                                                   .arg(UpdateModel.revision)
                                                                                                                   .arg(extra === 0 ? "" : "." + extra)
                         case UpdateModel.UpToDate:
-                            return qsTr("You have the latest version of VLC media player: <font color=\"%1\">%2</font>.").arg(theme.accent)
+                            return qsTr("You have the latest version of VLC Gold: <font color=\"%1\">%2</font>.").arg(theme.accent)
                                                                                                                          .arg(Application.version)
                         case UpdateModel.CheckFailed:
                             return qsTr("An <font color=\"%1\">error</font> occurred while checking for updates...").arg(theme.fg.negative)

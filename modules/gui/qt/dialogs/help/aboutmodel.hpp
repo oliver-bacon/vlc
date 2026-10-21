@@ -64,7 +64,7 @@ public:
 
     static QString getVersion()
     {
-        return QString::fromUtf8(VERSION_MESSAGE);
+        return QString::fromUtf8(GOLD_VERSION);
     }
 };
 

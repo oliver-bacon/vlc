@@ -378,7 +378,7 @@ void QmlGlobalMenu::popup(QPoint pos)
                     THEDP, &DialogsProvider::customizePlayerDialog);
     menu->addAction(icon("main_settings"), withKey(qtr("Settings"), "Ctrl + P"),
                     THEDP, &DialogsProvider::settingsDialog);
-    menu->addAction(icon("main_about_vlc"), withKey(qtr("About VLC"), "Shift + F1"),
+    menu->addAction(icon("main_about_vlc"), withKey(qtr("About VLC Gold"), "Shift + F1"),
                     THEDP, &DialogsProvider::aboutDialog);
 
     menu->addSeparator();

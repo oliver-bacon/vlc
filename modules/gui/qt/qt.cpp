@@ -150,7 +150,7 @@ static void ShowDialog   ( intf_thread_t *, int, int, intf_dialog_args_t * );
 
 #define SYSTRAY_TEXT N_( "Systray icon" )
 #define SYSTRAY_LONGTEXT N_( "Show an icon in the systray " \
-                             "allowing you to control VLC media player " \
+                             "allowing you to control VLC Gold " \
                              "for basic actions." )
 
 #define MINIMIZED_TEXT N_( "Start VLC with only a systray icon" )
@@ -1274,8 +1274,8 @@ static void *Thread( void *obj )
     }
 #endif
 
-    app.setApplicationDisplayName( qtr("VLC media player") );
-    app.setApplicationVersion( QString::fromUtf8(VERSION_MESSAGE) );
+    app.setApplicationDisplayName( qtr("VLC Gold") );
+    app.setApplicationVersion( QString::fromUtf8(GOLD_VERSION) );
 
     if( QDate::currentDate().dayOfYear() >= QT_XMAS_JOKE_DAY && var_InheritBool( p_intf, "qt-icon-change" ) )
         app.setWindowIcon( QIcon::fromTheme( "vlc-xmas", QIcon( ":/logo/vlc128-xmas.png" ) ) );
