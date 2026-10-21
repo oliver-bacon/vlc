@@ -13,12 +13,12 @@ MSIBUILDDIR=$(abs_top_builddir)/extras/package/win32/msi
 W_MSIBUILDDIR=`$(WIN32_PATH_CMD) -w '$(MSIBUILDDIR)'`
 W_TOPBUILDDIR=`$(WIN32_PATH_CMD) -w '$(abs_top_builddir)'`
 if HAVE_ARM64
-MSIOUTFILE=vlc-$(VERSION)-winarm64.msi
+MSIOUTFILE=vlc-gold-$(GOLD_VERSION)-winarm64.msi
 else
 if HAVE_WIN64
-MSIOUTFILE=vlc-$(VERSION)-win64.msi
+MSIOUTFILE=vlc-gold-$(GOLD_VERSION)-win64.msi
 else
-MSIOUTFILE=vlc-$(VERSION)-win32.msi
+MSIOUTFILE=vlc-gold-$(GOLD_VERSION)-win32.msi
 endif
 endif
 

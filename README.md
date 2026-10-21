@@ -123,9 +123,9 @@ docker run --rm -it --user root -v "$PWD":/vlc -w /vlc \
 ```
 
 This uses VideoLAN's own build image. The first run takes long because it also builds
-VLC's dependencies. Output: `win64/vlc-4.0.0-dev/vlc.exe` and the packages
+VLC's dependencies. Output: `win64/vlc-gold-<version>/vlc.exe` and the packages
 `win64/vlc-gold-<version>-win64.zip` / `.7z` / `.exe`; debug symbols in
-`win64/symbols-4.0.0-dev/`.
+`win64/symbols-gold-<version>/`.
 
 ### Linux
 

@@ -69,7 +69,7 @@ ${LangFileString} Reinstall_HeadlineInstall "Choose how you want to install VLC.
 ${LangFileString} Reinstall_HeadlineMaintenance "Choose the maintenance option to perform."
 ${LangFileString} Reinstall_MessageOlder "An older version of VLC is installed on your system. Select the operation you want to perform and click Next to continue."
 ${LangFileString} Reinstall_MessageNewer "A newer version of VLC is already installed! It is not recommended that you downgrade to an older version. Select the operation you want to perform and click Next to continue."
-${LangFileString} Reinstall_MessageSame "VLC ${VERSION} is already installed. Select the operation you want to perform and click Next to continue."
+${LangFileString} Reinstall_MessageSame "VLC Gold ${VERSION} is already installed. Select the operation you want to perform and click Next to continue."
 ${LangFileString} Reinstall_OptionUpgrade "Upgrade VLC using previous settings (recommended)"
 ${LangFileString} Reinstall_OptionDowngrade "Downgrade VLC using previous settings (recommended)"
 ${LangFileString} Reinstall_OptionComponents "Add/Remove/Reinstall components"

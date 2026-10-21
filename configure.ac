@@ -362,7 +362,7 @@ int foo() { return my_array[0]; }
 
     AC_ARG_WITH(packagedir,
       AS_HELP_STRING([--with-packagedir=DIR],
-        [output the packaged VLC files in DIR (default vlc-$PACKAGE_VERSION)]))
+        [output the packaged VLC files in DIR (default vlc-gold-$GOLD_VERSION)]))
     AS_IF([test "${with_packagedir}" != ""], [
         AS_IF([test -d "${with_packagedir}"], [
             PACKAGE_DIR=`cd "${with_packagedir}" && pwd -P`
@@ -371,7 +371,7 @@ int foo() { return my_array[0]; }
             PACKAGE_DIR="${with_packagedir}"
         ])
     ], [
-        PACKAGE_DIR=`pwd -P`"/vlc-${PACKAGE_VERSION}"
+        PACKAGE_DIR=`pwd -P`"/vlc-gold-${GOLD_VERSION}"
     ])
     AC_SUBST([PACKAGE_DIR])
 

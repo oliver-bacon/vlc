@@ -4,8 +4,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 !define PRODUCT_NAME "VLC Gold"
-!define VERSION @VERSION@
-!define PRODUCT_VERSION @VERSION@
+; VERSION is shown to users (VLC Gold). VLC_VERSION stays in the registry and is
+; used to compare with an installed VLC, which shares the same registry key.
+!define VERSION @GOLD_VERSION@
+!define PRODUCT_VERSION @GOLD_VERSION@
+!define VLC_VERSION @VERSION@
 !define PRODUCT_GROUP "VideoLAN"
 !define PRODUCT_PUBLISHER "VideoLAN"
 !define PRODUCT_WEB_SITE "https://www.videolan.org/"
@@ -599,7 +602,7 @@ WinOk:
   ${If} $PreviousVersion == ""
     StrCpy $PerformUpdate 0
   ${Else}
-    Push "${VERSION}"
+    Push "${VLC_VERSION}"
     Push $PreviousVersion
     Call VersionCompare
 
@@ -773,7 +776,7 @@ FunctionEnd
 Section -Post
   WriteUninstaller "$INSTDIR\uninstall.exe"
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "InstallDir" $INSTDIR
-  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "Version" "${VERSION}"
+  WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "Version" "${VLC_VERSION}"
   WriteRegStr HKLM "${PRODUCT_DIR_REGKEY}" "" "$INSTDIR\vlc.exe"
 
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
@@ -791,9 +794,9 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "Publisher" "${PRODUCT_PUBLISHER}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "VersionMajor"  "@VERSION_MAJOR@"
+    "VersionMajor"  "@GOLD_VERSION_MAJOR@"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "VersionMinor" "@VERSION_MINOR@"
+    "VersionMinor" "@GOLD_VERSION_MINOR@"
 SectionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -897,7 +900,7 @@ Section "un.$(Name_Section91)" SEC91
 
 
   DeleteRegKey HKLM \
-    "SOFTWARE\MozillaPlugins\@videolan.org/vlc,version=${VERSION}"
+    "SOFTWARE\MozillaPlugins\@videolan.org/vlc,version=${VLC_VERSION}"
 
   DeleteRegKey HKLM \
     "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"

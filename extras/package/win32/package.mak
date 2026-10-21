@@ -4,7 +4,9 @@ BUILT_SOURCES_distclean += \
 endif
 
 win32_destdir=@PACKAGE_DIR@
-win32_debugdir=$(abs_top_builddir)/symbols-$(VERSION)
+# Top folder inside the zip / 7z: the default PACKAGE_DIR, relative to the build dir
+win32_pkgdir=vlc-gold-$(GOLD_VERSION)
+win32_debugdir=$(abs_top_builddir)/symbols-gold-$(GOLD_VERSION)
 
 7ZIP_OPTS=-t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on
 
@@ -158,17 +160,17 @@ endif
 
 package-win32-zip: package-win-strip
 	rm -f -- $(WINVERSION).zip
-	zip -r -9 $(WINVERSION).zip vlc-$(VERSION) --exclude \*.nsi \*NSIS\* \*languages\* \*sdk\* \*helpers\* spad\*
+	zip -r -9 $(WINVERSION).zip $(win32_pkgdir) --exclude \*.nsi \*NSIS\* \*languages\* \*sdk\* \*helpers\* spad\*
 
 package-win32-debug-zip: package-win-common
 	rm -f -- $(WINVERSION)-debug.zip
-	zip -r -9 $(WINVERSION)-debug.zip vlc-$(VERSION)
+	zip -r -9 $(WINVERSION)-debug.zip $(win32_pkgdir)
 
 package-win32-7zip: package-win-strip
-	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION).7z vlc-$(VERSION)
+	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION).7z $(win32_pkgdir)
 
 package-win32-debug-7zip: package-win-common
-	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION)-debug.7z vlc-$(VERSION)
+	$(SEVENZIP) a $(7ZIP_OPTS) $(WINVERSION)-debug.7z $(win32_pkgdir)
 
 package-win32-cleanup:
 	rm -Rf $(win32_destdir) $(win32_debugdir)
