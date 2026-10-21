@@ -117,14 +117,14 @@ FunctionEnd
 !macro HideIcons
   WriteRegDWORD HKLM "Software\Clients\Media\VLC\InstallInfo" "IconsVisible" 0
   SetShellVarContext all  ; Set $DESKTOP to All Users
-  ${Unless} ${FileExists} "$DESKTOP\VLC media player.lnk"
+  ${Unless} ${FileExists} "$DESKTOP\VLC Gold.lnk"
     SetShellVarContext current  ; Set $DESKTOP to the current user's desktop
   ${EndUnless}
-  ${If} ${FileExists} "$DESKTOP\VLC media player.lnk"
-    Delete "$DESKTOP\VLC media player.lnk"
+  ${If} ${FileExists} "$DESKTOP\VLC Gold.lnk"
+    Delete "$DESKTOP\VLC Gold.lnk"
   ${EndIf}
-  ${If} ${FileExists} "$QUICKLAUNCH\VLC media player.lnk"
-    Delete "$QUICKLAUNCH\VLC media player.lnk"
+  ${If} ${FileExists} "$QUICKLAUNCH\VLC Gold.lnk"
+    Delete "$QUICKLAUNCH\VLC Gold.lnk"
   ${EndIf}
 !macroend
 !define HideIcons "!insertmacro HideIcons"
@@ -133,11 +133,11 @@ FunctionEnd
 !macro ShowIcons
   WriteRegDWORD HKLM "Software\Clients\Media\VLC\InstallInfo" "IconsVisible" 1
   SetShellVarContext all  ; Set $DESKTOP to All Users
-  ${Unless} ${FileExists} "$DESKTOP\VLC media player.lnk"
-    CreateShortCut "$DESKTOP\VLC media player.lnk" "$EXEDIR\vlc.exe" "" "$EXEDIR\vlc.exe" 0
+  ${Unless} ${FileExists} "$DESKTOP\VLC Gold.lnk"
+    CreateShortCut "$DESKTOP\VLC Gold.lnk" "$EXEDIR\vlc.exe" "" "$EXEDIR\vlc.exe" 0
   ${EndUnless}
-  ${Unless} ${FileExists} "$QUICKLAUNCH\VLC media player.lnk"
-    CreateShortCut "$QUICKLAUNCH\VLC media player.lnk" "$EXEDIR\vlc.exe" "" "$EXEDIR\vlc.exe" 0
+  ${Unless} ${FileExists} "$QUICKLAUNCH\VLC Gold.lnk"
+    CreateShortCut "$QUICKLAUNCH\VLC Gold.lnk" "$EXEDIR\vlc.exe" "" "$EXEDIR\vlc.exe" 0
   ${EndUnless}
 !macroend
 !define ShowIcons "!insertmacro ShowIcons"

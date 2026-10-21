@@ -24,25 +24,25 @@ ${LangFileString} Desc_Section04 \
 ${LangFileString} Desc_Section05 \
     "DVD and CD playback registration"
 ${LangFileString} Desc_Section06 \
-    "Sets VLC media player as the default application for the specified file type"
+    "Sets VLC Gold as the default application for the specified file type"
 ${LangFileString} Desc_Section07 \
     "Add context menu items ('Play With VLC' and 'Add To VLC's Playlist')"
 ${LangFileString} Desc_Section08 \
-    "Deletes VLC media player preferences and cache files leftover from previous installations"
+    "Deletes VLC Gold preferences and cache files leftover from previous installations"
 
 ${LangFileString} Name_Section91 "Uninstall"
 ${LangFileString} Name_Section92 "Delete preferences and cache"
 
 ${LangFileString} Desc_Section91 \
-"Uninstall VLC media player and all its components"
+"Uninstall VLC Gold and all its components"
 ${LangFileString} Desc_Section92 \
-"Deletes VLC media player preferences and cache files"
+"Deletes VLC Gold preferences and cache files"
 
 ${LangFileString} ShellAssociation_Play "Play"
-${LangFileString} ContextMenuEntry_PlayWith "Play with VLC media player"
-${LangFileString} ContextMenuEntry_AddToPlaylist "Add to VLC media player's Playlist"
+${LangFileString} ContextMenuEntry_PlayWith "Play with VLC Gold"
+${LangFileString} ContextMenuEntry_AddToPlaylist "Add to VLC Gold's Playlist"
 
-${LangFileString} Link_VisitWebsite "Visit the VideoLAN VLC media player Website"
+${LangFileString} Link_VisitWebsite "Visit the VideoLAN VLC Website"
 
 ${LangFileString} Name_InstTypeRecommended "Recommended"
 ${LangFileString} Name_InstTypeMinimum "Minimum"

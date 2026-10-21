@@ -23,25 +23,25 @@ ${LangFileString} Desc_Section04 \
 ${LangFileString} Desc_Section05 \
     "DVD and CD playback registration"
 ${LangFileString} Desc_Section06 \
-    "Causir VLC media player coma programa per defaut per aqueste tipe de fichièr"
+    "Causir VLC Gold coma programa per defaut per aqueste tipe de fichièr"
 ${LangFileString} Desc_Section07 \
     "Apondre los menuts ('Legir amb VLC' e 'Apondre a la lista de lectura')"
 ${LangFileString} Desc_Section08 \
-    "Suprimir las preferéncias de VLC media player e los fichièrs cache de las ancianas versions"
+    "Suprimir las preferéncias de VLC Gold e los fichièrs cache de las ancianas versions"
 
 ${LangFileString} Name_Section91 "Desinstallar"
 ${LangFileString} Name_Section92 "Suprimir las preferéncias e lo cache"
 
 ${LangFileString} Desc_Section91 \
-"Suprimir VLC media player e totes los sieus compausants"
+"Suprimir VLC Gold e totes los sieus compausants"
 ${LangFileString} Desc_Section92 \
-"Suprimir las preferéncias de VLC media player e los fichièrs cache"
+"Suprimir las preferéncias de VLC Gold e los fichièrs cache"
 
 ${LangFileString} ShellAssociation_Play "Legir"
 ${LangFileString} ContextMenuEntry_PlayWith "Legir amb VLC"
 ${LangFileString} ContextMenuEntry_AddToPlaylist "Apondre a la lista de lectura de VLC"
 
-${LangFileString} Link_VisitWebsite "Anar sul sit de VideoLAN VLC media player"
+${LangFileString} Link_VisitWebsite "Anar sul sit de VideoLAN VLC"
 
 ${LangFileString} Name_InstTypeRecommended "Recomandat"
 ${LangFileString} Name_InstTypeMinimum "Minimum"

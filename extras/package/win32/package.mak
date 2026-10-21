@@ -16,12 +16,12 @@ build-npapi: package-win-install
 endif
 
 if HAVE_ARM64
-WINVERSION=vlc-$(VERSION)-winarm64
+WINVERSION=vlc-gold-$(GOLD_VERSION)-winarm64
 else
 if HAVE_WIN64
-WINVERSION=vlc-$(VERSION)-win64
+WINVERSION=vlc-gold-$(GOLD_VERSION)-win64
 else
-WINVERSION=vlc-$(VERSION)-win32
+WINVERSION=vlc-gold-$(GOLD_VERSION)-win32
 endif
 endif
 

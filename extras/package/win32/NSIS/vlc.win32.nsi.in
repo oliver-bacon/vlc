@@ -3,7 +3,7 @@
 ; (http://nsis.sourceforge.net) ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-!define PRODUCT_NAME "VLC media player"
+!define PRODUCT_NAME "VLC Gold"
 !define VERSION @VERSION@
 !define PRODUCT_VERSION @VERSION@
 !define PRODUCT_GROUP "VideoLAN"
@@ -44,9 +44,9 @@ Var 32bitPath
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Name "${PRODUCT_NAME}"
-@HAVE_WIN64_FALSE@                   OutFile ..\vlc-${VERSION}-win32.exe
-@HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\vlc-${VERSION}-win64.exe
-@HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\vlc-${VERSION}-winarm64.exe
+@HAVE_WIN64_FALSE@                   OutFile ..\vlc-gold-@GOLD_VERSION@-win32.exe
+@HAVE_WIN64_TRUE@ @HAVE_ARM64_FALSE@ OutFile ..\vlc-gold-@GOLD_VERSION@-win64.exe
+@HAVE_WIN64_TRUE@ @HAVE_ARM64_TRUE@  OutFile ..\vlc-gold-@GOLD_VERSION@-winarm64.exe
 InstallDir "$@PROGRAMFILES@\${PRODUCT_PUBLISHER}\VLC"
 !ifdef NSIS_LZMA_COMPRESS_WHOLE
 SetCompressor lzma
@@ -785,7 +785,7 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "DisplayIcon" "$INSTDIR\vlc.exe"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "DisplayVersion" "${PRODUCT_VERSION}"
+    "DisplayVersion" "@GOLD_VERSION@"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \

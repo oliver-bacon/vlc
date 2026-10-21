@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (C) 2026 VLC authors and VideoLAN
 #
-# Builds VLC Redesign as an AppImage for x86_64 Linux.
+# Builds VLC Gold as an AppImage for x86_64 Linux.
 #
 # Run from the repository root, inside Ubuntu 22.04 (its glibc 2.35 is old enough for
 # most current distributions):
@@ -9,8 +9,8 @@
 #   docker run --rm --user root -v "$PWD":/vlc -w /vlc ubuntu:22.04 \
 #     bash extras/package/appimage/build.sh
 #
-# Output: build-appimage/VLC_Redesign-<version>-x86_64.AppImage. The version comes from
-# `git describe` (redesign-v* tags); set it with `-e VERSION=0.2.6` on docker run.
+# Output: build-appimage/VLC_Gold-<version>-x86_64.AppImage. The version comes from
+# `git describe` (redesign-v* tags); set it with `-e VERSION=0.3.0` on docker run.
 # Other settings: `-e JOBS=2` (parallel compile jobs, default 4).
 
 set -euo pipefail
@@ -143,17 +143,17 @@ rm -rf "$APPDIR/usr/include" "$APPDIR/usr/lib/pkgconfig" "$APPDIR/usr/share/appl
        "$APPDIR/usr/share/metainfo" "$APPDIR/usr/share/icons"
 
 ### 5. AppDir: menu entry, icon, bundled libraries
-install -Dm644 share/vlc512x512.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/vlc-redesign.png"
+install -Dm644 share/vlc512x512.png "$APPDIR/usr/share/icons/hicolor/512x512/apps/vlc-gold.png"
 MIMETYPES=$(grep -o '^[a-z][^ #]*' share/vlc.desktop.mimetypes | paste -sd';')
 mkdir -p "$APPDIR/usr/share/applications"
-cat > "$APPDIR/usr/share/applications/vlc-redesign.desktop" <<EOF
+cat > "$APPDIR/usr/share/applications/vlc-gold.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=VLC Redesign
+Name=VLC Gold
 GenericName=Media player
-Comment=VLC 4.0 (development version) with a redesigned interface
+Comment=Media player with a redesigned interface, based on VLC
 Exec=vlc --started-from-file %U
-Icon=vlc-redesign
+Icon=vlc-gold
 Terminal=false
 Categories=AudioVideo;Player;
 MimeType=$MIMETYPES;
@@ -170,13 +170,13 @@ export QMAKE=$QTDIR/bin/qmake
 export QML_SOURCES_PATHS=$SRC/modules/gui/qt
 export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
 export LD_LIBRARY_PATH=$APPDIR/usr/lib:$APPDIR/usr/lib/vlc:$QTDIR/lib:/usr/local/lib
-export LDAI_OUTPUT="$OUT/VLC_Redesign-$VERSION-x86_64.AppImage"
+export LDAI_OUTPUT="$OUT/VLC_Gold-$VERSION-x86_64.AppImage"
 export OUTPUT=$LDAI_OUTPUT
 
 "$TOOLS/linuxdeploy-x86_64.AppImage" --appdir "$APPDIR" \
   --executable "$APPDIR/usr/bin/vlc" \
-  --desktop-file "$APPDIR/usr/share/applications/vlc-redesign.desktop" \
-  --icon-file "$APPDIR/usr/share/icons/hicolor/512x512/apps/vlc-redesign.png" \
+  --desktop-file "$APPDIR/usr/share/applications/vlc-gold.desktop" \
+  --icon-file "$APPDIR/usr/share/icons/hicolor/512x512/apps/vlc-gold.png" \
   "${DEPS_ARGS[@]}" \
   --plugin qt
 
