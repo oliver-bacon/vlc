@@ -427,9 +427,22 @@ FocusScope {
                         lyricsLoader.item.lyricsSyncToPlayback = true
                 }
 
+                // VLC Redesign: the cone placeholder gets a plain background,
+                // not a blurred copy of itself
+                readonly property bool showingCone: !rootPlayer._audioOnly
+                                                    && String(cover.source) === rootPlayer.noArtCover
+
+                Rectangle {
+                    anchors.fill: parent
+                    visible: audioFocusScope.showingCone
+                    color: bgtheme.bg.primary
+                }
+
                 // background image
                 Widgets.DualKawaseBlur {
                     id: blurredBackground
+
+                    visible: !audioFocusScope.showingCone
 
                     // Six pass is free here since we release the intermediate layers
                     // through unsetting `live` (see `liveTimer`):
