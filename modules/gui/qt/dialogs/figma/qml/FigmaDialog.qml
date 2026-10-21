@@ -248,9 +248,12 @@ Window {
 
         background: Rectangle {
             radius: VLCStyle.dp(6, VLCStyle.scale)
+            readonly property color fill: button.primary ? root.accentSurface : root.surfaceColor
+            // lights up on hover, like the buttons of the player panels
             color: !button.enabled ? Qt.darker(root.surfaceColor, root.dark ? 1.0 : 1.05)
-                 : button.primary ? root.accentSurface : root.surfaceColor
-            opacity: button.hovered ? 0.85 : 1.0
+                 : button.hovered || button.pressed
+                   ? (root.dark ? Qt.lighter(fill, 1.3) : Qt.darker(fill, 1.06))
+                 : fill
             border.width: button.visualFocus ? VLCStyle.focus_border : 0
             border.color: root.accentColor
         }

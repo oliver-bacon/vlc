@@ -23,10 +23,11 @@ import VLC.MainInterface
 import VLC.Style
 import VLC.Dialogs
 
-// Yes/no question (delete a file, delete playlists...): the question with
-// Yes and No under it, left aligned, in a square outlined frame without a
-// title bar (Oliver's choice). DialogsProvider::questionDialog() opens it
-// and waits for DialogsProvider.answerQuestion().
+// Yes/no question (delete a file, delete playlists...): the question
+// centered, with Yes and No under it, each centered in its half of the
+// dialog, in a square outlined frame without a title bar (Oliver's mock-up).
+// DialogsProvider::questionDialog() opens it and waits for
+// DialogsProvider.answerQuestion().
 FigmaDialog {
     id: root
 
@@ -75,28 +76,43 @@ FigmaDialog {
             id: content
 
             width: parent.width
-            spacing: VLCStyle.dp(20, VLCStyle.scale)
+            spacing: VLCStyle.dp(28, VLCStyle.scale)
 
             Text {
                 id: message
 
                 Layout.fillWidth: true
+                Layout.topMargin: VLCStyle.dp(10, VLCStyle.scale)
+                horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.Wrap
                 color: root.titleColor
                 font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
                 lineHeight: 1.2
             }
 
-            Row {
-                spacing: VLCStyle.dp(10, VLCStyle.scale)
+            // two halves, a button centered in each
+            Item {
+                Layout.fillWidth: true
+                Layout.bottomMargin: VLCStyle.dp(6, VLCStyle.scale)
+                implicitHeight: yesButton.height
 
                 FigmaDialog.Button {
+                    id: yesButton
+
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.horizontalCenterOffset: -parent.width / 4
+                    width: VLCStyle.dp(127, VLCStyle.scale)
+                    height: VLCStyle.dp(40, VLCStyle.scale)
                     text: qsTr("Yes")
                     primary: true
                     onClicked: root.accept()
                 }
 
                 FigmaDialog.Button {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.horizontalCenterOffset: parent.width / 4
+                    width: yesButton.width
+                    height: yesButton.height
                     text: qsTr("No")
                     onClicked: root.reject()
                 }
