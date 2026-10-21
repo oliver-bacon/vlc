@@ -167,8 +167,8 @@ int main(int argc, const char *argv[])
     if (isatty (STDERR_FILENO))
         /* This message clutters error logs. It is printed only on a TTY.
          * Fortunately, LibVLC prints version info with -vv anyway. */
-        fprintf (stderr, "VLC media player %s (revision %s)\n",
-                 libvlc_get_version(), libvlc_get_changeset());
+        fprintf (stderr, "VLC Gold %s (VLC %s, revision %s)\n",
+                 GOLD_VERSION, libvlc_get_version(), libvlc_get_changeset());
 
     sigset_t set;
 
@@ -244,7 +244,7 @@ int main(int argc, const char *argv[])
     int ret = 1;
     libvlc_SetExitHandler(vlc->p_libvlc_int, vlc_kill, &self);
     libvlc_set_app_id (vlc, "org.VideoLAN.VLC", PACKAGE_VERSION, PACKAGE_NAME);
-    libvlc_set_user_agent (vlc, "VLC media player", "VLC/"PACKAGE_VERSION);
+    libvlc_set_user_agent (vlc, "VLC Gold", "VLC/"PACKAGE_VERSION);
 
     if (libvlc_InternalAddIntf (vlc->p_libvlc_int, NULL))
     {

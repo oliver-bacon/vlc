@@ -544,6 +544,9 @@
 /* Simple version string */
 #mesondefine VERSION_MESSAGE
 
+/* VLC Gold version shown to users */
+#mesondefine GOLD_VERSION
+
 /* compiler */
 #mesondefine VLC_COMPILER
 

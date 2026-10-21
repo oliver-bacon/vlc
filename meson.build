@@ -6,6 +6,10 @@ project('VLC', ['c', 'cpp'],
 vlc_copyright_years = '1996-2026'
 vlc_version_codename = 'Otto Chriek'
 
+# VLC Gold: the version shown to users. VLC's version stays for libVLC and plugins.
+gold_version = '0.3.0'
+gold_version_parts = gold_version.split('.')
+
 # LibVLC library (ABI) version
 # Format must be major.minor.micro
 libvlc_abi_version = '12.0.0'
@@ -1002,6 +1006,7 @@ endif
 cdata.set_quoted('VERSION',         vlc_version)
 cdata.set_quoted('PACKAGE_VERSION', vlc_version)
 cdata.set_quoted('VERSION_MESSAGE', f'@vlc_version@ @vlc_version_codename@')
+cdata.set_quoted('GOLD_VERSION', gold_version)
 
 cdata.set('VERSION_MAJOR',      vlc_version_major)
 cdata.set('VERSION_MINOR',      vlc_version_minor)
@@ -1191,6 +1196,10 @@ if host_system == 'windows'
     rc_conf.merge_from(cdata)
     rc_conf.set('VERSION', vlc_version)
     rc_conf.set('COPYRIGHT_YEARS', vlc_copyright_years)
+    rc_conf.set('GOLD_VERSION', gold_version)
+    rc_conf.set('GOLD_VERSION_MAJOR', gold_version_parts[0])
+    rc_conf.set('GOLD_VERSION_MINOR', gold_version_parts[1])
+    rc_conf.set('GOLD_VERSION_REVISION', gold_version_parts[2])
 endif
 
 # libvlccore

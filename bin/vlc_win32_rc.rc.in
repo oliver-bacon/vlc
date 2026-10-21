@@ -1,5 +1,5 @@
-#define VERSION_NUMBER @VERSION_MAJOR@,@VERSION_MINOR@,@VERSION_REVISION@,@VERSION_EXTRA@
-#define VERSION_NUMBER_STR "@VERSION_MAJOR@,@VERSION_MINOR@,@VERSION_REVISION@,@VERSION_EXTRA@"
+#define VERSION_NUMBER @GOLD_VERSION_MAJOR@,@GOLD_VERSION_MINOR@,@GOLD_VERSION_REVISION@,0
+#define VERSION_NUMBER_STR "@GOLD_VERSION@"
 
 #include <winuser.h>
 
@@ -16,12 +16,12 @@ BEGIN
     BLOCK "040904E4"
     BEGIN
       VALUE "CompanyName", "VideoLAN"
-      VALUE "ProductName", "VLC media player"
+      VALUE "ProductName", "VLC Gold"
       VALUE "ProductVersion", VERSION_NUMBER_STR
       VALUE "InternalName", "vlc"
       VALUE "OriginalFilename", "vlc.exe"
-      VALUE "FileVersion", "@VERSION@"
-      VALUE "FileDescription", "VLC media player"
+      VALUE "FileVersion", "@GOLD_VERSION@"
+      VALUE "FileDescription", "VLC Gold"
       VALUE "LegalCopyright", "Copyright \251 @COPYRIGHT_YEARS@ VideoLAN and VLC Authors"
       VALUE "LegalTrademarks", "VLC media player, VideoLAN and x264 are registered trademarks from VideoLAN"
     END
