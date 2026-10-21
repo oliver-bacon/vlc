@@ -43,6 +43,9 @@ T.ToolBar {
     // Not strictly necessary to set
     property Item plListView
 
+    // space left of the cone (MainDisplay lines it up with the side panel icons)
+    property real logoLeftMargin: VLCStyle.margin_xsmall * 2
+
     property bool _showCSD: MainCtx.clientSideDecoration
         && !(MainCtx.intfMainWindow.visibility === Window.FullScreen)
         && !MainCtx.hasToolbarMenu
@@ -82,7 +85,7 @@ T.ToolBar {
         implicitHeight: VLCStyle.globalToolbar_height
         implicitWidth: navigationButtons.implicitWidth
                      + playqueueButtonsTop.implicitWidth
-                     + VLCStyle.margin_xsmall * 2
+                     + root.logoLeftMargin + VLCStyle.margin_xsmall
 
         Item {
             id: navigationButtons
@@ -93,7 +96,7 @@ T.ToolBar {
                 left: parent.left
                 top: parent.top
                 bottom: parent.bottom
-                leftMargin: VLCStyle.margin_xsmall
+                leftMargin: root.logoLeftMargin
             }
 
             Navigation.parentItem: root

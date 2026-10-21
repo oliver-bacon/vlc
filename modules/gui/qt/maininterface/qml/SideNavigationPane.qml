@@ -65,6 +65,10 @@ T.Pane {
     readonly property real _iconLeft: delegateShowText ? VLCStyle.margin_xsmall
                                                        : (_railPanelWidth - VLCStyle.icon_normal) / 2
 
+    // left edge of the entry icons, from the pane's left edge without the
+    // safe area (the top bar cone lines up with it)
+    readonly property real iconLeft: panelInset + _iconLeft
+
     readonly property real railWidth: 2 * panelInset + safeAreaLeftMargin + safeAreaRightMargin
                                       + _railPanelWidth + rightPadding
 

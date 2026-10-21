@@ -283,6 +283,8 @@ FocusScope {
                 return null
         }
 
+        logoLeftMargin: sidebar.visible ? sidebar.iconLeft : VLCStyle.margin_xsmall * 2
+
         navigationVisible: pannelVisiblity.showNavigation
         playqueueVisible: pannelVisiblity.showPlayqueue
 
