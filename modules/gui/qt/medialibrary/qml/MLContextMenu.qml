@@ -97,10 +97,6 @@ NativeMenu {
             "action": deleteStream,
             "visible": _deleteStream
         }, {
-            "text": qsTr("Delete File From System"),
-            "action": deleteFileFromSource,
-            "visible": _deleteFileFromSource
-        }, {
             "text": qsTr("Information"),
             "action": _signalShowInformation,
             "visible": function(dataList, options, indexes) {
@@ -265,7 +261,12 @@ NativeMenu {
                     model.hideOnHome(indexes)
             },
             "visible": root.removeFromHome !== ""
-     }, {
+        }, {
+            // not in the design's menu; asks with the question dialog first
+            "text": qsTr("Delete File From System"),
+            "action": deleteFileFromSource,
+            "visible": _deleteFileFromSource
+        }, {
             "text": qsTr("More"),
             "children": _moreActions
         }
@@ -345,10 +346,8 @@ NativeMenu {
     function deleteFileFromSource(dataList, options, indexes) {
         let confirm = DialogsProvider.questionDialog(qsTr("Are you sure you want to delete this file?"));
         
-        if (confirm) {
+        if (confirm)
             model.deleteFileFromSource(indexes[0]);
-            console.log("File Deleted !!");
-        }
     }
 
     function showInformationAvailable(dataList, options, indexes) {
