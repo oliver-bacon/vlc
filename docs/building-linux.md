@@ -1,11 +1,11 @@
-# VLC Redesign on Linux
+# VLC Gold on Linux
 
 ## AppImage (recommended)
 
-The recommended way to run VLC Redesign on Linux is the AppImage, a single executable file
+The recommended way to run VLC Gold on Linux is the AppImage, a single executable file
 that requires no installation or compilation. Download
-`VLC_Redesign-<version>-x86_64.AppImage` from the
-[Releases](https://github.com/oliver-bacon/vlc/releases) page, make it executable
+`VLC_Gold-<version>-x86_64.AppImage` from the
+[Releases](https://github.com/oliver-bacon/vlc-gold/releases) page, make it executable
 (right-click › Properties › "Allow executing file as program", or `chmod +x` on the file)
 and run it. It does not modify an installed VLC; to remove it, delete the file. It runs on
 64-bit distributions with glibc 2.35 or newer (released 2022 or later), for example
@@ -17,7 +17,7 @@ desktop it also starts and plays video on Debian 12, Fedora 44 and Arch Linux.
 For further notes (settings folder, app menu entry), see the [README](../README.md#linux-64-bit).
 
 The following sections describe how to build the AppImage and how to build and install
-VLC Redesign from source.
+VLC Gold from source.
 
 ## Building the AppImage
 
@@ -33,10 +33,10 @@ The script installs the build tools, Qt 6.8.3 (aqtinstall), meson 1.10, newer Wa
 tools and medialibrary 0.13.2 inside the container, builds VLC and packages it with
 [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy). All downloads are pinned and
 checked against SHA-256 / SHA-512 checksums. Output:
-`build-appimage/VLC_Redesign-<version>-x86_64.AppImage`. The first run takes long; later
+`build-appimage/VLC_Gold-<version>-x86_64.AppImage`. The first run takes long; later
 runs reuse the downloads and the VLC build in `build-appimage/`. It needs about 1.3 GB of
 RAM per compile job (4 jobs by default; add `-e JOBS=2` to `docker run` to use fewer). Add
-`-e VERSION=0.2.6` to set the version in the file name.
+`-e VERSION=0.3.0` to set the version in the file name.
 
 ## Build and install from source (experimental)
 
@@ -47,7 +47,7 @@ It also builds on Ubuntu with Qt 6.8.3 from [aqtinstall](https://github.com/miur
 **1. Get the source** (the default branch `ui-redesign` is the redesign):
 
 ```sh
-git clone https://github.com/oliver-bacon/vlc.git ~/vlc
+git clone https://github.com/oliver-bacon/vlc-gold.git ~/vlc
 ```
 
 **2. Install VLC's build dependencies.** On Arch:
@@ -104,7 +104,7 @@ ninja -C build install
 ```sh
 cd "$VLC_SRC"
 PKG_CONFIG_PATH=$DEPS/lib/pkgconfig meson setup build-linux --buildtype=release \
-  --prefix=/opt/vlc-redesign --libdir=lib \
+  --prefix=/opt/vlc-gold --libdir=lib \
   -Dmedialibrary=enabled -Dqt=enabled -Dlua=disabled \
   -Dc_link_args="-Wl,-rpath,$DEPS/lib" -Dcpp_link_args="-Wl,-rpath,$DEPS/lib"
 ninja -C build-linux
@@ -117,53 +117,52 @@ VLC finds its modules and helpers such as the preparser:
 VLC_LIB_PATH=build-linux/modules ./build-linux/bin/vlc-static -I qt
 ```
 
-**6. Install (optional).** This installs to `/opt/vlc-redesign`, separate from your
-distribution's VLC, adds the command `vlc-redesign` and an app menu entry "VLC Redesign" that
+**6. Install (optional).** This installs to `/opt/vlc-gold`, separate from your
+distribution's VLC, adds the command `vlc-gold` and an app menu entry "VLC Gold" that
 also appears under "Open with" for video and audio files. `--prefix` in step 4 sets the
 location; if you set up `build-linux` without it, first run
-`meson configure build-linux --prefix=/opt/vlc-redesign --libdir=lib` and `ninja -C build-linux`.
+`meson configure build-linux --prefix=/opt/vlc-gold --libdir=lib` and `ninja -C build-linux`.
 
 ```sh
 cd "$VLC_SRC"
-PREFIX=/opt/vlc-redesign
+PREFIX=/opt/vlc-gold
 ninja -C build-linux
 sudo ninja -C build-linux install
-sudo tee /usr/local/bin/vlc-redesign > /dev/null <<EOF
+sudo tee /usr/local/bin/vlc-gold > /dev/null <<EOF
 #!/bin/sh
 export LD_LIBRARY_PATH=$PREFIX/lib:$PREFIX/lib/vlc\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}
 exec $PREFIX/bin/vlc "\$@"
 EOF
-sudo chmod 755 /usr/local/bin/vlc-redesign
+sudo chmod 755 /usr/local/bin/vlc-gold
 sudo env LD_LIBRARY_PATH=$PREFIX/lib $PREFIX/libexec/vlc/vlc-cache-gen $PREFIX/lib/vlc/plugins
-sudo install -Dm644 share/vlc512x512.png $PREFIX/share/icons/vlc-redesign.png
+sudo install -Dm644 share/vlc512x512.png $PREFIX/share/icons/vlc-gold.png
 MIMETYPES=$(grep -o '^[a-z][^ #]*' share/vlc.desktop.mimetypes | paste -sd';')
 sudo mkdir -p /usr/local/share/applications
-sudo tee /usr/local/share/applications/vlc-redesign.desktop > /dev/null <<EOF
+sudo tee /usr/local/share/applications/vlc-gold.desktop > /dev/null <<EOF
 [Desktop Entry]
 Type=Application
-Name=VLC Redesign
+Name=VLC Gold
 GenericName=Media player
-Exec=/usr/local/bin/vlc-redesign --started-from-file %U
-Icon=$PREFIX/share/icons/vlc-redesign.png
+Exec=/usr/local/bin/vlc-gold --started-from-file %U
+Icon=$PREFIX/share/icons/vlc-gold.png
 Terminal=false
 Categories=AudioVideo;Player;
 MimeType=$MIMETYPES;
 EOF
 ```
 
-- `vlc-redesign` is a small launcher script: it lets the installed VLC find its own
-  libraries (`libvlc`, `libvlccore`) in `/opt/vlc-redesign` without registering them
+- `vlc-gold` is a small launcher script: it lets the installed VLC find its own
+  libraries (`libvlc`, `libvlccore`) in `/opt/vlc-gold` without registering them
   system-wide. VLC 4's `libvlccore.so.9` has the same name as the one of the regular VLC 3,
   so a system-wide entry would make the regular VLC load the wrong library.
-- **Installed with an earlier version of these steps?** Remove the system-wide entry it
-  created: `sudo rm /etc/ld.so.conf.d/vlc-redesign.conf && sudo ldconfig`, then run step 6
-  again (it replaces the old `vlc-redesign` link with the launcher script).
+- **Installed as "VLC Redesign" before?** Remove the old install first:
+  `sudo rm -rf /opt/vlc-redesign /usr/local/bin/vlc-redesign /usr/local/share/applications/vlc-redesign.desktop /etc/ld.so.conf.d/vlc-redesign.conf && sudo ldconfig`
 - `vlc-cache-gen`: writes the plugin cache (`plugins.dat`), so VLC starts faster.
 - medialibrary is still loaded from `~/vlc-deps`; don't delete that folder.
 - **Update:** `cd ~/vlc && git pull && ninja -C build-linux && sudo ninja -C build-linux install`,
   then run the `vlc-cache-gen` line again.
 - **Uninstall:**
-  `sudo rm -rf /opt/vlc-redesign /usr/local/bin/vlc-redesign /usr/local/share/applications/vlc-redesign.desktop`
+  `sudo rm -rf /opt/vlc-gold /usr/local/bin/vlc-gold /usr/local/share/applications/vlc-gold.desktop`
 
 Notes:
 - **Qt:** use Qt 6.8 or newer. The system Qt works on Arch (6.12). If your distribution has an

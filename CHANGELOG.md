@@ -1,18 +1,26 @@
 # Changelog
 
-All notable changes of the VLC Redesign (unofficial). Versions use the tag scheme
+All notable changes of VLC Gold. Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
 ## Unreleased
 
+### Changed
+- Renamed to **VLC Gold**, version 0.3.0: window titles, About, tray, installer, Linux app
+  entry and `vlc --version`. VLC's own version (4.0.0-dev) stays for libVLC and plugins
+- Windows packages are named `vlc-gold-<version>-win64.zip` / `.7z` / `.exe`, the Linux
+  AppImage `VLC_Gold-<version>-x86_64.AppImage`; the repository is now `oliver-bacon/vlc-gold`
+- README: shorter feature list, beta note, no known issues section
+- Linux build instructions moved from the README to `docs/building-linux.md`, with an
+  optional install to `/opt/vlc-gold` (`vlc-gold` command, app menu entry, update and
+  uninstall steps)
+
+### Removed
+- Update check (it compared against VLC releases from VideoLAN)
+
 ### Added
 - Linux AppImage build script (`extras/package/appimage/build.sh`, Ubuntu 22.04 in Docker)
 - README: how to download and run the Linux AppImage
-
-### Changed
-- Linux build instructions moved from the README to `docs/building-linux.md`, with an
-  optional install to `/opt/vlc-redesign` (`vlc-redesign` command, app menu entry, update
-  and uninstall steps)
 
 ### Fixed
 - Linux install from source: a launcher script finds VLC's libraries instead of a

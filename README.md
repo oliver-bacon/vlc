@@ -1,20 +1,17 @@
-# VLC Redesign (unofficial)
+# VLC Gold
 
-A new interface for VLC media player 4.0, built on VLC's own Qt/QML interface and
-following the community design "VLC Redesign" by Juxtopposed.
+A media player with a new interface, built on VLC 4.0 and its Qt/QML interface, following
+the community design "VLC Redesign" by Juxtopposed.
 
 [![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](COPYING)
 [![Design: CC BY 4.0](https://img.shields.io/badge/design-CC%20BY%204.0-lightgrey)](https://creativecommons.org/licenses/by/4.0/)
-[![Platform: Windows](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6)](#download-and-install)
+[![Platform: Windows | Linux](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20x64-0078D6)](#download-and-install)
+[![Status: beta](https://img.shields.io/badge/status-beta-D37918)](#download-and-install)
 
-> [!IMPORTANT]
-> This is an **unofficial fan project**. It is not made, affiliated with, or endorsed
-> by VideoLAN. "VLC", "VLC media player" and the cone logo are trademarks of
-> VideoLAN. This is a modified version of VLC, redistributed under the GNU GPL like
-> VLC itself; the original software comes from
-> [videolan.org](https://www.videolan.org/) and
-> [code.videolan.org/videolan/vlc](https://code.videolan.org/videolan/vlc).
-> Please do not report problems with this build to VideoLAN.
+> [!NOTE]
+> VLC Gold is in **beta** and still a work in progress: some parts of the design are not
+> implemented yet, and you may run into rough edges. Please report problems in the
+> [issue tracker](https://github.com/oliver-bacon/vlc-gold/issues).
 
 It is based on VLC master (4.0 development version, commit `1176b56`). The work is in
 the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed in
@@ -31,95 +28,62 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 
 ## Features
 
-What is in the code today.
-
-**Look and feel**
-- Colours, accent (#D37918, user-selectable), icon set and two-tone menu icons from the design
-- Restyled menus, dialogs and top bars; new placeholder pictures for media without artwork
-- Onboarding on first start: media folder, theme and accent colour, basic shortcuts
+**Design**
+- The look of the "VLC Redesign" design: new colours, icons, menus and dialogs, dark and
+  light themes, and an accent colour you can change (the cone logo follows it)
+- Onboarding on first start: media folder, theme, accent colour and basic shortcuts
 
 **Player**
-- One-row player bar: playback controls on the left, a thick seek bar in the middle
-- On the right: Favorite, the cone-shaped volume, fullscreen, Audio, Subtitles, Playback
-  settings and Queue
-- Rounded frame around the video
-- Top bar with the media title, the folder name (opens the library at that folder) and a
-  library button; with VLC's own title bar: minimize, maximize, close
-- Favorite button for every media, also for files outside the library
-- Audio / subtitle track popover; Queue / Bookmarks / Chapters popover with sort,
-  repeat, shuffle, add and remove
-- "Continue watching" prompt with the time already watched; error messages in the same style
-- Right-click menu reorganized like the design, with "Hide UI"
-- Default hotkeys changed: Record is `R` (Random has no key), Hide UI is `Ctrl+\`
-
-**Seek bar**
-- Preview thumbnails while hovering (local video files)
-- Subtitle timeline on the seek bar with delay and zoom buttons (external .srt, .vtt,
-  .ass, .ssa files; turned on in the Playback tab)
-- Waveform for local audio files
-
-**Playback settings panel** (gear button)
-- Playback, Video, Audio and Subtitles tabs: speed, reverse, sleep timer; video effects
-  (essential, crop, colours); equalizer with preset icons, compressor, spatializer,
-  stereo widener; audio and subtitle delays
-- Subtitle appearance: font, colours, offset, size as named steps or as a percentage,
-  outline thickness, background opacity, and saved subtitle presets
-- "Open Advanced Settings" opens the matching page of the settings window
+- One-row player bar with a large seek bar, the cone-shaped volume, and buttons for audio,
+  subtitles, playback settings and the queue
+- Seek bar with preview thumbnails for videos, a subtitle timeline and a waveform for music
+- Playback settings and the queue open as a panel on the right: speed, sleep timer, video
+  effects, equalizer and audio effects, subtitle delay, look and saved presets
+- Favorites, "Continue watching", and a reorganized right-click menu with "Hide UI"
+- New default keys: Record is `R`, Hide UI is `Ctrl+\`
 
 **Library**
-- Side navigation: Home, Videos, Music, Network, Playlists, Recent, pins and "Add item";
-  icon-only rail with side panels on narrow windows; back and forward in the page headers
-- Home: Continue Watching, Listen Again, Frequently Visited Folders; "Remove from Home"
-  in the context menu; music covers from the files' artwork
-- Videos browsed by library folder with previews of what is inside; Music with Songs,
-  Albums, Artists and Genres
-- Network: Add Network Stream, Podcasts, Radio (bundled country flags), saved streams
-- Folder and file context menus (play, queue, stream, convert, subtitle and audio tracks,
-  resync, show in folder, pin, remove from library)
-- Compact library panel inside the player (resizable); mini player card with the play queue
+- Home with Continue Watching, Listen Again and Frequently Visited Folders
+- Videos by folder with clickable paths; Music by songs, albums, artists and genres
+- Network streams, podcasts and radio
+- A compact library panel inside the player, and a mini player
 
-**Dialogs and settings**
-- New settings window (App / Media / System, search, advanced options), backed by VLC's
-  own options; equalizer with 10 bands and audio effects applied while playing
-- Settings profiles (Movies, Shows, Music, Work, …): each keeps all settings, including
-  the player bars, theme and subtitle presets
-- Theme and accent colour change at once, also over a playing video; the accent replaces
-  the orange everywhere, including the cone logo
-- Open Network Stream, New Playlist (with picture), Playlist Properties, Keyboard Shortcuts
-- Add Subtitles / Add Audio Tracks: to this file, folder or playlist; from the computer
-  or from a link. Tracks are saved in the media library and loaded every time
-- Customize Player edits the bars in place, for the video and the music player, with new
-  bar items (Favorite, PiP, ±15 s, Chapters, Bookmark, Zoom, …)
+**Settings**
+- A new settings window with search, built on VLC's own options
+- Settings profiles (Movies, Shows, Music, Work, …) that switch everything at once
+- Customize Player: edit the player bars in place, with new buttons such as Favorite,
+  picture-in-picture, ±15 s and Chapters
+- Subtitles and audio tracks can be added to a file, folder or playlist and are loaded
+  every time
 
 ## Download and install
 
 ### Windows (10 or 11, 64-bit)
 
-Download from the [Releases](https://github.com/oliver-bacon/vlc/releases) page. You can
+Download from the [Releases](https://github.com/oliver-bacon/vlc-gold/releases) page. You can
 check a download against `SHA256SUMS.txt` from the same release:
 `certutil -hashfile <file> SHA256`.
 
-**Portable (recommended):** `vlc-4.0.0-dev-win64.zip` or `.7z`. Extract it anywhere and run
-`vlc.exe`. Nothing is installed.
+**Portable (recommended):** `vlc-gold-<version>-win64.zip` or `.7z`. Extract it anywhere and
+run `vlc.exe`. Nothing is installed.
 
-**Installer:** `vlc-4.0.0-dev-win64.exe`. This is VLC's own installer, unchanged: it calls
-itself "VLC media player" and installs into the same folder as official VLC
+**Installer:** `vlc-gold-<version>-win64.exe`. It installs into the same folder as VLC
 (`C:\Program Files\VideoLAN\VLC`), **replacing an installed VLC** and its file
-associations. Use it only if you do not need official VLC on the same PC; reinstall
-official VLC from [videolan.org](https://www.videolan.org/) to go back.
+associations. Use it only if you do not need VLC from [videolan.org](https://www.videolan.org/)
+on the same PC; reinstall VLC from there to go back.
 
 Notes:
 - The build is not code-signed, so Windows SmartScreen may warn before the first start.
-- It uses the same settings folder as an installed VLC (`%APPDATA%\vlc`). If you also use
-  official VLC 4 builds, back that folder up first.
+- It uses the same settings folder as VLC (`%APPDATA%\vlc`). If you also use VLC 4
+  development builds from videolan.org, back that folder up first.
 - If you used an earlier build: open **Customize Player** and click **Restore Default**
   to get the new player bar.
 
 ### Linux (64-bit)
 
-VLC Redesign is available for Linux as an AppImage: a single executable file that requires
-no installation or compilation. Download `VLC_Redesign-<version>-x86_64.AppImage` from the
-[Releases](https://github.com/oliver-bacon/vlc/releases) page. It runs on 64-bit
+VLC Gold is available for Linux as an AppImage: a single executable file that requires
+no installation or compilation. Download `VLC_Gold-<version>-x86_64.AppImage` from the
+[Releases](https://github.com/oliver-bacon/vlc-gold/releases) page. It runs on 64-bit
 distributions with glibc 2.35 or newer (released 2022 or later), for example Ubuntu 22.04,
 Debian 12, Fedora 36, Linux Mint 21 and current Arch Linux.
 
@@ -127,8 +91,8 @@ Tested on Arch Linux with KDE Plasma (in a virtual machine). In automated tests 
 desktop it also starts and plays video on Debian 12, Fedora 44 and Arch Linux.
 
 1. Make it executable: right-click › Properties › "Allow executing file as program", or
-   `chmod +x VLC_Redesign-*-x86_64.AppImage`.
-2. Double-click it, or run `./VLC_Redesign-*-x86_64.AppImage` (add a file to play it).
+   `chmod +x VLC_Gold-*-x86_64.AppImage`.
+2. Double-click it, or run `./VLC_Gold-*-x86_64.AppImage` (add a file to play it).
 
 Nothing is installed and an installed VLC is not modified; to remove it, delete the file.
 Optional: compare the SHA-256 with `SHA256SUMS.txt` from the same release
@@ -138,30 +102,13 @@ Notes:
 - **App menu and "Open with":** the AppImage doesn't add itself. Tools like
   [Gear Lever](https://flathub.org/apps/it.mijorus.gearlever) or
   [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher) add it with one click.
-- It uses the same settings folder as an installed VLC (`~/.config/vlc`) and the same media
-  library (`~/.local/share/vlc`). If you use your distribution's VLC, back up those folders
-  first.
+- It uses the same settings folder as VLC (`~/.config/vlc`) and the same media library
+  (`~/.local/share/vlc`). If you use your distribution's VLC, back up those folders first.
 - If it doesn't start because FUSE is missing (some minimal or container setups), run it
   with `--appimage-extract-and-run`.
 
 To build the AppImage yourself, or to build and install from source (experimental), see
-[VLC Redesign on Linux](docs/building-linux.md).
-
-## Known issues
-
-- **Testing:** tested by the author only; no independent tester yet.
-- **Light theme:** not reviewed screen by screen.
-- **Subtitle timeline:** works with external .srt / .vtt / .ass / .ssa files; embedded
-  subtitle tracks get no timeline.
-- **Not implemented:** subtitles from OpenSubtitles (shown but disabled); the key that was
-  pressed in on-screen messages; picture-in-picture outside the main window; moving the
-  seek bar in Customize Player.
-- **UPnP shutdown hang on Windows:** VLC's UPnP plugin could keep `vlc.exe` running after
-  closing, and the next start had no media library. This build includes a fix (libupnp
-  miscompiled with MinGW). If it still happens: end `vlc.exe` in Task Manager and delete
-  `plugins\services_discovery\libupnp_plugin.dll` (you lose UPnP discovery).
-
-Please report problems in the [issue tracker](https://github.com/oliver-bacon/vlc/issues) of this repository.
+[VLC Gold on Linux](docs/building-linux.md).
 
 ## Building from source
 
@@ -177,14 +124,14 @@ docker run --rm -it --user root -v "$PWD":/vlc -w /vlc \
 
 This uses VideoLAN's own build image. The first run takes long because it also builds
 VLC's dependencies. Output: `win64/vlc-4.0.0-dev/vlc.exe` and the packages
-`win64/vlc-4.0.0-dev-win64.zip` / `.7z` / `.exe`; debug symbols in
+`win64/vlc-gold-<version>-win64.zip` / `.7z` / `.exe`; debug symbols in
 `win64/symbols-4.0.0-dev/`.
 
 ### Linux
 
-For running VLC Redesign, the AppImage is sufficient (see [Linux](#linux-64-bit)).
+For running VLC Gold, the AppImage is sufficient (see [Linux](#linux-64-bit)).
 Instructions for building the AppImage, or for building and installing from source
-(experimental), are in [VLC Redesign on Linux](docs/building-linux.md).
+(experimental), are in [VLC Gold on Linux](docs/building-linux.md).
 
 ## Credits and attribution
 
@@ -199,9 +146,11 @@ implemented yet. Icons and pictures from the Figma file were used, converted or 
 (see [CREDITS.md](CREDITS.md)). Juxtopposed is not involved in this project and has not
 endorsed it.
 
-**VLC:** the [VideoLAN team and VLC contributors](THANKS), who make VLC and its Qt interface.
+**VLC:** VLC Gold is based on VLC by the [VideoLAN team and VLC contributors](THANKS),
+who make VLC and its Qt interface. "VLC", "VLC media player" and the cone logo are
+trademarks of VideoLAN.
 
-**Redesign implementation:** Oliver Bacon ([@oliver-bacon](https://github.com/oliver-bacon)).
+**VLC Gold:** Oliver Bacon ([@oliver-bacon](https://github.com/oliver-bacon)).
 
 **Third-party assets:** country flags from [flag-icons](https://github.com/lipis/flag-icons)
 (MIT). Details in [CREDITS.md](CREDITS.md).

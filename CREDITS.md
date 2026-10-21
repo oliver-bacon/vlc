@@ -34,10 +34,10 @@ Used unchanged for the radio countries.
 
 ## VLC
 
-VLC media player is made by the VideoLAN team and many contributors; see [AUTHORS](AUTHORS)
+VLC Gold is based on VLC media player, made by the VideoLAN team and many contributors; see [AUTHORS](AUTHORS)
 and [THANKS](THANKS). "VLC", "VLC media player" and the cone logo are trademarks of
 VideoLAN. This project is not affiliated with or endorsed by VideoLAN.
 
-## Redesign implementation
+## VLC Gold
 
 Oliver Bacon ([@oliver-bacon](https://github.com/oliver-bacon), commits as thespine1337).
