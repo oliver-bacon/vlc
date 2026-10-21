@@ -36,6 +36,9 @@ NativeMenu {
     property var enqueueAt: null
     // MLFolderModel of the library folders, for "Remove from Library"
     property var libraryFolders: null
+    // function (index), called after the file of the entry was deleted
+    // (the view reloads its list)
+    property var deletedAt: null
 
     onRequestData: (requestID, indexes) => {
         const dataList = indexes.map((i) => root.dataAt(i)).filter((d) => !!d)
@@ -48,6 +51,19 @@ NativeMenu {
     function _isFolder(dataList) { const d = _one(dataList); return !!d && d.isFolder }
     function _isLocal(dataList) { const d = _one(dataList); return !!d && String(d.mrl).startsWith("file://") }
     function _parentUrl(mrl) { const s = String(mrl); return s.substring(0, s.lastIndexOf("/")) }
+
+    function _deleteFile(dataList, indexes) {
+        const mrl = String(dataList[0].mrl)
+        if (!DialogsProvider.questionDialog(qsTr("Are you sure you want to delete this file?")))
+            return
+        if (!VLCConfig.deleteFile(mrl))
+            return
+        // the media library drops the file when it scans the folder again
+        if (MainCtx.mediaLibraryAvailable)
+            MainCtx.mediaLibrary.reloadFolder(root._parentUrl(mrl))
+        if (root.deletedAt)
+            root.deletedAt(indexes[0])
+    }
 
     function _pin(d) {
         const key = "Library/Pins"
@@ -138,6 +154,11 @@ NativeMenu {
             "text": qsTr("Remove from Library"),
             "action": (dataList) => root.libraryFolders.remove(dataList[0].mrl),
             "visible": (dataList) => _isFolder(dataList) && !!dataList[0].isLibraryRoot && !!root.libraryFolders
+        }, {
+            "text": qsTr("Delete File From System"),
+            "action": (dataList, options, indexes) => root._deleteFile(dataList, indexes),
+            "visible": (dataList, options, indexes) => _isFile(dataList) && indexes[0] >= 0
+                       && VLCConfig.isDeletableFile(String(dataList[0].mrl))
         }
     ]
 }

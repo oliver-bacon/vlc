@@ -127,11 +127,15 @@ Widgets.PageExt {
         Component.onCompleted: _updateCount()
     }
 
+    // raised to read the shown folder again (a file was deleted)
+    property int _reloadCount: 0
+
     NetworkMediaModel {
         id: folderModel
 
         ctx: MainCtx
-        tree: root._atRoot ? undefined : root._tree
+        // setting the tree again reloads the folder
+        tree: (root._reloadCount, root._atRoot ? undefined : root._tree)
         // A-Z until a sort order is chosen (VLC's default order is descending)
         sortCriteria: root.sort.criteria !== "" ? root.sort.criteria : "name"
         sortOrder: root.sort.criteria !== "" ? root.sort.order : Qt.AscendingOrder
@@ -176,6 +180,7 @@ Widgets.PageExt {
         playAt: (i) => folderModel.addAndPlay(videoFilter.sourceRow(i))
         enqueueAt: (i) => folderModel.addToPlaylist(videoFilter.sourceRow(i))
         libraryFolders: libraryFolders
+        deletedAt: (i) => root._reloadCount++
     }
 
     // right-click on an entry or on the empty part of the page

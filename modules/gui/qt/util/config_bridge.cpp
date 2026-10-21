@@ -23,6 +23,7 @@
 
 #include <QColor>
 #include <QFileDialog>
+#include <QFile>
 #include <QFileInfo>
 #include <QDir>
 #include <QCollator>
@@ -435,6 +436,26 @@ QStringList ConfigBridge::listFiles(const QString& folderUrl, const QStringList&
     collator.setNumericMode(true);
     std::sort(files.begin(), files.end(), collator);
     return files;
+}
+
+bool ConfigBridge::isDeletableFile(const QString& fileUrl) const
+{
+    const QString path = QUrl(fileUrl).toLocalFile();
+    if (path.isEmpty())
+        return false;
+    const QFileInfo info(path);
+    if (!info.isFile())
+        return false;
+    if (!(QFile::permissions(path) & QFileDevice::WriteUser))
+        return false;
+    return QFile::permissions(info.absolutePath()) & QFileDevice::WriteUser;
+}
+
+bool ConfigBridge::deleteFile(const QString& fileUrl) const
+{
+    if (!isDeletableFile(fileUrl))
+        return false;
+    return QFile::remove(QUrl(fileUrl).toLocalFile());
 }
 
 QVariant ConfigBridge::browseNode(const QString& folderUrl) const

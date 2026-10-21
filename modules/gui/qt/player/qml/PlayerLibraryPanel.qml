@@ -458,6 +458,8 @@ FocusScope {
         menu.dataAt = (i) => root._menuEntry(i)
         menu.playAt = (i) => root._play(i, root._rowData(i), false)
         menu.enqueueAt = (i) => root._play(i, root._rowData(i), true)
+        // setting the tree again reloads the folder
+        menu.deletedAt = (i) => { if (root._browse) root._browse.tree = root._level.tree }
         menu.popup([index], globalPos)
     }
 

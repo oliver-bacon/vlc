@@ -92,6 +92,12 @@ public:
     /// sorted naturally
     Q_INVOKABLE QStringList listFiles(const QString& folderUrl, const QStringList& extensions) const;
 
+    /// Whether a local file (URL) can be deleted: the file and its folder
+    /// are writable (same check as the media library's "isDeletableFile")
+    Q_INVOKABLE bool isDeletableFile(const QString& fileUrl) const;
+    /// Deletes a local file (URL) from the disk, returns false on failure
+    Q_INVOKABLE bool deleteFile(const QString& fileUrl) const;
+
     /// Browse view node of a local folder, to open it in the Browse view
     /// ("Go to Source")
     Q_INVOKABLE QVariant browseNode(const QString& folderUrl) const;
