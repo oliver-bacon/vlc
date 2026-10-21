@@ -61,8 +61,7 @@ QtObject {
                     { label: qsTr("Accent color"), option: "qt-accent-color", kind: "accent" }
                 ]},
                 { title: qsTr("Startup"), rows: [
-                    { label: qsTr("Show confirmation and error dialogs"), option: "qt-error-dialogs" },
-                    { label: qsTr("Check for updates automatically"), option: "qt-updates-notif" }
+                    { label: qsTr("Show confirmation and error dialogs"), option: "qt-error-dialogs" }
                 ]},
                 { title: qsTr("Diagnostics"), rows: [
                     { label: qsTr("Save a log"), option: "file-logging" },
