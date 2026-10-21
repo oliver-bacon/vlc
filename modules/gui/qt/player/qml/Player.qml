@@ -41,12 +41,13 @@ FocusScope {
     readonly property int positionSliderY: controlBar.y + controlBar.sliderY
 
     // VLC Redesign: area of the playback settings and queue panels of the
-    // player bar (Figma: a card on the right side, 20 px from the window edge
-    // and above the player bar, under the top bar)
+    // player bar: a card on the right side, 20 px from the video frame on
+    // the top, right and bottom (the frame is 10 px in from the window sides)
     readonly property rect sidePanelArea: {
         const gap = VLCStyle.dp(20, VLCStyle.scale)
-        const top = topBar.visible ? topBar.y + topBar.reservedHeight : gap
-        return Qt.rect(0, top, width - gap, Math.max(0, controlBar.y - gap - top))
+        const right = videoFrame.visible ? videoFrame._border + gap : gap
+        const top = (topBar.visible ? topBar.y + topBar.reservedHeight : 0) + gap
+        return Qt.rect(0, top, width - right, Math.max(0, controlBar.y - gap - top))
     }
 
     readonly property string coverSource: {
