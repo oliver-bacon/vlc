@@ -3,7 +3,7 @@
 All notable changes of VLC Gold. Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
-## Unreleased
+## redesign-v0.3.0 (beta)
 
 ### Changed
 - Renamed to **VLC Gold**, version 0.3.0: window titles, About, tray, installer, Linux app
@@ -17,17 +17,30 @@ All notable changes of VLC Gold. Versions use the tag scheme
   optional install to `/opt/vlc-gold` (`vlc-gold` command, app menu entry, update and
   uninstall steps)
 
+- Yes/no questions use the redesign's dialog: centered, no title bar, outlined frame,
+  buttons under the text that light up on hover
+- The redesign's cone is the app icon, and a cone shows instead of the music
+  placeholder while a video starts
+- Playback settings and the queue open as a card on the right side of the player, 20 px
+  from the video frame
+- The on-screen message shows the pressed key under it
+
 ### Removed
 - Update check (it compared against VLC releases from VideoLAN)
 
 ### Added
 - Linux AppImage build script (`extras/package/appimage/build.sh`, Ubuntu 22.04 in Docker)
 - README: how to download and run the Linux AppImage
+- Delete File From System in the file menu of library folders
 
 ### Fixed
 - Linux install from source: a launcher script finds VLC's libraries instead of a
   system-wide `ld.so.conf.d` entry, which made the distribution's VLC 3 load the redesign's
   `libvlccore.so.9`
+- Submenus open right next to the menu instead of 28 px away
+- Videos: subfolder pages keep their folder, and the parent folders in the breadcrumbs
+  can be clicked
+- HDR videos are tone mapped on SDR screens (Windows, Direct3D 11)
 
 ## redesign-v0.2.6 (beta)
 
