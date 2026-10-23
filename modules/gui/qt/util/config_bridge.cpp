@@ -36,12 +36,15 @@
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
+#include <map>
+#include <set>
 
 #include <vlc_common.h>
 #include <vlc_configuration.h>
 #include <vlc_modules.h>
 #include <vlc_plugin.h>
 #include <vlc_actions.h>
+#include <vlc_config_cat.h>
 
 #include "qt.hpp"
 #include "util/vlchotkeyconverter.hpp"
@@ -90,6 +93,170 @@ QString typeName(const module_config_t* item)
 QString rgbToString(int64_t rgb)
 {
     return QColor::fromRgb(static_cast<QRgb>(rgb & 0xFFFFFF)).name();
+}
+
+
+// Config items of a module; frees them when going out of scope
+struct ModuleConfig
+{
+    explicit ModuleConfig(const module_t* module)
+        : items(module_config_get(module, &count)) {}
+    ~ModuleConfig() { module_config_free(items); }
+    ModuleConfig(const ModuleConfig&) = delete;
+    ModuleConfig& operator=(const ModuleConfig&) = delete;
+
+    const module_config_t* begin() const { return items; }
+    const module_config_t* end() const { return items + count; }
+
+    // count first: it is filled while `items` is initialized
+    unsigned count = 0;
+    module_config_t* items = nullptr;
+};
+
+// Every module, freed when going out of scope
+struct ModuleList
+{
+    ModuleList() : modules(module_list_get(&count)) {}
+    ~ModuleList() { module_list_free(modules); }
+    ModuleList(const ModuleList&) = delete;
+    ModuleList& operator=(const ModuleList&) = delete;
+
+    module_t* const* begin() const { return modules; }
+    module_t* const* end() const { return modules + count; }
+
+    // count first: it is filled while `modules` is initialized
+    size_t count = 0;
+    module_t** modules = nullptr;
+};
+
+// Where the classic preferences show a module: its first subcategory
+// followed by an option; SUBCAT_UNKNOWN when it has no options
+enum vlc_config_subcat modulePlace(const module_t* module)
+{
+    enum vlc_config_subcat subcat = SUBCAT_UNKNOWN;
+    bool hasOptions = false;
+    for (const module_config_t& item : ModuleConfig(module))
+    {
+        if (item.i_type == CONFIG_SUBCATEGORY)
+        {
+            subcat = static_cast<enum vlc_config_subcat>(item.value.i);
+            continue;
+        }
+        if (CONFIG_ITEM(item.i_type))
+        {
+            hasOptions = true;
+            if (subcat != SUBCAT_UNKNOWN)
+                break;
+        }
+    }
+    if (!hasOptions)
+        return SUBCAT_UNKNOWN;
+    const enum vlc_config_cat cat = vlc_config_cat_FromSubcat(subcat);
+    if (cat == CAT_UNKNOWN || cat == CAT_HIDDEN)
+        return SUBCAT_UNKNOWN;
+    return subcat;
+}
+
+bool moduleInSubcat(const module_t* module, int subcat)
+{
+    for (const module_config_t& item : ModuleConfig(module))
+        if (item.i_type == CONFIG_SUBCATEGORY && item.value.i == subcat)
+            return true;
+    return false;
+}
+
+QString moduleText(const module_t* module)
+{
+    return qfut(module_GetLongName(module));
+}
+
+// Options from `begin` on, split at the sections; stops at the next
+// subcategory when `onePage` (the core's options of one page)
+QVariantList optionSections(const module_config_t* begin, const module_config_t* end, bool onePage)
+{
+    QVariantList sections;
+    QString title;
+    QStringList options;
+    bool hotkeys = false;
+
+    const auto flush = [&]() {
+        if (!options.isEmpty())
+            sections.append(QVariantMap {
+                { QStringLiteral("title"), title },
+                { QStringLiteral("options"), options },
+            });
+        options.clear();
+    };
+
+    for (const module_config_t* item = begin; item < end; ++item)
+    {
+        if (item->i_type == CONFIG_SUBCATEGORY)
+        {
+            if (onePage)
+                break;
+            continue;
+        }
+        if (item->i_type == CONFIG_SECTION)
+        {
+            flush();
+            title = item->psz_text ? qfut(item->psz_text) : QString {};
+            continue;
+        }
+        // obsolete options have no description
+        if (!CONFIG_ITEM(item->i_type) || item->psz_text == nullptr)
+            continue;
+        // the hotkeys are edited together, in one dialog
+        if (item->i_type == CONFIG_ITEM_KEY)
+        {
+            if (!hotkeys)
+                options.append(QStringLiteral("#hotkeys"));
+            hotkeys = true;
+            continue;
+        }
+        options.append(qfu(item->psz_name));
+    }
+    flush();
+    return sections;
+}
+
+QString subcatName(enum vlc_config_subcat subcat)
+{
+    return qfu(vlc_config_subcat_GetName(subcat));
+}
+
+// "Video › Output modules", or "Video" for a category's own page
+QString pagePath(enum vlc_config_subcat subcat)
+{
+    const enum vlc_config_cat cat = vlc_config_cat_FromSubcat(subcat);
+    if (vlc_config_subcat_IsGeneral(subcat))
+        return qfu(vlc_config_cat_GetName(cat));
+    return qfu(vlc_config_cat_GetName(cat)) + QStringLiteral(" › ") + subcatName(subcat);
+}
+
+QString catIcon(enum vlc_config_cat cat)
+{
+    switch (cat)
+    {
+    case CAT_INTERFACE: return QStringLiteral("interface");
+    case CAT_AUDIO:     return QStringLiteral("audio");
+    case CAT_VIDEO:     return QStringLiteral("video");
+    case CAT_INPUT:     return QStringLiteral("input");
+    case CAT_SOUT:      return QStringLiteral("sout");
+    case CAT_PLAYLIST:  return QStringLiteral("playlist");
+    case CAT_ADVANCED:  return QStringLiteral("advanced");
+    default:            return {};
+    }
+}
+
+// sorted as the classic preferences tree (QTreeWidget: case-insensitive,
+// not numeric, so "Direct3D11" comes before "Direct3D9")
+void sortByText(QVariantList& list, const QString& key)
+{
+    QCollator collator;
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(list.begin(), list.end(), [&](const QVariant& a, const QVariant& b) {
+        return collator.compare(a.toMap().value(key).toString(), b.toMap().value(key).toString()) < 0;
+    });
 }
 
 } // namespace
@@ -231,6 +398,50 @@ QVariantList ConfigBridge::choices(const QString& name) const
         return ret;
 
     const QByteArray utf8 = name.toUtf8();
+
+    // Modules of a subcategory or with a capability (the core lists only
+    // the CONFIG_ITEM_MODULE ones), as the classic preferences do
+    if (item->i_type == CONFIG_ITEM_MODULE_CAT || item->i_type == CONFIG_ITEM_MODULE_LIST_CAT
+     || item->i_type == CONFIG_ITEM_MODULE_LIST)
+    {
+        std::set<QString> seen;
+        const auto add = [&](const QString& value, const QString& text) {
+            if (seen.insert(value).second)
+                ret.append(QVariantMap {
+                    { QStringLiteral("value"), value },
+                    { QStringLiteral("text"), text },
+                });
+        };
+
+        for (module_t* module : ModuleList())
+        {
+            if (module_is_main(module))
+                continue;
+            const bool match = (item->i_type == CONFIG_ITEM_MODULE_LIST)
+                    ? (item->psz_type && module_provides(module, item->psz_type))
+                    : moduleInSubcat(module, item->min.i);
+            if (!match)
+                continue;
+            add(qfu(module_get_object(module)), moduleText(module));
+
+            // the web, telnet and console interfaces are all the lua module
+            if (!strcmp(module_get_object(module), "lua") && !strcmp(item->psz_name, "extraintf"))
+            {
+                add(QStringLiteral("http"), QStringLiteral("Web"));
+                add(QStringLiteral("telnet"), QStringLiteral("Telnet"));
+#ifndef _WIN32
+                add(QStringLiteral("cli"), QStringLiteral("Console"));
+#endif
+            }
+        }
+        // in module list order, as the classic preferences
+        if (item->i_type == CONFIG_ITEM_MODULE_CAT)
+            ret.prepend(QVariantMap {
+                { QStringLiteral("value"), QString {} },
+                { QStringLiteral("text"), qtr("Default") },
+            });
+        return ret;
+    }
 
     if (IsConfigIntegerType(item->i_type) && item->i_type != CONFIG_ITEM_RGB)
     {
@@ -479,6 +690,169 @@ QVariant ConfigBridge::browseNode(const QString& folderUrl) const
         vlc_media_tree_Add(tree.get(), &(tree->root), inputItem);
     }
     return QVariant::fromValue(NetworkTreeItem(tree, item));
+}
+
+QVariantList ConfigBridge::settingsTree() const
+{
+    std::map<int, QVariantList> subcats; // by category
+    std::set<int> seen;
+
+    const auto addSubcat = [&](enum vlc_config_subcat subcat) {
+        const enum vlc_config_cat cat = vlc_config_cat_FromSubcat(subcat);
+        if (cat == CAT_UNKNOWN || cat == CAT_HIDDEN)
+            return;
+        subcats[cat]; // the category exists even without other pages
+        // a category's general subcategory is the category's own page
+        if (vlc_config_subcat_IsGeneral(subcat) || !seen.insert(subcat).second)
+            return;
+        subcats[cat].append(QVariantMap {
+            { QStringLiteral("subcat"), static_cast<int>(subcat) },
+            { QStringLiteral("name"), subcatName(subcat) },
+        });
+    };
+
+    for (const module_config_t& item : ModuleConfig(module_get_main()))
+        if (item.i_type == CONFIG_SUBCATEGORY)
+            addSubcat(static_cast<enum vlc_config_subcat>(item.value.i));
+
+    // pages that only modules use
+    for (module_t* module : ModuleList())
+    {
+        if (module_is_main(module))
+            continue;
+        const enum vlc_config_subcat subcat = modulePlace(module);
+        if (subcat != SUBCAT_UNKNOWN)
+            addSubcat(subcat);
+    }
+
+    QVariantList ret;
+    for (size_t i = 0; i < vlc_config_cat_Count(); ++i)
+    {
+        const enum vlc_config_cat cat = vlc_config_cat_GetAt(i)->id;
+        const auto it = subcats.find(cat);
+        if (it == subcats.end())
+            continue;
+        QVariantList pages = it->second;
+        sortByText(pages, QStringLiteral("name"));
+        ret.append(QVariantMap {
+            { QStringLiteral("cat"), static_cast<int>(cat) },
+            { QStringLiteral("name"), qfu(vlc_config_cat_GetName(cat)) },
+            { QStringLiteral("icon"), catIcon(cat) },
+            { QStringLiteral("subcat"), static_cast<int>(vlc_config_cat_GetGeneralSubcat(cat)) },
+            { QStringLiteral("subcats"), pages },
+        });
+    }
+    return ret;
+}
+
+QVariantMap ConfigBridge::settingsPage(int subcat) const
+{
+    const auto id = static_cast<enum vlc_config_subcat>(subcat);
+
+    QVariantList sections;
+    {
+        const ModuleConfig core(module_get_main());
+        for (const module_config_t* item = core.begin(); item < core.end(); ++item)
+        {
+            if (item->i_type == CONFIG_SUBCATEGORY && item->value.i == subcat)
+            {
+                sections = optionSections(item + 1, core.end(), true);
+                break;
+            }
+        }
+    }
+
+    QVariantList modules;
+    for (module_t* module : ModuleList())
+    {
+        if (module_is_main(module) || modulePlace(module) != id)
+            continue;
+        // the short name, as in the classic preferences tree
+        modules.append(QVariantMap {
+            { QStringLiteral("name"), qfu(module_get_object(module)) },
+            { QStringLiteral("text"), qfut(module_get_name(module, false)) },
+        });
+    }
+    sortByText(modules, QStringLiteral("text"));
+
+    const char* help = vlc_config_subcat_GetHelp(id);
+    return {
+        { QStringLiteral("title"), subcatName(id) },
+        { QStringLiteral("path"), pagePath(id) },
+        { QStringLiteral("help"), help ? qfu(help) : QString {} },
+        { QStringLiteral("sections"), sections },
+        { QStringLiteral("modules"), modules },
+    };
+}
+
+QVariantMap ConfigBridge::moduleSettings(const QString& name) const
+{
+    const module_t* module = module_find(name.toUtf8().constData());
+    if (!module)
+        return {};
+
+    const ModuleConfig config(module);
+    // as the classic preferences: the HTML help when there is one
+    const char* helpHtml = module_get_help_html(module);
+    const char* help = module_get_help(module);
+    return {
+        { QStringLiteral("name"), name },
+        { QStringLiteral("title"), moduleText(module) },
+        { QStringLiteral("help"), helpHtml ? qfut(helpHtml) : (help ? qfut(help) : QString {}) },
+        { QStringLiteral("helpIsHtml"), helpHtml != nullptr },
+        { QStringLiteral("sections"), optionSections(config.begin(), config.end(), false) },
+    };
+}
+
+QVariantList ConfigBridge::searchSettings(const QString& text, int limit) const
+{
+    QVariantList ret;
+    const QString needle = text.trimmed();
+    if (needle.isEmpty())
+        return ret;
+
+    const auto matches = [&](const module_config_t& item) {
+        if (!CONFIG_ITEM(item.i_type) || item.i_type == CONFIG_ITEM_KEY || item.psz_text == nullptr)
+            return false;
+        return qfu(item.psz_name).contains(needle, Qt::CaseInsensitive)
+            || qfut(item.psz_text).contains(needle, Qt::CaseInsensitive)
+            || (item.psz_longtext && qfut(item.psz_longtext).contains(needle, Qt::CaseInsensitive));
+    };
+    const auto add = [&](const module_config_t& item, const QString& place) {
+        ret.append(QVariantMap {
+            { QStringLiteral("option"), qfu(item.psz_name) },
+            { QStringLiteral("place"), place },
+        });
+        return ret.size() < limit;
+    };
+
+    // the core's options, by page
+    enum vlc_config_subcat subcat = SUBCAT_UNKNOWN;
+    for (const module_config_t& item : ModuleConfig(module_get_main()))
+    {
+        if (item.i_type == CONFIG_SUBCATEGORY)
+            subcat = static_cast<enum vlc_config_subcat>(item.value.i);
+        const enum vlc_config_cat cat = vlc_config_cat_FromSubcat(subcat);
+        if (cat == CAT_UNKNOWN || cat == CAT_HIDDEN || !matches(item))
+            continue;
+        if (!add(item, pagePath(subcat)))
+            return ret;
+    }
+
+    // then the modules' options
+    for (module_t* module : ModuleList())
+    {
+        if (module_is_main(module))
+            continue;
+        const enum vlc_config_subcat place = modulePlace(module);
+        if (place == SUBCAT_UNKNOWN)
+            continue;
+        const QString where = pagePath(place) + QStringLiteral(" › ") + moduleText(module);
+        for (const module_config_t& item : ModuleConfig(module))
+            if (matches(item) && !add(item, where))
+                return ret;
+    }
+    return ret;
 }
 
 void ConfigBridge::save()

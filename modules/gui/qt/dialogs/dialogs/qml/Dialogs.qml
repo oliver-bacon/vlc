@@ -684,6 +684,21 @@ Item {
     }
 
     Loader {
+        id: allSettingsWindowLoader
+        active: false
+        source: "qrc:///qt/qml/VLC/Dialogs/AllSettingsWindow.qml"
+
+        Connections {
+            target: DialogsProvider
+
+            function onShowAllSettingsWindow() {
+                allSettingsWindowLoader.active = true
+                allSettingsWindowLoader.item.open()
+            }
+        }
+    }
+
+    Loader {
         id: toolbarEditorDialogLoader
         active: false
         source: "qrc:///qt/qml/VLC/Dialogs/ToolbarEditorDialog.qml"

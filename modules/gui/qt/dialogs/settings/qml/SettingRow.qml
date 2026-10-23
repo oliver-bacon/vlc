@@ -33,6 +33,8 @@ FocusScope {
     required property var row
 
     signal actionRequested(string action)
+    // kind "picker": a choice that only the window uses (no option)
+    signal picked(var value)
 
     readonly property string option: row.option ?? ""
     readonly property string kind: row.kind ?? ""
@@ -50,7 +52,7 @@ FocusScope {
 
     // Whether this build can do what the row sets
     readonly property bool supported: {
-        if (kind === "colorScheme" || kind === "action")
+        if (kind === "colorScheme" || kind === "action" || kind === "picker")
             return true
         if (kind === "openSubtitles")
             return VLCOpenSubtitles.available
@@ -72,6 +74,8 @@ FocusScope {
     readonly property var choices: {
         if (kind === "spatialMode")
             return spatialModes
+        if (kind === "picker")
+            return row.choices ?? []
         return (option !== "" && kind !== "accent") ? VLCConfig.choices(option) : []
     }
     readonly property var range: (option !== "") ? VLCConfig.range(option) : ({})
@@ -86,6 +90,8 @@ FocusScope {
             return spatialModes.some((m) => VLCConfig.hasModule("audio-filter", m.value))
         if (kind === "spatialMode")
             return _spatialMode()
+        if (kind === "picker")
+            return row.value ?? ""
         if (option === "")
             return undefined
         return VLCConfig.value(option)
@@ -101,7 +107,10 @@ FocusScope {
     }
 
     function write(newValue) {
-        if (kind === "filter") {
+        if (kind === "picker") {
+            root.value = newValue
+            root.picked(newValue)
+        } else if (kind === "filter") {
             VLCConfig.setModule(row.list, row.module, newValue)
             if (row.live)
                 VLCEffects.applyAudioFilter(row.module, newValue)
@@ -138,6 +147,7 @@ FocusScope {
         case "filter": return toggleComponent
         case "spatial": return toggleComponent
         case "spatialMode": return dropdownComponent
+        case "picker": return dropdownComponent
         case "eqPreset": return dropdownComponent
         case "equalizer": return null
         case "action": return actionComponent
@@ -150,6 +160,9 @@ FocusScope {
         case "file":
         case "directory": return pathComponent
         case "rgb": return textComponent
+        // the list as text (order and extra entries kept), the modules as
+        // chips below the row (moduleChips)
+        case "modulelist": return textComponent
         }
         if (choices.length > 0)
             return (choices.length <= 3 && type !== "module") ? segmentedComponent : dropdownComponent
@@ -170,7 +183,73 @@ FocusScope {
             return 0
         if (kind === "equalizer")
             return equalizerLoader.implicitHeight + 2 * VLCStyle.dp(6, VLCStyle.scale)
-        return Math.max(VLCStyle.dp(46, VLCStyle.scale), rowLayout.implicitHeight)
+        return _rowHeight + (moduleChips.active ? moduleChips.implicitHeight + VLCStyle.margin_small : 0)
+    }
+
+    readonly property real _rowHeight: Math.max(VLCStyle.dp(46, VLCStyle.scale), rowLayout.implicitHeight)
+
+    // Module lists (e.g. video filters): one chip per module, on = in the list
+    Loader {
+        id: moduleChips
+
+        active: root.available && root.kind === "" && root.type === "modulelist" && root.choices.length > 0
+        anchors { top: rowLayout.bottom; left: parent.left; right: parent.right }
+
+        sourceComponent: Flow {
+            id: chipFlow
+
+            spacing: VLCStyle.dp(4, VLCStyle.scale)
+
+            // "a:b" or "a,b" (some lists use commas, keep what is there)
+            readonly property string separator: String(root.value ?? "").indexOf(",") >= 0 ? "," : ":"
+            readonly property var entries: String(root.value ?? "").split(/[,:]/)
+                                                                   .map((e) => e.trim())
+                                                                   .filter((e) => e !== "")
+
+            function setModule(name, on) {
+                const list = entries.filter((e) => e.split("{")[0] !== name)
+                if (on)
+                    list.push(name)
+                root.write(list.join(separator))
+            }
+
+            Repeater {
+                model: root.choices
+
+                T.AbstractButton {
+                    id: chip
+
+                    required property var modelData
+
+                    readonly property bool isOn: chipFlow.entries.some((e) => e.split("{")[0] === modelData.value)
+
+                    implicitWidth: chipLabel.implicitWidth + 2 * VLCStyle.dp(10, VLCStyle.scale)
+                    implicitHeight: VLCStyle.dp(28, VLCStyle.scale)
+
+                    onClicked: chipFlow.setModule(modelData.value, !isOn)
+
+                    Accessible.role: Accessible.CheckBox
+                    Accessible.checked: isOn
+                    Accessible.name: modelData.text
+
+                    background: Rectangle {
+                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        color: chip.isOn ? root._selected
+                                       : (chip.hovered ? Qt.lighter(root._well, 1.3) : root._well)
+                        border.width: chip.visualFocus ? VLCStyle.focus_border : 0
+                        border.color: theme.visualFocus
+                    }
+                    contentItem: T.Label {
+                        id: chipLabel
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        text: chip.modelData.text
+                        font.pixelSize: VLCStyle.fontSize_normal
+                        color: chip.isOn ? theme.accent : root._text
+                    }
+                }
+            }
+        }
     }
 
     // the equalizer bands take the whole width (Figma "EQ")
@@ -219,12 +298,14 @@ FocusScope {
     RowLayout {
         id: rowLayout
 
-        anchors.fill: parent
+        anchors { top: parent.top; left: parent.left; right: parent.right }
+        height: root._rowHeight
         visible: root.kind !== "equalizer"
         spacing: VLCStyle.margin_normal
 
         RowLayout {
             Layout.fillWidth: true
+            visible: root.row.label !== ""
             spacing: VLCStyle.margin_xsmall
 
             T.Label {
@@ -283,6 +364,8 @@ FocusScope {
             id: controlLoader
 
             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+            // without a label, the control takes the whole row
+            Layout.fillWidth: root.row.label === ""
             focus: true
             active: root.available
             sourceComponent: root._control

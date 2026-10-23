@@ -127,7 +127,7 @@ QtObject {
             name: qsTr("Controls"), title: qsTr("Mouse, Keyboard & Remote Controls"), icon: VLCIcons.hotkeys,
             sections: [
                 { title: qsTr("Keyboard Shortcuts"), rows: [
-                    { label: qsTr("Edit keyboard shortcuts"), kind: "action", action: "openAdvancedSettings", buttonText: qsTr("Edit") }
+                    { label: qsTr("Edit keyboard shortcuts"), kind: "action", action: "openShortcuts", buttonText: qsTr("Edit") }
                 ]},
                 { title: qsTr("Skip Amounts"), rows: [
                     { label: qsTr("Very short skip"), option: "extrashort-jump-size", kind: "number", unit: "s" },

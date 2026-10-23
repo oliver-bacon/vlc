@@ -309,6 +309,14 @@ void DialogsProvider::settingsPageDialog(const QString& page)
         prefsDialog();
 }
 
+void DialogsProvider::allSettingsDialog()
+{
+    if (isSignalConnected(QMetaMethod::fromSignal(&DialogsProvider::showAllSettingsWindow)))
+        emit showAllSettingsWindow();
+    else
+        prefsDialog();
+}
+
 bool DialogsProvider::figmaDialog(const QString& name, const QVariant& args)
 {
     if (!isSignalConnected(QMetaMethod::fromSignal(&DialogsProvider::showFigmaDialog)))

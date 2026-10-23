@@ -102,6 +102,21 @@ public:
     /// ("Go to Source")
     Q_INVOKABLE QVariant browseNode(const QString& folderUrl) const;
 
+    /// "All Settings" window: VLC's categories in their usual order, as
+    /// { cat, name, icon, subcat (the category's own page),
+    ///   subcats: [{ subcat, name }] }
+    Q_INVOKABLE QVariantList settingsTree() const;
+    /// One page of the "All Settings" window:
+    /// { title, help, sections: [{ title, options }], modules: [{ name, text }] }
+    /// `options` are option names, "#hotkeys" stands for all hotkey options;
+    /// `modules` are the modules whose settings belong to this page
+    Q_INVOKABLE QVariantMap settingsPage(int subcat) const;
+    /// Settings of one module: { name, title, help, helpIsHtml, sections: [{ title, options }] }
+    Q_INVOKABLE QVariantMap moduleSettings(const QString& module) const;
+    /// Options whose name or description contains `text`:
+    /// [{ option, place }], at most `limit`
+    Q_INVOKABLE QVariantList searchSettings(const QString& text, int limit = 150) const;
+
     /// Interface state that is not a VLC option (for instance the items
     /// pinned to the library sidebar), kept in the Qt interface settings
     Q_INVOKABLE QVariant uiValue(const QString& key, const QVariant& defaultValue = {}) const;

@@ -28,8 +28,8 @@ import VLC.Widgets as Widgets
 // Settings window from the "VLC Redesign" Figma file: categories on the
 // left (App / Media / System), a search field, and the options of the
 // selected category on the right. Every change is saved immediately.
-// Options without a place here stay reachable through "All Settings…",
-// which opens the classic preferences dialog.
+// Options without a place here stay reachable through "All Settings…"
+// (AllSettingsWindow.qml).
 Window {
     id: root
 
@@ -68,7 +68,11 @@ Window {
     }
 
     function openAdvancedSettings() {
-        DialogsProvider.prefsDialog()
+        DialogsProvider.allSettingsDialog()
+    }
+
+    function openShortcuts() {
+        DialogsProvider.keyboardShortcutsDialog()
     }
 
     function openAddons() {
@@ -516,7 +520,7 @@ Window {
                             }
                         }
 
-                        // Links to the classic preferences for everything else
+                        // Links to every VLC option (AllSettingsWindow.qml)
                         RowLayout {
                             Layout.fillWidth: true
                             visible: !root.searching
