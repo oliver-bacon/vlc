@@ -853,6 +853,34 @@ static int strcmp_void(const void *a, const void *b)
     return strcmp(a, *entry);
 }
 
+/* Asks the display to take the format of the filter chain output (a new
+ * chroma or orientation), with a picture pool in that format */
+static int SetDisplayFormatFromFilters(vout_thread_sys_t *vout,
+                                       const video_format_t *fmt,
+                                       vlc_video_context *vctx)
+{
+    vout_thread_sys_t *sys = vout;
+    picture_pool_t *new_private_pool =
+            picture_pool_NewFromFormat(fmt, FILTER_POOL_SIZE);
+    if (new_private_pool == NULL)
+        return VLC_ENOMEM;
+
+    msg_Dbg(&vout->obj, "Changing vout format to %4.4s, orientation %d",
+                        (const char *) &fmt->i_chroma, (int) fmt->orientation);
+    int ret = vout_SetDisplayFormat(sys->display, fmt, vctx);
+    if (ret != VLC_SUCCESS)
+    {
+        picture_pool_Release(new_private_pool);
+        msg_Dbg(&vout->obj, "Changing vout format to %4.4s failed",
+                (const char *) &fmt->i_chroma);
+        return ret;
+    }
+    // update the pool
+    picture_pool_Release(sys->private_pool);
+    sys->private_pool = new_private_pool;
+    return VLC_SUCCESS;
+}
+
 static void ChangeFilters(vout_thread_sys_t *vout)
 {
     /* bsearch: must be sorted alphabetically */
@@ -954,6 +982,9 @@ static void ChangeFilters(vout_thread_sys_t *vout)
         vlc_array_clear(array);
     }
 
+    /* whether the display took the format of the filter chain output */
+    bool display_fmt_changed = false;
+
     if (!es_format_IsSimilar(p_fmt_current, &fmt_target)) {
         es_format_LogDifferences(vlc_object_logger(&vout->obj),
                 "current", p_fmt_current, "new", &fmt_target);
@@ -963,35 +994,19 @@ static void ChangeFilters(vout_thread_sys_t *vout)
         /* Assign the same chroma to compare everything except the chroma */
         tmp.i_codec = fmt_target.i_codec;
         tmp.video.i_chroma = fmt_target.video.i_chroma;
+        /* An orientation change (transform filter) also goes to the display,
+         * which can show the picture flipped or rotated (Direct3D11): no
+         * converter can rotate hardware decoded pictures */
+        tmp.video.orientation = fmt_target.video.orientation;
 
         int ret = VLC_EGENERIC;
 
         bool only_chroma_changed = es_format_IsSimilar(&tmp, &fmt_target);
         if (only_chroma_changed)
         {
-            picture_pool_t *new_private_pool =
-                    picture_pool_NewFromFormat(&p_fmt_current->video,
-                                               FILTER_POOL_SIZE);
-            if (new_private_pool != NULL)
-            {
-                msg_Dbg(&vout->obj, "Changing vout format to %4.4s",
-                                    (const char *) &p_fmt_current->video.i_chroma);
-                /* Only the chroma changed, request the vout to update the format */
-                ret = vout_SetDisplayFormat(sys->display, &p_fmt_current->video,
-                                            vctx_current);
-                if (ret != VLC_SUCCESS)
-                {
-                    picture_pool_Release(new_private_pool);
-                    msg_Dbg(&vout->obj, "Changing vout format to %4.4s failed",
-                            (const char *) &p_fmt_current->video.i_chroma);
-                }
-                else
-                {
-                    // update the pool
-                    picture_pool_Release(sys->private_pool);
-                    sys->private_pool = new_private_pool;
-                }
-            }
+            ret = SetDisplayFormatFromFilters(vout, &p_fmt_current->video,
+                                              vctx_current);
+            display_fmt_changed = ret == VLC_SUCCESS;
         }
 
         if (ret != VLC_SUCCESS)
@@ -1007,6 +1022,12 @@ static void ChangeFilters(vout_thread_sys_t *vout)
             }
         }
     }
+
+    /* The pictures reach the display in the source format again: undo the
+     * orientation an earlier filter chain gave to the display */
+    if (!display_fmt_changed
+     && sys->display->source->orientation != fmt_target.video.orientation)
+        SetDisplayFormatFromFilters(vout, &fmt_target.video, vctx_target);
 
     es_format_Clean(&fmt_target);
 
