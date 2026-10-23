@@ -676,8 +676,20 @@ QString OpenSubtitles::defaultLanguage() const
         if (!saved.isEmpty())
             return saved;
     }
-    // the UI language: "pt-BR" -> "pt-br", "de-DE" -> "de"
-    const QString ui = QLocale().uiLanguages().value(0, QStringLiteral("en")).toLower();
+    // the system's language: "pt-BR" -> "pt-br", "de-DE" -> "de". The "C"
+    // locale (e.g. LANG=C.UTF-8) names no language: English then.
+    QString ui;
+    for (const QString& entry : QLocale::system().uiLanguages())
+    {
+        const QString language = entry.toLower();
+        if (language.isEmpty() || language == QLatin1String("c") || language.startsWith(QLatin1String("c-"))
+            || language.startsWith(QLatin1String("c."))  || language == QLatin1String("posix"))
+            continue;
+        ui = language;
+        break;
+    }
+    if (ui.isEmpty())
+        return QStringLiteral("en");
     if (ui.startsWith(QLatin1String("pt")))
         return ui.contains(QLatin1String("br")) ? QStringLiteral("pt-br") : QStringLiteral("pt-pt");
     if (ui.startsWith(QLatin1String("zh")))
