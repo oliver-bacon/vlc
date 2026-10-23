@@ -49,6 +49,9 @@ public:
     /// video filter modules ("adjust", "sharpen", "invert"...)
     Q_INVOKABLE bool videoFilterEnabled(const QString& module) const;
     Q_INVOKABLE void setVideoFilterEnabled(const QString& module, bool enabled);
+    /// whole filter chains ("module:module"), for the presets of the panel
+    Q_INVOKABLE QString filterChain(bool audio) const;
+    Q_INVOKABLE void setFilterChain(bool audio, const QString& chain);
 
     /// filter options: current value (live object first, then config)
     Q_INVOKABLE QVariant audioValue(const QString& option) const;

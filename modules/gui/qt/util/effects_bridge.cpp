@@ -198,6 +198,25 @@ void EffectsBridge::applyVideoFilters(const QStringList& list, bool restart)
     }
 }
 
+QString EffectsBridge::filterChain(bool audio) const
+{
+    return chainOf(audio ? "audio-filter" : "video-filter").join(':');
+}
+
+void EffectsBridge::setFilterChain(bool audio, const QString& chain)
+{
+    const QStringList list = chain.split(':', Qt::SkipEmptyParts);
+    if (!audio)
+    {
+        applyVideoFilters(list, true);
+        return;
+    }
+    putConfig(QStringLiteral("audio-filter"), list.join(':'));
+    // the audio output rebuilds its filters when the variable is set
+    if (SharedAOut aout = m_intf->p_mainPlayerController->getAout())
+        var_SetString(aout.get(), "audio-filter", qtu(list.join(':')));
+}
+
 QVariant EffectsBridge::audioValue(const QString& option) const
 {
     const QByteArray name = option.toUtf8();

@@ -152,10 +152,10 @@ PlayerSidePopup {
                 currentIndex: root.currentTab
                 implicitHeight: children[currentIndex]?.implicitHeight ?? 0
 
-                PlaybackPage {}
-                VideoPage {}
-                AudioPage {}
-                SubtitlesPage {}
+                Loader { active: root.pagesActive; sourceComponent: Component { PlaybackPage {} } }
+                Loader { active: root.pagesActive; sourceComponent: Component { VideoPage {} } }
+                Loader { active: root.pagesActive; sourceComponent: Component { AudioPage {} } }
+                Loader { active: root.pagesActive; sourceComponent: Component { SubtitlesPage {} } }
             }
         }
 
@@ -164,6 +164,14 @@ PlayerSidePopup {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
             color: root.dividerColor
+        }
+
+        PresetBar {
+            id: presetBar
+            Layout.fillWidth: true
+            Layout.leftMargin: 20 * root.dp1
+            Layout.rightMargin: 20 * root.dp1
+            Layout.topMargin: 14 * root.dp1
         }
 
         T.Button {
@@ -587,8 +595,6 @@ PlayerSidePopup {
             }
         }
 
-        // video 8:30: the subtitle settings saved as presets (per show)
-        SubtitlePresetCard { Layout.topMargin: 6 * root.dp1 }
     }
 
     // ---- subtitle settings: size values, presets ------------------------
@@ -600,6 +606,7 @@ PlayerSidePopup {
     property int textScale: 100
 
     onOpened: textScale = Player.getSubtitleTextScale()
+    onClosed: presetBar.listOpen = false
 
     function setTextScale(v) {
         textScale = Math.max(10, Math.min(500, v))
@@ -614,44 +621,171 @@ PlayerSidePopup {
         configRevision++
     }
 
-    readonly property var presetOptions: ["freetype-font", "freetype-color", "freetype-outline-color",
-                                          "freetype-outline-thickness", "freetype-background-opacity",
-                                          "sub-margin", "sub-language"]
+    // ---- presets: all settings of the panel, saved under a name ---------
 
-    function loadPresets() {
+    // video 8:30: "save all these settings for this specific show through a
+    // preset and then later you just select whatever preset you want".
+    // Leaving a preset keeps the settings it had in it; "Default Preset" is
+    // the settings used without a preset.
+
+    // plain options, options of the audio output, options of the video output
+    readonly property var configPresetOptions: [
+        "freetype-font", "freetype-color", "freetype-outline-color", "freetype-outline-thickness",
+        "freetype-background-opacity", "sub-margin", "sub-language", "sub-track",
+        "audio-track", "audio-language", "d3d11-hdr-mode", "preferred-resolution"]
+    readonly property var audioPresetOptions: [
+        "stereo-mode", "equalizer-preamp", "equalizer-bands", "equalizer-preset", "equalizer-2pass",
+        "compressor-rms-peak", "compressor-attack", "compressor-release", "compressor-threshold",
+        "compressor-ratio", "compressor-knee", "compressor-makeup-gain",
+        "spatializer-roomsize", "spatializer-width", "spatializer-wet", "spatializer-dry", "spatializer-damp",
+        "stereowiden-delay", "stereowiden-feedback", "stereowiden-crossfeed", "stereowiden-dry-mix"]
+    readonly property var videoPresetOptions: [
+        "hue", "brightness", "contrast", "saturation", "gamma", "sharpen-sigma", "gradfun-radius",
+        "grain-variance", "extract-component", "colorthres-color", "colorthres-saturationthres",
+        "colorthres-similaritythres", "gradient-mode", "gradient-color", "gradient-cartoon", "sepia-intensity"]
+
+    function _loadJson(key, fallback) {
         try {
-            const list = JSON.parse(VLCConfig.uiValue("Player/SubtitlePresets", "[]"))
-            return Array.isArray(list) ? list : []
+            const value = JSON.parse(String(VLCConfig.uiValue(key, "")))
+            return value ?? fallback
         } catch (e) {
-            return []
+            return fallback
         }
     }
 
-    function savePresets(list) {
-        VLCConfig.setUiValue("Player/SubtitlePresets", JSON.stringify(list))
+    // the subtitle presets of earlier versions become presets of the panel
+    property var presets: {
+        const list = _loadJson("Player/Presets", null) ?? _loadJson("Player/SubtitlePresets", [])
+        return Array.isArray(list) ? list : []
+    }
+    property var defaultPreset: _loadJson("Player/DefaultPreset", null)
+    property string activePreset: {
+        const name = String(VLCConfig.uiValue("Player/Preset", VLCConfig.uiValue("Player/SubtitlePreset", "")))
+        return presets.some((p) => p.name === name) ? name : ""
     }
 
-    function currentSubtitleSettings(name) {
+    // the pages read their values when they are created: they are created
+    // again after a preset changed the settings
+    property bool pagesActive: true
+
+    function currentSettings(name) {
         const values = {}
-        for (const option of presetOptions)
+        for (const option of configPresetOptions)
             if (VLCConfig.exists(option))
                 values[option] = VLCConfig.value(option)
-        return { "name": name, "values": values, "textScale": textScale,
-                 "delay": Player.subtitleDelayMS, "sizeValues": subtitleSizeScale ? "scale" : "relative" }
+        for (const option of audioPresetOptions)
+            if (VLCConfig.exists(option))
+                values[option] = VLCEffects.audioValue(option)
+        for (const option of videoPresetOptions)
+            if (VLCConfig.exists(option))
+                values[option] = VLCEffects.videoValue(option)
+        const orientation = VLCEffects.orientation()
+        return { "name": name, "values": values,
+                 "audioFilters": VLCEffects.filterChain(true), "videoFilters": VLCEffects.filterChain(false),
+                 "flip": orientation.flip, "angle": orientation.angle,
+                 "textScale": textScale, "sizeValues": subtitleSizeScale ? "scale" : "relative",
+                 "delay": Player.subtitleDelayMS, "audioDelay": Player.audioDelayMS }
     }
 
     function applyPreset(preset) {
-        for (const option in preset.values)
-            if (VLCConfig.exists(option))
-                VLCConfig.setValue(option, preset.values[option])
+        const values = preset.values ?? {}
+        for (const option in values) {
+            if (!VLCConfig.exists(option))
+                continue
+            if (audioPresetOptions.includes(option))
+                VLCEffects.setAudioValue(option, values[option])
+            else if (videoPresetOptions.includes(option))
+                VLCEffects.setVideoValue(option, values[option])
+            else
+                VLCConfig.setValue(option, values[option])
+        }
+        if (preset.audioFilters !== undefined)
+            VLCEffects.setFilterChain(true, preset.audioFilters)
+        if (preset.videoFilters !== undefined)
+            VLCEffects.setFilterChain(false, preset.videoFilters)
+        if (preset.flip !== undefined)
+            VLCEffects.setOrientation(preset.flip, preset.angle ?? 0)
         if (preset.textScale !== undefined)
             setTextScale(preset.textScale)
         if (preset.delay !== undefined)
             Player.subtitleDelayMS = preset.delay
-        subtitleSizeScale = preset.sizeValues === "scale"
-        VLCConfig.setUiValue("Player/SubtitleSizeValues", preset.sizeValues ?? "relative")
-        VLCConfig.setUiValue("Player/SubtitlePreset", preset.name)
+        if (preset.audioDelay !== undefined)
+            Player.audioDelayMS = preset.audioDelay
+        if (preset.sizeValues !== undefined) {
+            subtitleSizeScale = preset.sizeValues === "scale"
+            VLCConfig.setUiValue("Player/SubtitleSizeValues", preset.sizeValues)
+        }
         configRevision++
+        pagesActive = false
+        pagesActive = true
+    }
+
+    function _savePresets(list) {
+        presets = list
+        VLCConfig.setUiValue("Player/Presets", JSON.stringify(list))
+    }
+
+    function _setActive(name) {
+        activePreset = name
+        VLCConfig.setUiValue("Player/Preset", name)
+    }
+
+    // keeps the current settings in the preset that is left
+    function _storeActive() {
+        if (activePreset === "") {
+            defaultPreset = currentSettings("")
+            VLCConfig.setUiValue("Player/DefaultPreset", JSON.stringify(defaultPreset))
+        } else {
+            _savePresets(presets.map((p) => p.name === activePreset ? currentSettings(p.name) : p))
+        }
+    }
+
+    // "" chooses "Default Preset"
+    function choosePreset(name) {
+        if (name === activePreset)
+            return
+        _storeActive()
+        const preset = name === "" ? defaultPreset : presets.find((p) => p.name === name)
+        if (preset)
+            applyPreset(preset)
+        _setActive(name)
+    }
+
+    function newPresetName() {
+        for (let i = 1; ; ++i) {
+            const name = qsTr("Custom Preset %1").arg(String(i).padStart(2, "0"))
+            if (!presets.some((p) => p.name === name))
+                return name
+        }
+    }
+
+    // a new preset with the current settings
+    function addPreset() {
+        _storeActive()
+        const name = newPresetName()
+        _savePresets(presets.concat([currentSettings(name)]))
+        _setActive(name)
+        return name
+    }
+
+    function renamePreset(oldName, newName) {
+        newName = newName.trim()
+        if (newName === "" || newName === oldName || presets.some((p) => p.name === newName))
+            return false
+        _savePresets(presets.map((p) => p.name === oldName ? Object.assign({}, p, { "name": newName }) : p))
+        if (activePreset === oldName)
+            _setActive(newName)
+        return true
+    }
+
+    // deleting the active preset goes back to "Default Preset"
+    function deletePreset(name) {
+        _savePresets(presets.filter((p) => p.name !== name))
+        if (activePreset === name) {
+            if (defaultPreset)
+                applyPreset(defaultPreset)
+            _setActive("")
+        }
     }
 
     // ===================================================================
@@ -1055,86 +1189,134 @@ PlayerSidePopup {
 
     // preset of the subtitle settings: name and chevron, a menu to apply,
     // save, rename or delete presets
-    component SubtitlePresetCard: Rectangle {
-        id: pc
-        property var presets: root.loadPresets()
-        property string current: String(VLCConfig.uiValue("Player/SubtitlePreset", ""))
-        readonly property bool hasCurrent: presets.some((p) => p.name === current)
+    // footer bar of the presets (Figma "Setting Preset"): the active preset;
+    // above it the list with "New Preset", the presets (with a "…" menu to
+    // rename or delete them) and "Default Preset" at the bottom
+    component PresetBar: Rectangle {
+        id: bar
+        property bool listOpen: false
+        property string editing: ""     // preset being renamed
+        property string menuTarget: ""  // preset of the open "…" menu
 
-        Layout.fillWidth: true
+        z: 10
         implicitHeight: 40 * root.dp1
         radius: 4 * root.dp1
-        color: pcMouse.hovered ? root.cardColor : root.tabsColor
+        color: barArea.containsMouse ? root.tabsColor : root.wellColor
+        onListOpenChanged: if (!listOpen) editing = ""
 
-        function _newName() {
-            for (let i = 1; ; ++i) {
-                const name = qsTr("Custom Preset %1").arg(String(i).padStart(2, "0"))
-                if (!presets.some((p) => p.name === name))
-                    return name
-            }
+        // closes the list on a click elsewhere in the panel
+        MouseArea {
+            readonly property point origin: bar.listOpen ? bar.mapToItem(root.contentItem, 0, 0) : Qt.point(0, 0)
+            visible: bar.listOpen
+            x: -origin.x
+            y: -origin.y
+            width: root.contentItem.width
+            height: root.contentItem.height
+            onClicked: bar.listOpen = false
         }
 
-        function _store(list) {
-            root.savePresets(list)
-            presets = list
+        MouseArea {
+            id: barArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: bar.listOpen = !bar.listOpen
         }
-
-        HoverHandler { id: pcMouse }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10 * root.dp1
-            anchors.rightMargin: 10 * root.dp1
-
-            T.TextField {
-                id: nameField
+            anchors.leftMargin: 14 * root.dp1
+            anchors.rightMargin: 14 * root.dp1
+            Text {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                verticalAlignment: TextInput.AlignVCenter
-                readOnly: !pc.hasCurrent
-                color: pc.hasCurrent ? root.titleColor : root.textColor
-                selectionColor: root.accentSurface
+                text: root.activePreset !== "" ? root.activePreset : qsTr("Default Preset")
+                color: root.titleColor
                 font.pixelSize: 13 * root.dp1
-                text: pc.hasCurrent ? pc.current : qsTr("No Subtitle Preset")
-                background: null
-                // rename the current preset
-                onEditingFinished: {
-                    const name = text.trim()
-                    if (!pc.hasCurrent || name === "" || name === pc.current
-                            || pc.presets.some((p) => p.name === name)) {
-                        text = Qt.binding(() => pc.hasCurrent ? pc.current : qsTr("No Subtitle Preset"))
-                        return
-                    }
-                    pc._store(pc.presets.map((p) => p.name === pc.current ? Object.assign({}, p, { "name": name }) : p))
-                    VLCConfig.setUiValue("Player/SubtitlePreset", name)
-                    pc.current = name
-                }
+                elide: Text.ElideRight
             }
+            Text {
+                font.family: VLCIcons.fontFamily
+                font.pixelSize: 13 * root.dp1
+                text: bar.listOpen ? VLCIcons.chevron_down : VLCIcons.chevron_up
+                color: root.textColor
+            }
+        }
 
-            T.Button {
-                id: pcChevron
-                implicitWidth: 28 * root.dp1
-                implicitHeight: 28 * root.dp1
-                background: null
-                contentItem: Text {
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.family: VLCIcons.fontFamily
-                    font.pixelSize: 13 * root.dp1
-                    text: VLCIcons.chevron_down
-                    color: root.textColor
-                }
-                Accessible.name: qsTr("Subtitle presets")
-                onClicked: {
-                    const items = pc.presets.map((p) => ({ "text": p.name, "checked": p.name === pc.current }))
-                    if (items.length > 0)
-                        items.push({ "separator": true })
-                    items.push({ "text": qsTr("Save as New Preset") })
-                    if (pc.hasCurrent) {
-                        items.push({ "text": qsTr("Update \"%1\"").arg(pc.current) })
-                        items.push({ "text": qsTr("Delete \"%1\"").arg(pc.current) })
+        Accessible.role: Accessible.ComboBox
+        Accessible.name: qsTr("Preset")
+
+        Rectangle {
+            id: presetList
+            visible: bar.listOpen
+            width: bar.width
+            height: listColumn.implicitHeight + 2
+            y: -height - 6 * root.dp1
+            radius: 4 * root.dp1
+            color: root.panelColor
+            border.width: 1
+            border.color: root.dividerColor
+            clip: true
+
+            Column {
+                id: listColumn
+                x: 1
+                y: 1
+                width: parent.width - 2
+
+                Flickable {
+                    width: parent.width
+                    // room for the tabs above
+                    height: Math.min(presetRows.implicitHeight,
+                                     Math.max(80 * root.dp1, bar.mapToItem(root.contentItem, 0, 0).y - 140 * root.dp1))
+                    contentHeight: presetRows.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
+                    clip: true
+
+                    Column {
+                        id: presetRows
+                        width: parent.width
+
+                        PresetRow {
+                            width: presetRows.width
+                            icon: VLCIcons.add
+                            text: qsTr("New Preset")
+                            onClicked: bar.editing = root.addPreset()
+                        }
+                        Repeater {
+                            model: root.presets
+                            delegate: PresetRow {
+                                required property var modelData
+                                width: presetRows.width
+                                text: modelData.name
+                                menu: true
+                                checked: modelData.name === root.activePreset
+                                editing: bar.editing === modelData.name
+                                onClicked: {
+                                    root.choosePreset(modelData.name)
+                                    bar.listOpen = false
+                                }
+                                onMenuClicked: (button) => {
+                                    bar.menuTarget = modelData.name
+                                    presetMenu.popup(button.mapToGlobal(0, button.height + 4 * root.dp1),
+                                                     [{ "text": qsTr("Rename") }, { "text": qsTr("Delete") }])
+                                }
+                                onRenamed: (name) => {
+                                    root.renamePreset(modelData.name, name)
+                                    bar.editing = ""
+                                }
+                            }
+                        }
                     }
-                    presetMenu.popup(pc.mapToGlobal(0, pc.height + 4 * root.dp1), items)
+                }
+
+                PresetRow {
+                    width: listColumn.width
+                    color: hovered ? root.tabsColor : root.cardColor
+                    text: qsTr("Default Preset")
+                    checked: root.activePreset === ""
+                    onClicked: {
+                        root.choosePreset("")
+                        bar.listOpen = false
+                    }
                 }
             }
         }
@@ -1143,26 +1325,113 @@ PlayerSidePopup {
             id: presetMenu
             ctx: MainCtx
             onSelected: (index, _) => {
-                const n = pc.presets.length
-                if (index < n) {
-                    root.applyPreset(pc.presets[index])
-                    pc.current = pc.presets[index].name
-                    return
+                if (index === 0)
+                    bar.editing = bar.menuTarget
+                else if (index === 1)
+                    root.deletePreset(bar.menuTarget)
+            }
+        }
+    }
+
+    // row of the preset list: "…" button or icon, name (editable while it
+    // is renamed), check mark of the active preset
+    component PresetRow: Rectangle {
+        id: row
+        property string text
+        property string icon: ""
+        property bool menu: false
+        property bool checked: false
+        property bool editing: false
+        readonly property bool hovered: rowArea.containsMouse
+        signal clicked()
+        signal menuClicked(Item button)
+        signal renamed(string name)
+
+        implicitHeight: 40 * root.dp1
+        color: hovered ? root.cardColor : "transparent"
+        function _startEditing() {
+            nameEdit.text = row.text
+            nameEdit.selectAll()
+            nameEdit.forceActiveFocus()
+        }
+        onEditingChanged: if (editing) _startEditing()
+        // a new preset is created while it is renamed
+        Component.onCompleted: if (editing) _startEditing()
+
+        MouseArea {
+            id: rowArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: if (!row.editing) row.clicked()
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14 * root.dp1
+            anchors.rightMargin: 16 * root.dp1
+            spacing: 8 * root.dp1
+
+            T.Button {
+                id: menuButton
+                visible: row.menu
+                implicitWidth: 24 * root.dp1
+                implicitHeight: 24 * root.dp1
+                background: Rectangle {
+                    radius: 3 * root.dp1
+                    color: menuButton.hovered ? root.wellColor : "transparent"
                 }
-                // the separator is not counted by the menu
-                const action = index - n
-                if (action === 0) {
-                    const name = pc._newName()
-                    pc._store(pc.presets.concat([root.currentSubtitleSettings(name)]))
-                    VLCConfig.setUiValue("Player/SubtitlePreset", name)
-                    pc.current = name
-                } else if (action === 1) {
-                    pc._store(pc.presets.map((p) => p.name === pc.current ? root.currentSubtitleSettings(p.name) : p))
-                } else if (action === 2) {
-                    pc._store(pc.presets.filter((p) => p.name !== pc.current))
-                    VLCConfig.setUiValue("Player/SubtitlePreset", "")
-                    pc.current = ""
+                contentItem: Text {
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.family: VLCIcons.fontFamily
+                    font.pixelSize: 14 * root.dp1
+                    text: VLCIcons.ellipsis
+                    color: menuButton.hovered ? root.titleColor : root.textColor
                 }
+                Accessible.name: qsTr("Preset options")
+                onClicked: row.menuClicked(menuButton)
+            }
+            Text {
+                visible: row.icon !== ""
+                Layout.preferredWidth: 24 * root.dp1
+                horizontalAlignment: Text.AlignHCenter
+                font.family: VLCIcons.fontFamily
+                font.pixelSize: 14 * root.dp1
+                text: row.icon
+                color: row.hovered ? root.titleColor : root.textColor
+            }
+            Text {
+                visible: !row.editing
+                Layout.fillWidth: true
+                text: row.text
+                color: row.checked || row.hovered ? root.titleColor : root.textColor
+                font.pixelSize: 13 * root.dp1
+                elide: Text.ElideRight
+            }
+            T.TextField {
+                id: nameEdit
+                visible: row.editing
+                Layout.fillWidth: true
+                implicitHeight: 28 * root.dp1
+                leftPadding: 6 * root.dp1
+                verticalAlignment: TextInput.AlignVCenter
+                color: root.titleColor
+                selectionColor: root.accentSurface
+                font.pixelSize: 13 * root.dp1
+                background: Rectangle {
+                    radius: 4 * root.dp1
+                    color: root.wellColor
+                    border.width: 1
+                    border.color: root.accentColor
+                }
+                onEditingFinished: if (row.editing) row.renamed(text)
+            }
+            Text {
+                visible: row.checked
+                font.family: VLCIcons.fontFamily
+                font.pixelSize: 14 * root.dp1
+                text: VLCIcons.check
+                color: root.accentColor
             }
         }
     }
