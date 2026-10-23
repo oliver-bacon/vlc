@@ -34,7 +34,7 @@ T.Control {
     width: Math.round(VLCStyle.dp(360, VLCStyle.scale))
     height: Math.round(cardColumn.implicitHeight + 2 * cardPadding)
 
-    readonly property real cardPadding: VLCStyle.dp(6, VLCStyle.scale)
+    readonly property real cardPadding: VLCStyle.dp(9, VLCStyle.scale)
     padding: cardPadding
     readonly property bool dark: VLCStyle.palette?.isDark ?? true
     readonly property real videoRadius: VLCStyle.dp(5, VLCStyle.scale)
@@ -301,24 +301,38 @@ T.Control {
             }
         }
 
-        // progress
+        // progress (Figma "Miniplayer"): 16 px track, 1 px wider than the
+        // video on each side and 5 px below it; the fill is inset by 2 px;
+        // the 8 x 12 knob only shows while the card is hovered
         Rectangle {
+            id: progressTrack
+
+            readonly property real inset: VLCStyle.dp(2, VLCStyle.scale)
+            readonly property real fillWidth: width - 2 * inset
+
             Layout.fillWidth: true
-            Layout.preferredHeight: VLCStyle.dp(8, VLCStyle.scale)
-            radius: height / 2
+            Layout.preferredHeight: VLCStyle.dp(16, VLCStyle.scale)
+            Layout.leftMargin: -VLCStyle.dp(1, VLCStyle.scale)
+            Layout.rightMargin: -VLCStyle.dp(1, VLCStyle.scale)
+            Layout.topMargin: VLCStyle.dp(5, VLCStyle.scale) - cardColumn.spacing
+            radius: VLCStyle.dp(6, VLCStyle.scale)
             color: root.trackColor
 
             Rectangle {
-                width: Math.max(height, parent.width * Player.position)
-                height: parent.height
-                radius: parent.radius
+                x: progressTrack.inset
+                y: progressTrack.inset
+                width: Math.max(2 * radius, progressTrack.fillWidth * Player.position)
+                height: parent.height - 2 * progressTrack.inset
+                radius: VLCStyle.dp(4, VLCStyle.scale)
                 color: root.dark ? VLCStyle.palette.accentBrightDark : VLCStyle.palette.accentBrightLight
             }
             Rectangle {
-                x: Math.max(0, parent.width * Player.position - width)
-                width: VLCStyle.dp(4, VLCStyle.scale)
-                height: parent.height
-                radius: width / 2
+                visible: root.cardHovered
+                x: progressTrack.inset + Math.max(0, progressTrack.fillWidth * Player.position - width)
+                y: progressTrack.inset
+                width: VLCStyle.dp(8, VLCStyle.scale)
+                height: parent.height - 2 * progressTrack.inset
+                radius: VLCStyle.dp(4, VLCStyle.scale)
                 color: VLCStyle.palette.orange500
             }
         }
