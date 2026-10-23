@@ -1521,6 +1521,11 @@ static void *ThreadCleanup( qt_intf_t *p_intf, CleanupReason cleanupReason )
         p_intf->p_mi = nullptr;
     }
 
+    /* QML objects of the unloaded interface that were deleted later (queue
+     * models of the player bar...) still listen to the playlist: delete them
+     * now, the core deletes the playlist once the interface is closed */
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+
     if ( p_intf->p_compositor &&  cleanupReason == CLEANUP_APP_TERMINATED)
     {
         p_intf->p_compositor.reset();
