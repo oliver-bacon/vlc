@@ -1043,6 +1043,8 @@ PlayerSidePopup {
         Layout.fillWidth: true
         implicitHeight: (tickLabels.length > 0 ? 41 : 24) * root.dp1
         live: true
+        // the handle jumps from step to step instead of sliding between them
+        snapMode: T.Slider.SnapAlways
 
         background: Item {
             Rectangle {
