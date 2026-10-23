@@ -37,6 +37,11 @@ PlayerSidePopup {
 
     property int currentTab: 2 // Audio, as in the design
 
+    // music: no Video and Subtitles tabs (as Player.qml's _audioOnly). The
+    // chosen tab is kept, the Audio tab shows meanwhile.
+    readonly property bool audioOnly: Player.audioTracks.count > 0 && Player.videoTracks.count === 0
+    readonly property int shownTab: (audioOnly && (currentTab === 1 || currentTab === 3)) ? 2 : currentTab
+
     defaultHeight: Math.min(VLCStyle.dp(640, VLCStyle.scale), (parent?.Window.height ?? 800) - VLCStyle.dp(144, VLCStyle.scale)) // 120 + the gap above the bar
     padding: 0
     modal: false
@@ -114,7 +119,8 @@ PlayerSidePopup {
 
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        checked: root.currentTab === index
+                        visible: !root.audioOnly || index === 0 || index === 2
+                        checked: root.shownTab === index
                         onClicked: root.currentTab = index
 
                         background: Rectangle {
@@ -184,7 +190,7 @@ PlayerSidePopup {
                     id: pages
 
                     Layout.fillWidth: true
-                    currentIndex: root.currentTab
+                    currentIndex: root.shownTab
                     Layout.preferredHeight: children[currentIndex]?.implicitHeight ?? 0
 
                     Loader { active: root.pagesActive; sourceComponent: Component { PlaybackPage {} } }
@@ -201,7 +207,7 @@ PlayerSidePopup {
                     flat: true
                     glyph: VLCIcons.history
                     text: qsTr("Restore Defaults")
-                    onClicked: root.restoreDefaults(root.currentTab)
+                    onClicked: root.restoreDefaults(root.shownTab)
                 }
             }
         }
@@ -229,7 +235,7 @@ PlayerSidePopup {
             text: qsTr("Open Advanced Settings")
             // the settings window on the page of the current tab
             onClicked: {
-                const page = ["playback", "video", "audio", "subtitles"][root.currentTab] ?? "playback"
+                const page = ["playback", "video", "audio", "subtitles"][root.shownTab] ?? "playback"
                 root.close()
                 DialogsProvider.settingsPageDialog(page)
             }
@@ -303,6 +309,7 @@ PlayerSidePopup {
             // VLC Redesign: subtitle lines on the seek bar (read by
             // SliderBar.qml); works with subtitle files, not embedded tracks
             label: qsTr("Show Subtitle Timeline on Seekbar")
+            visible: !root.audioOnly
             Switch {
                 checked: String(VLCConfig.uiValue("Player/SubtitleTimeline", false)) === "true"
                 onToggled: VLCConfig.setUiValue("Player/SubtitleTimeline", checked)

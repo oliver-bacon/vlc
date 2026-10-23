@@ -144,6 +144,7 @@ decltype (ControlbarProfileModel::m_defaults)
                                     ControlListModel::FAVORITE_BUTTON,
                                     ControlListModel::VOLUME,
                                     ControlListModel::AUDIO_TRACKS_BUTTON,
+                                    ControlListModel::EXTENDED_BUTTON,
                                     ControlListModel::PLAYLIST_BUTTON
                                 }
                             }
@@ -579,9 +580,10 @@ static const PlayerControlbarModel::Data defaultTopbar {
 // Settings key: version of the saved layouts (VLC Redesign): 1 = they have
 // the SEEK_BAR control, 2 = the centered video bar of 1 is back to one row,
 // 3 = the seek bar can be anywhere: a bar without it in its left, center or
-// right part has it in the row above (top)
+// right part has it in the row above (top), 4 = the "Modern Style" music bar
+// has the playback settings button
 constexpr QLatin1String SETTINGS_KEY_SEEKBAR {"SeekBarControl"};
-constexpr int SEEKBAR_LAYOUT_VERSION = 3;
+constexpr int SEEKBAR_LAYOUT_VERSION = 4;
 
 static bool hasSeekBar(const PlayerControlbarModel::Data& data)
 {
@@ -993,14 +995,25 @@ bool ControlbarProfileModel::reload()
             // version 1 had the "Modern Style" video controls in the middle
             // with the seek bar above: back to one row
             auto video = ptrNewProfile->getModelData(PlayerControlbarModel::Videoplayer);
-            if (ptrNewProfile->name() == qfut("Modern Style") && video[0].isEmpty() && video[1] == playback)
+            if (layoutVersion < 2 && ptrNewProfile->name() == qfut("Modern Style") && video[0].isEmpty() && video[1] == playback)
             {
                 video[0] = playback;
                 video[1] = { ControlListModel::SEEK_BAR };
                 ptrNewProfile->setModelData(PlayerControlbarModel::Videoplayer, video);
             }
             // before version 3 a bar without the seek bar in it had it above
-            addSeekBar(ptrNewProfile);
+            if (layoutVersion < 3)
+                addSeekBar(ptrNewProfile);
+            // before version 4 the "Modern Style" music bar had no playback
+            // settings button: add it when the bar was not changed
+            auto music = ptrNewProfile->getModelData(PlayerControlbarModel::Audioplayer);
+            const QVector<int> oldMusicRight { ControlListModel::FAVORITE_BUTTON, ControlListModel::VOLUME,
+                                               ControlListModel::AUDIO_TRACKS_BUTTON, ControlListModel::PLAYLIST_BUTTON };
+            if (ptrNewProfile->name() == qfut("Modern Style") && music[2] == oldMusicRight)
+            {
+                music[2].insert(3, ControlListModel::EXTENDED_BUTTON);
+                ptrNewProfile->setModelData(PlayerControlbarModel::Audioplayer, music);
+            }
             ptrNewProfile->resetDirty();
         }
 
