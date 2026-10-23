@@ -44,12 +44,22 @@ PlayerSidePopup {
 
     // Figma tokens (dark), light palette tokens otherwise
     readonly property bool dark: VLCStyle.palette?.isDark ?? true
-    readonly property color panelColor: dark ? "#191919" : "#E7E7E7"
-    readonly property color tabsColor: dark ? "#151515" : "#DEDEDE"
+    // Dark/BG/B1 at 95 %, tab bar Dark/BG/B2 (Figma player settings panel)
+    readonly property color panelColor: dark ? Qt.rgba(14 / 255, 14 / 255, 14 / 255, 0.95) : "#E7E7E7"
+    readonly property color tabsColor: dark ? "#090909" : "#DEDEDE"
     readonly property color cardColor: dark ? "#1F1F1F" : "#DEDEDE"
     readonly property color wellColor: dark ? "#090909" : "#F4F4F4"
+    readonly property color wellHoverColor: dark ? "#0E0E0E" : "#FAFAFA"
+    // text box ring, dropdown fill (Dark/BG/A4); open card (Dark/BG/A3)
+    readonly property color ringColor: dark ? "#191919" : "#DEDEDE"
+    readonly property color openCardColor: dark ? "#1B1B1B" : "#DEDEDE"
+    // value boxes of the design: 138 x 34 with a 2 px ring
+    readonly property real fieldWidth: 140 * root.dp1
+    readonly property real fieldHeight: 36 * root.dp1
     readonly property color dividerColor: dark ? "#222222" : "#ACACAC"
     readonly property color titleColor: dark ? "#C6C6C6" : "#161616"
+    // section titles of the Figma panel (16 px #969696)
+    readonly property color sectionColor: dark ? "#969696" : "#2E2E2E"
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
     readonly property color dimColor: "#6B6B6B"
     readonly property color faintColor: dark ? "#404040" : "#9B9B9B"
@@ -143,8 +153,8 @@ PlayerSidePopup {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: tab.modelData.text
-                                font.pixelSize: 13 * root.dp1
-                                color: tab.checked ? root.titleColor : root.dimColor
+                                font.pixelSize: 12 * root.dp1
+                                color: tab.checked ? root.textColor : root.dimColor
                             }
                         }
                     }
@@ -192,31 +202,37 @@ PlayerSidePopup {
             Layout.topMargin: 14 * root.dp1
         }
 
+        // Figma "Button": full-width bar, Dark/BG/B2, Dark/BG/A4 on hover
         T.Button {
             id: advanced
 
-            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
+            Layout.leftMargin: 20 * root.dp1
+            Layout.rightMargin: 20 * root.dp1
             Layout.topMargin: 6 * root.dp1
             Layout.bottomMargin: 8 * root.dp1
-            // T.Button has no implicit width of its own: without it the
-            // layout centres a zero-wide button and the text hangs right
-            implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
             implicitHeight: 32 * root.dp1
-            background: null
-            contentItem: Row {
-                spacing: 8 * root.dp1
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    font.family: VLCIcons.fontFamily
-                    font.pixelSize: 14 * root.dp1
-                    text: VLCIcons.settings
-                    color: advanced.hovered ? root.titleColor : root.textColor
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: qsTr("Open Advanced Settings")
-                    font.pixelSize: 13 * root.dp1
-                    color: advanced.hovered ? root.titleColor : root.textColor
+            background: Rectangle {
+                radius: 4 * root.dp1
+                color: advanced.hovered ? root.ringColor : root.wellColor
+            }
+            contentItem: Item {
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 8 * root.dp1
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.family: VLCIcons.fontFamily
+                        font.pixelSize: 18 * root.dp1
+                        text: VLCIcons.settings
+                        color: advanced.hovered ? root.textColor : root.dimColor
+                    }
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: qsTr("Open Advanced Settings")
+                        font.pixelSize: 14 * root.dp1
+                        color: advanced.hovered ? root.textColor : root.dimColor
+                    }
                 }
             }
             // the settings window on the page of the current tab
@@ -295,8 +311,6 @@ PlayerSidePopup {
         Segmented {
             id: flipChoice
             Layout.fillWidth: true
-            spacing: 1
-            buttonWidth: (width - 2 * spacing) / 3
             options: [qsTr("None"), qsTr("Horizontal"), qsTr("Vertical")]
             current: videoPage.orientation.flip
             onChosen: (i) => videoPage.setOrientation(i, videoPage.orientation.angle)
@@ -304,7 +318,7 @@ PlayerSidePopup {
         Row2 {
             label: qsTr("Rotate")
             UnitBox {
-                implicitWidth: 136 * root.dp1
+                implicitWidth: root.fieldWidth
                 Layout.fillWidth: false
                 unit: qsTr("deg")
                 maxValue: 359
@@ -372,8 +386,10 @@ PlayerSidePopup {
             property bool linkHorizontal: false
 
             function apply() { VLCEffects.setCrop(cropTop, cropBottom, cropLeft, cropRight) }
+            contentSpacing: 16 * root.dp1
 
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8 * root.dp1
                 PixelBox { label: qsTr("Top"); value: cropCard.cropTop
                     onEdited: (v) => { cropCard.cropTop = v; if (cropCard.linkVertical) cropCard.cropBottom = v; cropCard.apply() } }
@@ -382,6 +398,7 @@ PlayerSidePopup {
                 LinkButton { checked: cropCard.linkVertical; onClicked: cropCard.linkVertical = !cropCard.linkVertical }
             }
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8 * root.dp1
                 PixelBox { label: qsTr("Left"); value: cropCard.cropLeft
                     onEdited: (v) => { cropCard.cropLeft = v; if (cropCard.linkHorizontal) cropCard.cropRight = v; cropCard.apply() } }
@@ -428,6 +445,7 @@ PlayerSidePopup {
         FxSlider {
             from: -10000; to: 10000; stepSize: 50
             tickLabels: ["-10 s", "0 s", "+10 s"]
+            fillFromZero: true
             value: Player.audioDelayMS
             onMoved: Player.audioDelayMS = value
         }
@@ -506,6 +524,7 @@ PlayerSidePopup {
         FxSlider {
             from: -10000; to: 10000; stepSize: 50
             tickLabels: ["-10 s", "0 s", "+10 s"]
+            fillFromZero: true
             value: Player.subtitleDelayMS
             onMoved: Player.subtitleDelayMS = value
         }
@@ -527,7 +546,7 @@ PlayerSidePopup {
         Row2 {
             label: qsTr("Subtitle Offset")
             UnitBox {
-                implicitWidth: 136 * root.dp1
+                implicitWidth: root.fieldWidth
                 Layout.fillWidth: false
                 unit: "px"
                 value: { root.configRevision; return Number(VLCConfig.value("sub-margin") ?? 0) || 0 }
@@ -580,7 +599,7 @@ PlayerSidePopup {
             visible: root.subtitleSizeScale
             label: qsTr("Font Size")
             UnitBox {
-                implicitWidth: 136 * root.dp1
+                implicitWidth: root.fieldWidth
                 Layout.fillWidth: false
                 unit: "%"
                 maxValue: 500
@@ -592,7 +611,7 @@ PlayerSidePopup {
             visible: root.subtitleSizeScale && VLCConfig.exists("freetype-outline-thickness")
             label: qsTr("Outline Thickness")
             UnitBox {
-                implicitWidth: 136 * root.dp1
+                implicitWidth: root.fieldWidth
                 Layout.fillWidth: false
                 unit: "%"
                 maxValue: 50
@@ -604,7 +623,7 @@ PlayerSidePopup {
             visible: root.subtitleSizeScale && VLCConfig.exists("freetype-background-opacity")
             label: qsTr("Background Opacity")
             UnitBox {
-                implicitWidth: 136 * root.dp1
+                implicitWidth: root.fieldWidth
                 Layout.fillWidth: false
                 unit: "%"
                 maxValue: 100
@@ -814,15 +833,16 @@ PlayerSidePopup {
         Item { Layout.preferredHeight: 4 * root.dp1 }
     }
 
+    // Figma panel: titles 16 px #969696, labels 14 px #6B6B6B
     component SectionTitle: Text {
         Layout.topMargin: 6 * root.dp1
-        color: root.titleColor
-        font.pixelSize: 15 * root.dp1
+        color: root.sectionColor
+        font.pixelSize: 16 * root.dp1
     }
 
     component Label2: Text {
-        color: root.textColor
-        font.pixelSize: 13 * root.dp1
+        color: root.dimColor
+        font.pixelSize: 14 * root.dp1
     }
 
     component Divider: Rectangle {
@@ -842,24 +862,48 @@ PlayerSidePopup {
         Text {
             Layout.fillWidth: true
             text: parent.label
-            color: root.textColor
-            font.pixelSize: 13 * root.dp1
+            color: root.dimColor
+            font.pixelSize: 14 * root.dp1
             elide: Text.ElideRight
         }
     }
 
-    component ValueBox: Rectangle {
+    // background of the text boxes (Figma "Values", EQ value boxes): 2 px
+    // Dark/BG/A4 ring around a Dark/BG/B2 well, accent ring while editing
+    component FieldBackground: Rectangle {
+        property bool focused: false
+        radius: 6 * root.dp1
+        color: focused ? root.accentColor : root.ringColor
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2 * root.dp1
+            radius: 4 * root.dp1
+            color: root.wellColor
+        }
+    }
+
+    // Figma chevrons are 10 x 5 px glyphs on a 24 px em, centred in the box
+    component Chevron: Text {
+        Layout.preferredWidth: 24 * root.dp1
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        font.family: VLCIcons.fontFamily
+        font.pixelSize: 24 * root.dp1
+        text: VLCIcons.chevron_down
+        color: root.textColor
+    }
+
+    component ValueBox: FieldBackground {
         property alias text: valueText.text
-        implicitWidth: 136 * root.dp1
-        implicitHeight: 28 * root.dp1
-        radius: 4 * root.dp1
-        color: root.wellColor
+        property real fontSize: 14 * root.dp1
+        implicitWidth: root.fieldWidth
+        implicitHeight: root.fieldHeight
         Text {
             id: valueText
-            anchors { fill: parent; leftMargin: 10 * root.dp1; rightMargin: 10 * root.dp1 }
+            anchors { fill: parent; leftMargin: 14 * root.dp1; rightMargin: 14 * root.dp1 }
             verticalAlignment: Text.AlignVCenter
-            color: root.titleColor
-            font.pixelSize: 12 * root.dp1
+            color: root.textColor
+            font.pixelSize: parent.fontSize
             elide: Text.ElideRight
         }
     }
@@ -868,48 +912,61 @@ PlayerSidePopup {
     component ConfigBox: T.TextField {
         id: configBox
         property string option
-        implicitWidth: 136 * root.dp1
-        implicitHeight: 28 * root.dp1
-        leftPadding: 10 * root.dp1
+        implicitWidth: root.fieldWidth
+        implicitHeight: root.fieldHeight
+        leftPadding: 14 * root.dp1
+        rightPadding: 14 * root.dp1
         verticalAlignment: TextInput.AlignVCenter
-        color: root.titleColor
+        color: root.textColor
         selectionColor: root.accentSurface
-        font.pixelSize: 12 * root.dp1
+        font.pixelSize: 14 * root.dp1
         text: { root.configRevision; return String(VLCConfig.value(option) ?? "") }
-        background: Rectangle {
-            radius: 4 * root.dp1
-            color: root.wellColor
-            border.width: configBox.activeFocus ? 1 : 0
-            border.color: root.accentColor
-        }
+        background: FieldBackground { focused: configBox.activeFocus }
         onEditingFinished: VLCConfig.setValue(option, text)
     }
 
-    component ColorBox: RowLayout {
+    // hex value and a swatch in one text box
+    component ColorBox: FieldBackground {
         id: colorBox
         property string option
         property string value: { root.configRevision; return String(VLCConfig.value(option) ?? "#000000") }
-        spacing: 0
-        ConfigBox {
-            option: colorBox.option
-            implicitWidth: 108 * root.dp1
-            text: colorBox.value.toUpperCase()
-            onEditingFinished: colorBox.value = String(VLCConfig.value(colorBox.option))
-        }
-        Rectangle {
-            implicitWidth: 28 * root.dp1
-            implicitHeight: 28 * root.dp1
-            color: root.wellColor
-            Rectangle { anchors.centerIn: parent; width: 14 * root.dp1; height: 14 * root.dp1; radius: 2 * root.dp1; color: colorBox.value }
+        implicitWidth: root.fieldWidth
+        implicitHeight: root.fieldHeight
+        focused: colorField.activeFocus
+        RowLayout {
+            anchors { fill: parent; leftMargin: 14 * root.dp1; rightMargin: 12 * root.dp1 }
+            spacing: 6 * root.dp1
+            T.TextField {
+                id: colorField
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                verticalAlignment: TextInput.AlignVCenter
+                color: root.textColor
+                selectionColor: root.accentSurface
+                font.pixelSize: 14 * root.dp1
+                text: colorBox.value.toUpperCase()
+                background: null
+                onEditingFinished: {
+                    VLCConfig.setValue(colorBox.option, text)
+                    colorBox.value = String(VLCConfig.value(colorBox.option))
+                }
+            }
+            Rectangle { implicitWidth: 14 * root.dp1; implicitHeight: 14 * root.dp1; radius: 2 * root.dp1; color: colorBox.value }
         }
     }
 
-    // slider of the design: thin dark track, accent fill and a 4px handle
+    // slider of the design (Figma effect settings): 16 px Dark/BG/B2 track,
+    // Accent Bright fill inset by 2 px up to the 8 x 24 Accent Dim handle;
+    // the delay sliders fill from 0 (empty at 0 s in the Figma panel)
     component FxSlider: T.Slider {
         id: slider
         property var tickLabels: []
+        property bool fillFromZero: false
+        // handle x for a position 0..1
+        function handleX(pos) { return 2 * root.dp1 + pos * (availableWidth - 12 * root.dp1) }
+        readonly property real zeroPosition: (fillFromZero && from < 0 && to > 0) ? -from / (to - from) : 0
         Layout.fillWidth: true
-        implicitHeight: (tickLabels.length > 0 ? 34 : 18) * root.dp1
+        implicitHeight: (tickLabels.length > 0 ? 41 : 24) * root.dp1
         live: true
 
         background: Item {
@@ -917,24 +974,18 @@ PlayerSidePopup {
                 id: track
                 y: 4 * root.dp1
                 width: slider.availableWidth
-                height: 10 * root.dp1
-                radius: 3 * root.dp1
+                height: 16 * root.dp1
+                radius: 6 * root.dp1
                 color: root.wellColor
                 Rectangle {
-                    width: slider.visualPosition * parent.width
-                    height: parent.height
-                    radius: parent.radius
+                    readonly property real zeroX: slider.handleX(slider.mirrored ? 1 - slider.zeroPosition : slider.zeroPosition)
+                    readonly property real valueX: slider.handleX(slider.visualPosition)
+                    x: Math.min(zeroX, valueX)
+                    y: 2 * root.dp1
+                    width: Math.abs(valueX - zeroX) + 8 * root.dp1
+                    height: 12 * root.dp1
+                    radius: 4 * root.dp1
                     color: root.accentSurface
-                }
-                Repeater {
-                    model: slider.tickLabels.length > 1 ? slider.tickLabels.length : 0
-                    Rectangle {
-                        required property int index
-                        x: index * (track.width - 1) / (slider.tickLabels.length - 1)
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 1; height: 4 * root.dp1
-                        color: root.faintColor
-                    }
                 }
             }
             Repeater {
@@ -942,22 +993,22 @@ PlayerSidePopup {
                 Text {
                     required property var modelData
                     required property int index
-                    y: 18 * root.dp1
+                    y: 26 * root.dp1
                     x: Math.max(0, Math.min(track.width - implicitWidth,
-                         index * track.width / Math.max(1, slider.tickLabels.length - 1) - implicitWidth / 2))
+                         slider.handleX(index / Math.max(1, slider.tickLabels.length - 1)) + 4 * root.dp1 - implicitWidth / 2))
                     text: modelData
                     color: root.dimColor
-                    font.pixelSize: 10 * root.dp1
+                    font.pixelSize: 12 * root.dp1
                 }
             }
         }
         handle: Rectangle {
-            x: slider.visualPosition * (slider.availableWidth - width)
-            y: 1 * root.dp1
-            width: 5 * root.dp1
-            height: 16 * root.dp1
-            radius: 2 * root.dp1
-            color: slider.enabled ? root.accentColor : root.faintColor
+            x: slider.handleX(slider.visualPosition)
+            y: 0
+            width: 8 * root.dp1
+            height: 24 * root.dp1
+            radius: 4 * root.dp1
+            color: slider.enabled ? root.accentDimColor : root.faintColor
         }
     }
 
@@ -980,17 +1031,18 @@ PlayerSidePopup {
 
         Layout.fillWidth: true
         visible: option === "" || VLCConfig.exists(option)
-        spacing: 4 * root.dp1
+        // Figma effect settings: label 14 px, value box 10 px above the slider
+        spacing: (boxed ? 10 : 14) * root.dp1
 
         RowLayout {
-            Text { Layout.fillWidth: true; text: fs.label; color: root.textColor; font.pixelSize: 13 * root.dp1 }
+            Text { Layout.fillWidth: true; text: fs.label; color: root.dimColor; font.pixelSize: 14 * root.dp1 }
             Text {
                 visible: !fs.boxed
                 text: fs.current.toFixed(fs.decimals) + fs.unit
-                color: root.textColor
-                font.pixelSize: 13 * root.dp1
+                color: root.dimColor
+                font.pixelSize: 14 * root.dp1
             }
-            ValueBox { visible: fs.boxed; implicitWidth: 96 * root.dp1; text: fs.current.toFixed(fs.decimals) + fs.unit }
+            ValueBox { visible: fs.boxed; fontSize: 12 * root.dp1; text: fs.current.toFixed(fs.decimals) + fs.unit }
         }
         FxSlider {
             from: fs.from; to: fs.to
@@ -1016,29 +1068,37 @@ PlayerSidePopup {
         }
     }
 
-    // ON/OFF switch of the design
+    // ON/OFF switch of the design (Figma "Toggle"): 68 x 32 Dark/BG/B2,
+    // a 26 px knob and the ON/OFF label on its own 33 px tile
     component Switch: T.Switch {
         id: sw
-        implicitWidth: 34 * root.dp1 + 26 * root.dp1
-        implicitHeight: 22 * root.dp1
+        implicitWidth: 68 * root.dp1
+        implicitHeight: 32 * root.dp1
         indicator: Rectangle {
             anchors.fill: parent
-            radius: 4 * root.dp1
+            radius: 6 * root.dp1
             color: root.wellColor
             Rectangle {
-                x: sw.checked ? parent.width - width - 2 * root.dp1 : 2 * root.dp1
+                x: sw.checked ? 3 * root.dp1 : 32 * root.dp1
                 anchors.verticalCenter: parent.verticalCenter
-                width: 18 * root.dp1; height: 18 * root.dp1
+                width: 33 * root.dp1; height: 26 * root.dp1
                 radius: 3 * root.dp1
-                color: sw.checked ? root.accentColor : root.faintColor
+                color: sw.checked ? root.accentSurface : root.ringColor
                 Behavior on x { NumberAnimation { duration: VLCStyle.duration_short } }
+                Text {
+                    anchors.centerIn: parent
+                    text: sw.checked ? qsTr("ON") : qsTr("OFF")
+                    color: sw.checked ? root.accentColor : root.dimColor
+                    font.pixelSize: 12 * root.dp1
+                }
             }
-            Text {
+            Rectangle {
+                x: sw.checked ? 39 * root.dp1 : 3 * root.dp1
                 anchors.verticalCenter: parent.verticalCenter
-                x: sw.checked ? 6 * root.dp1 : parent.width - width - 6 * root.dp1
-                text: sw.checked ? qsTr("ON") : qsTr("OFF")
-                color: sw.checked ? root.accentColor : root.dimColor
-                font.pixelSize: 10 * root.dp1
+                width: 26 * root.dp1; height: 26 * root.dp1
+                radius: 3 * root.dp1
+                color: sw.checked ? root.accentDimColor : root.faintColor
+                Behavior on x { NumberAnimation { duration: VLCStyle.duration_short } }
             }
         }
     }
@@ -1075,14 +1135,17 @@ PlayerSidePopup {
         }
         visible: VLCConfig.exists(option)
         T.TextField {
-            implicitWidth: 76 * root.dp1
-            implicitHeight: 28 * root.dp1
-            leftPadding: 8 * root.dp1
+            id: cfrField
+            implicitWidth: 100 * root.dp1
+            implicitHeight: root.fieldHeight
+            leftPadding: 14 * root.dp1
+            rightPadding: 10 * root.dp1
             verticalAlignment: TextInput.AlignVCenter
-            color: root.titleColor
-            font.pixelSize: 12 * root.dp1
+            color: root.textColor
+            selectionColor: root.accentSurface
+            font.pixelSize: 14 * root.dp1
             text: cfr.hex
-            background: Rectangle { radius: 4 * root.dp1; color: root.wellColor }
+            background: FieldBackground { focused: cfrField.activeFocus }
             onEditingFinished: {
                 const v = parseInt(text.replace("#", ""), 16)
                 if (!isNaN(v))
@@ -1097,68 +1160,76 @@ PlayerSidePopup {
     }
 
     // number field with a unit ("px", "%")
-    component UnitBox: Rectangle {
+    component UnitBox: FieldBackground {
         id: ub
         property int value: 0
         property string unit: "px"
         property int maxValue: 10000
         signal edited(int value)
         Layout.fillWidth: true
-        implicitHeight: 28 * root.dp1
-        radius: 4 * root.dp1
-        color: root.wellColor
-        border.width: ubField.activeFocus ? 1 : 0
-        border.color: root.accentColor
+        implicitHeight: root.fieldHeight
+        focused: ubField.activeFocus
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10 * root.dp1
-            anchors.rightMargin: 10 * root.dp1
+            anchors.leftMargin: 14 * root.dp1
+            anchors.rightMargin: 14 * root.dp1
             T.TextField {
                 id: ubField
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 verticalAlignment: TextInput.AlignVCenter
-                color: root.titleColor
+                color: root.textColor
                 selectionColor: root.accentSurface
-                font.pixelSize: 12 * root.dp1
+                font.pixelSize: 14 * root.dp1
                 text: String(ub.value)
                 validator: IntValidator { bottom: 0; top: ub.maxValue }
                 background: null
                 onEditingFinished: ub.edited(parseInt(text) || 0)
             }
-            Text { text: ub.unit; color: root.faintColor; font.pixelSize: 12 * root.dp1 }
+            Text { text: ub.unit; color: root.faintColor; font.pixelSize: 14 * root.dp1 }
         }
     }
 
     // two-way choice ("Relative" | "Scale"), the chosen one in the accent
-    component Segmented: Row {
+    component Segmented: Rectangle {
         id: seg
         property var options: []
         property int current: 0
-        property real buttonWidth: 68 * root.dp1
         signal chosen(int index)
-        spacing: 0
-        Repeater {
-            model: seg.options
-            T.Button {
-                id: segButton
-                required property var modelData
-                required property int index
-                readonly property bool selected: index === seg.current
-                implicitWidth: seg.buttonWidth
-                implicitHeight: 28 * root.dp1
-                background: Rectangle {
-                    radius: 4 * root.dp1
-                    color: segButton.selected ? root.accentSurface : root.wellColor
+        // Figma "Values": 44 px Dark/BG/B2 box, 40 px buttons 2 px apart
+        implicitWidth: 213 * root.dp1
+        implicitHeight: 44 * root.dp1
+        radius: 6 * root.dp1
+        color: root.wellColor
+        Row {
+            id: segRow
+            anchors.fill: parent
+            anchors.margins: 2 * root.dp1
+            spacing: 2 * root.dp1
+            Repeater {
+                model: seg.options
+                T.Button {
+                    id: segButton
+                    required property var modelData
+                    required property int index
+                    readonly property bool selected: index === seg.current
+                    width: (segRow.width - (seg.options.length - 1) * segRow.spacing) / Math.max(1, seg.options.length)
+                    height: segRow.height
+                    background: Rectangle {
+                        radius: 4 * root.dp1
+                        color: segButton.selected ? root.accentSurface
+                             : segButton.hovered ? root.cardColor : root.ringColor
+                    }
+                    contentItem: Text {
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        text: segButton.modelData
+                        font.pixelSize: 14 * root.dp1
+                        color: segButton.selected ? root.accentColor : root.dimColor
+                        elide: Text.ElideRight
+                    }
+                    onClicked: seg.chosen(index)
                 }
-                contentItem: Text {
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    text: segButton.modelData
-                    font.pixelSize: 12 * root.dp1
-                    color: segButton.selected ? root.accentColor : root.textColor
-                }
-                onClicked: seg.chosen(index)
             }
         }
     }
@@ -1185,14 +1256,14 @@ PlayerSidePopup {
             Text {
                 Layout.fillWidth: true
                 text: ss.label
-                color: root.textColor
-                font.pixelSize: 13 * root.dp1
+                color: root.dimColor
+                font.pixelSize: 14 * root.dp1
             }
             Text {
                 // the exact value when it is between two steps
                 text: ss.steps[ss.index] === ss.value ? (ss.names[ss.index] ?? "") : (Math.round(ss.value) + "")
-                color: root.textColor
-                font.pixelSize: 12 * root.dp1
+                color: root.dimColor
+                font.pixelSize: 14 * root.dp1
             }
         }
         FxSlider {
@@ -1217,9 +1288,9 @@ PlayerSidePopup {
         property string menuTarget: ""  // preset of the open "…" menu
 
         z: 10
-        implicitHeight: 40 * root.dp1
-        radius: 4 * root.dp1
-        color: barArea.containsMouse ? root.tabsColor : root.wellColor
+        implicitHeight: 42 * root.dp1
+        radius: 6 * root.dp1
+        color: barArea.containsMouse ? root.wellHoverColor : root.wellColor
         onListOpenChanged: if (!listOpen) editing = ""
 
         // closes the list on a click elsewhere in the panel
@@ -1242,21 +1313,16 @@ PlayerSidePopup {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14 * root.dp1
-            anchors.rightMargin: 14 * root.dp1
+            anchors.leftMargin: 16 * root.dp1
+            anchors.rightMargin: 16 * root.dp1
             Text {
                 Layout.fillWidth: true
                 text: root.activePreset !== "" ? root.activePreset : qsTr("Default Preset")
-                color: root.titleColor
-                font.pixelSize: 13 * root.dp1
+                color: root.textColor
+                font.pixelSize: 14 * root.dp1
                 elide: Text.ElideRight
             }
-            Text {
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: 13 * root.dp1
-                text: bar.listOpen ? VLCIcons.chevron_down : VLCIcons.chevron_up
-                color: root.textColor
-            }
+            Chevron { text: bar.listOpen ? VLCIcons.chevron_down : VLCIcons.chevron_up }
         }
 
         Accessible.role: Accessible.ComboBox
@@ -1268,10 +1334,8 @@ PlayerSidePopup {
             width: bar.width
             height: listColumn.implicitHeight + 2
             y: -height - 6 * root.dp1
-            radius: 4 * root.dp1
-            color: root.panelColor
-            border.width: 1
-            border.color: root.dividerColor
+            radius: 6 * root.dp1
+            color: root.ringColor
             clip: true
 
             Column {
@@ -1296,6 +1360,7 @@ PlayerSidePopup {
                         PresetRow {
                             width: presetRows.width
                             icon: VLCIcons.add
+                            dim: true
                             text: qsTr("New Preset")
                             onClicked: bar.editing = root.addPreset()
                         }
@@ -1326,15 +1391,26 @@ PlayerSidePopup {
                     }
                 }
 
-                PresetRow {
+                Rectangle {
                     width: listColumn.width
-                    color: hovered ? root.tabsColor : root.cardColor
+                    height: 42 * root.dp1
+                    radius: 6 * root.dp1
+                    color: root.wellColor
+                PresetRow {
+                    x: 2 * root.dp1
+                    y: 2 * root.dp1
+                    width: parent.width - 4 * root.dp1
+                    implicitHeight: 38 * root.dp1
+                    radius: 4 * root.dp1
+                    color: hovered ? Qt.lighter(root.cardColor, 1.15) : root.cardColor
+                    textMargin: 14 * root.dp1
                     text: qsTr("Default Preset")
                     checked: root.activePreset === ""
                     onClicked: {
                         root.choosePreset("")
                         bar.listOpen = false
                     }
+                }
                 }
             }
         }
@@ -1360,6 +1436,8 @@ PlayerSidePopup {
         property bool menu: false
         property bool checked: false
         property bool editing: false
+        property bool dim: false            // "New Preset"
+        property real textMargin: 16 * root.dp1
         readonly property bool hovered: rowArea.containsMouse
         signal clicked()
         signal menuClicked(Item button)
@@ -1385,9 +1463,10 @@ PlayerSidePopup {
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 14 * root.dp1
+            // Figma: icon centred 28 px in, name at 50 px, 14 px text
+            anchors.leftMargin: row.textMargin
             anchors.rightMargin: 16 * root.dp1
-            spacing: 8 * root.dp1
+            spacing: 10 * root.dp1
 
             T.Button {
                 id: menuButton
@@ -1402,7 +1481,7 @@ PlayerSidePopup {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     font.family: VLCIcons.fontFamily
-                    font.pixelSize: 14 * root.dp1
+                    font.pixelSize: 24 * root.dp1
                     text: VLCIcons.ellipsis
                     color: menuButton.hovered ? root.titleColor : root.textColor
                 }
@@ -1414,16 +1493,16 @@ PlayerSidePopup {
                 Layout.preferredWidth: 24 * root.dp1
                 horizontalAlignment: Text.AlignHCenter
                 font.family: VLCIcons.fontFamily
-                font.pixelSize: 14 * root.dp1
+                font.pixelSize: 24 * root.dp1
                 text: row.icon
-                color: row.hovered ? root.titleColor : root.textColor
+                color: row.hovered ? root.textColor : row.dim ? root.dimColor : root.textColor
             }
             Text {
                 visible: !row.editing
                 Layout.fillWidth: true
                 text: row.text
-                color: row.checked || row.hovered ? root.titleColor : root.textColor
-                font.pixelSize: 13 * root.dp1
+                color: row.hovered ? root.titleColor : row.dim ? root.dimColor : root.textColor
+                font.pixelSize: 14 * root.dp1
                 elide: Text.ElideRight
             }
             T.TextField {
@@ -1433,9 +1512,9 @@ PlayerSidePopup {
                 implicitHeight: 28 * root.dp1
                 leftPadding: 6 * root.dp1
                 verticalAlignment: TextInput.AlignVCenter
-                color: root.titleColor
+                color: root.textColor
                 selectionColor: root.accentSurface
-                font.pixelSize: 13 * root.dp1
+                font.pixelSize: 14 * root.dp1
                 background: Rectangle {
                     radius: 4 * root.dp1
                     color: root.wellColor
@@ -1447,47 +1526,55 @@ PlayerSidePopup {
             Text {
                 visible: row.checked
                 font.family: VLCIcons.fontFamily
-                font.pixelSize: 14 * root.dp1
+                font.pixelSize: 24 * root.dp1
                 text: VLCIcons.check
                 color: root.accentColor
             }
         }
     }
 
+    // Figma "Video - Crop": 141 x 33 Dark/BG/B2 box, label, value, "px"
     component PixelBox: Rectangle {
         id: pb
         property string label
         property int value: 0
         signal edited(int value)
         Layout.fillWidth: true
-        implicitHeight: 28 * root.dp1
-        radius: 4 * root.dp1
+        implicitHeight: 33 * root.dp1
+        radius: 6 * root.dp1
         color: root.wellColor
+        border.width: pbField.activeFocus ? 1 : 0
+        border.color: root.accentColor
+        MouseArea { anchors.fill: parent; onClicked: pbField.forceActiveFocus() }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10 * root.dp1
-            anchors.rightMargin: 10 * root.dp1
-            Text { text: pb.label; color: root.textColor; font.pixelSize: 12 * root.dp1 }
+            anchors.leftMargin: 12 * root.dp1
+            anchors.rightMargin: 12 * root.dp1
+            spacing: 0
+            Text { Layout.preferredWidth: 60 * root.dp1; text: pb.label; color: root.dimColor; font.pixelSize: 14 * root.dp1; elide: Text.ElideRight }
             T.TextField {
-                Layout.fillWidth: true
+                id: pbField
+                Layout.preferredWidth: Math.max(10 * root.dp1, contentWidth + 2 * root.dp1)
                 Layout.fillHeight: true
+                padding: 0
                 verticalAlignment: TextInput.AlignVCenter
-                horizontalAlignment: TextInput.AlignRight
-                color: root.titleColor
-                font.pixelSize: 12 * root.dp1
+                color: root.textColor
+                selectionColor: root.accentSurface
+                font.pixelSize: 14 * root.dp1
                 text: String(pb.value)
                 validator: IntValidator { bottom: 0; top: 10000 }
                 background: null
                 onEditingFinished: pb.edited(parseInt(text) || 0)
             }
-            Text { text: "px"; color: root.faintColor; font.pixelSize: 12 * root.dp1 }
+            Text { Layout.leftMargin: 3 * root.dp1; text: "px"; color: root.faintColor; font.pixelSize: 14 * root.dp1 }
+            Item { Layout.fillWidth: true }
         }
     }
 
     component LinkButton: T.Button {
         id: link
-        implicitWidth: 24 * root.dp1
-        implicitHeight: 28 * root.dp1
+        implicitWidth: 30 * root.dp1
+        implicitHeight: 33 * root.dp1
         background: null
         contentItem: Text {
             horizontalAlignment: Text.AlignHCenter
@@ -1528,23 +1615,23 @@ PlayerSidePopup {
             function onRowsRemoved() { vd._revision++ }
         }
 
-        implicitHeight: 34 * root.dp1
-        background: Rectangle { radius: 4 * root.dp1; color: vd.hovered ? root.cardColor : root.tabsColor }
+        implicitHeight: 48 * root.dp1
+        leftPadding: 16 * root.dp1
+        rightPadding: 16 * root.dp1
+        background: Rectangle {
+            radius: 6 * root.dp1
+            color: root.wellColor
+            Rectangle { anchors.fill: parent; anchors.margins: 2 * root.dp1; radius: 4 * root.dp1; color: vd.hovered ? root.cardColor : root.ringColor }
+        }
         contentItem: RowLayout {
             Text {
                 Layout.fillWidth: true
-                Layout.leftMargin: 4 * root.dp1
-                text: vd.currentIndex >= 0 ? vd.itemText(vd.currentIndex) : ""
-                color: root.titleColor
-                font.pixelSize: 12 * root.dp1
+                                text: vd.currentIndex >= 0 ? vd.itemText(vd.currentIndex) : ""
+                color: root.textColor
+                font.pixelSize: 14 * root.dp1
                 elide: Text.ElideRight
             }
-            Text {
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: 13 * root.dp1
-                text: VLCIcons.chevron_down
-                color: root.textColor
-            }
+            Chevron {}
         }
         onClicked: {
             const items = []
@@ -1569,28 +1656,28 @@ PlayerSidePopup {
         readonly property var choices: VLCConfig.choices(option)
         property var current: audio ? VLCEffects.audioValue(option) : video ? VLCEffects.videoValue(option) : VLCConfig.value(option)
 
-        implicitHeight: 34 * root.dp1
-        background: Rectangle { radius: 4 * root.dp1; color: dd.hovered ? root.cardColor : root.tabsColor }
+        implicitHeight: 48 * root.dp1
+        leftPadding: 16 * root.dp1
+        rightPadding: 16 * root.dp1
+        background: Rectangle {
+            radius: 6 * root.dp1
+            color: root.wellColor
+            Rectangle { anchors.fill: parent; anchors.margins: 2 * root.dp1; radius: 4 * root.dp1; color: dd.hovered ? root.cardColor : root.ringColor }
+        }
         contentItem: RowLayout {
             Text {
                 Layout.fillWidth: true
-                Layout.leftMargin: 4 * root.dp1
                 text: {
                     const found = dd.choices.find((c) => String(c.value) === String(dd.current))
                     if (found && found.value !== "" && found.value !== "any")
                         return found.text
                     return dd.noneText !== "" ? dd.noneText : (found?.text ?? String(dd.current))
                 }
-                color: root.titleColor
-                font.pixelSize: 12 * root.dp1
+                color: root.textColor
+                font.pixelSize: 14 * root.dp1
                 elide: Text.ElideRight
             }
-            Text {
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: 13 * root.dp1
-                text: VLCIcons.chevron_down
-                color: root.textColor
-            }
+            Chevron {}
         }
         onClicked: menu.popup(mapToGlobal(0, height + 4 * root.dp1),
                               choices.map((c) => ({ "text": c.text, "checked": String(c.value) === String(current) })))
@@ -1640,23 +1727,23 @@ PlayerSidePopup {
         // the scan stops by itself after 20 s
         onVisibleChanged: if (visible) manager.StartScan()
 
-        implicitHeight: 34 * root.dp1
-        background: Rectangle { radius: 4 * root.dp1; color: rd.hovered ? root.cardColor : root.tabsColor }
+        implicitHeight: 48 * root.dp1
+        leftPadding: 16 * root.dp1
+        rightPadding: 16 * root.dp1
+        background: Rectangle {
+            radius: 6 * root.dp1
+            color: root.wellColor
+            Rectangle { anchors.fill: parent; anchors.margins: 2 * root.dp1; radius: 4 * root.dp1; color: rd.hovered ? root.cardColor : root.ringColor }
+        }
         contentItem: RowLayout {
             Text {
                 Layout.fillWidth: true
-                Layout.leftMargin: 4 * root.dp1
-                text: rd.selected >= 0 ? rd.names[rd.selected] : qsTr("Local")
-                color: root.titleColor
-                font.pixelSize: 12 * root.dp1
+                                text: rd.selected >= 0 ? rd.names[rd.selected] : qsTr("Local")
+                color: root.textColor
+                font.pixelSize: 14 * root.dp1
                 elide: Text.ElideRight
             }
-            Text {
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: 13 * root.dp1
-                text: VLCIcons.chevron_down
-                color: root.textColor
-            }
+            Chevron {}
         }
         onClicked: {
             manager.StartScan()
@@ -1686,17 +1773,22 @@ PlayerSidePopup {
         readonly property var minutes: [0, 15, 30, 45, 60, 90, 120]
         function label(m) { return m === 0 ? qsTr("Off") : qsTr("%1 min").arg(m) }
 
-        implicitHeight: 34 * root.dp1
-        background: Rectangle { radius: 4 * root.dp1; color: st.hovered ? root.cardColor : root.tabsColor }
+        implicitHeight: 48 * root.dp1
+        leftPadding: 16 * root.dp1
+        rightPadding: 16 * root.dp1
+        background: Rectangle {
+            radius: 6 * root.dp1
+            color: root.wellColor
+            Rectangle { anchors.fill: parent; anchors.margins: 2 * root.dp1; radius: 4 * root.dp1; color: st.hovered ? root.cardColor : root.ringColor }
+        }
         contentItem: RowLayout {
             Text {
                 Layout.fillWidth: true
-                Layout.leftMargin: 4 * root.dp1
-                text: st.label(VLCEffects.sleepMinutes)
-                color: root.titleColor
-                font.pixelSize: 12 * root.dp1
+                                text: st.label(VLCEffects.sleepMinutes)
+                color: root.textColor
+                font.pixelSize: 14 * root.dp1
             }
-            Text { font.family: VLCIcons.fontFamily; font.pixelSize: 13 * root.dp1; text: VLCIcons.chevron_down; color: root.textColor }
+            Chevron {}
         }
         onClicked: sleepMenu.popup(mapToGlobal(0, height + 4 * root.dp1),
                                    minutes.map((m) => ({ "text": label(m), "checked": m === VLCEffects.sleepMinutes })))
@@ -1714,17 +1806,22 @@ PlayerSidePopup {
         property bool enabledEq: VLCEffects.audioFilterEnabled("equalizer")
         property string preset: String(VLCEffects.audioValue("equalizer-preset") ?? "")
 
-        implicitHeight: 34 * root.dp1
-        background: Rectangle { radius: 4 * root.dp1; color: eqp.hovered ? root.cardColor : root.tabsColor }
+        implicitHeight: 48 * root.dp1
+        leftPadding: 16 * root.dp1
+        rightPadding: 16 * root.dp1
+        background: Rectangle {
+            radius: 6 * root.dp1
+            color: root.wellColor
+            Rectangle { anchors.fill: parent; anchors.margins: 2 * root.dp1; radius: 4 * root.dp1; color: eqp.hovered ? root.cardColor : root.ringColor }
+        }
         contentItem: RowLayout {
             Text {
                 Layout.fillWidth: true
-                Layout.leftMargin: 4 * root.dp1
-                text: eqp.enabledEq ? (eqp.presets.find((p) => p.name === eqp.preset)?.text ?? qsTr("Custom")) : qsTr("None")
-                color: root.titleColor
-                font.pixelSize: 12 * root.dp1
+                                text: eqp.enabledEq ? (eqp.presets.find((p) => p.name === eqp.preset)?.text ?? qsTr("Custom")) : qsTr("None")
+                color: root.textColor
+                font.pixelSize: 14 * root.dp1
             }
-            Text { font.family: VLCIcons.fontFamily; font.pixelSize: 13 * root.dp1; text: VLCIcons.chevron_down; color: root.textColor }
+            Chevron {}
         }
         onClicked: presetMenu.popup(mapToGlobal(0, height + 4 * root.dp1),
             [{ "text": qsTr("None"), "checked": !enabledEq }].concat(
@@ -1750,57 +1847,46 @@ PlayerSidePopup {
         }
     }
 
-    // "Expand Settings >" / "Collapse Settings v" card
-    component Card: ColumnLayout {
+    // "Expand Settings >" / "Collapse Settings v" card (Figma effect
+    // settings): 48 px Dark/BG/B2 bar, Dark/BG/A3 card while open
+    component Card: Rectangle {
         id: card
         default property alias cardContent: inner.data
+        property alias contentSpacing: inner.spacing
         property bool expanded: false
         Layout.fillWidth: true
-        spacing: 0
+        implicitHeight: header.height + (expanded ? inner.implicitHeight + 30 * root.dp1 : 0)
+        radius: 6 * root.dp1
+        color: expanded ? root.openCardColor : header.hovered ? root.wellHoverColor : root.wellColor
 
         T.Button {
             id: header
-            Layout.fillWidth: true
-            implicitHeight: 34 * root.dp1
-            background: Rectangle {
-                radius: 4 * root.dp1
-                color: header.hovered ? Qt.lighter(root.cardColor, 1.1) : root.cardColor
-                Rectangle {
-                    visible: card.expanded
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: parent.radius; color: parent.color
-                }
-            }
+            width: parent.width
+            height: 48 * root.dp1
+            leftPadding: 16 * root.dp1
+            rightPadding: 10 * root.dp1
+            background: null
             contentItem: RowLayout {
                 Text {
                     Layout.fillWidth: true
-                    Layout.leftMargin: 4 * root.dp1
                     text: card.expanded ? qsTr("Collapse Settings") : qsTr("Expand Settings")
-                    color: root.textColor
-                    font.pixelSize: 12 * root.dp1
+                    color: root.dimColor
+                    font.pixelSize: 14 * root.dp1
                 }
-                Text {
-                    font.family: VLCIcons.fontFamily
-                    font.pixelSize: 13 * root.dp1
+                Chevron {
                     text: card.expanded ? VLCIcons.chevron_down : VLCIcons.breadcrumb_sep
-                    color: root.textColor
+                    color: root.dimColor
                 }
             }
             onClicked: card.expanded = !card.expanded
         }
 
-        Rectangle {
-            Layout.fillWidth: true
+        ColumnLayout {
+            id: inner
             visible: card.expanded
-            implicitHeight: inner.implicitHeight + 24 * root.dp1
-            color: root.cardColor
-            radius: 4 * root.dp1
-
-            ColumnLayout {
-                id: inner
-                anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12 * root.dp1 }
-                spacing: 10 * root.dp1
-            }
+            anchors { left: parent.left; right: parent.right; top: header.bottom
+                      topMargin: 10 * root.dp1; leftMargin: 16 * root.dp1; rightMargin: 16 * root.dp1 }
+            spacing: 20 * root.dp1
         }
     }
 
