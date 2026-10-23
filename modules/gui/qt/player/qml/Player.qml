@@ -1287,7 +1287,7 @@ FocusScope {
             }
             showAlternateView: rootPlayer.sidePanelTab !== 0
 
-            onAddRequested: DialogsProvider.PLAppendDialog()
+            onAddRequested: DialogsProvider.simpleOpenDialog(MainPlaylistController.count === 0)
 
             rightPadding: VLCStyle.applicationHorizontalMargin
             topPadding:  {

@@ -239,7 +239,7 @@ PlayerSidePopup {
                 enabled: root.currentTab === 0 || !!root.bookmarkModel
                 onClicked: {
                     if (root.currentTab === 0)
-                        DialogsProvider.PLAppendDialog()
+                        DialogsProvider.simpleOpenDialog(MainPlaylistController.count === 0)
                     else
                         root.bookmarkModel.add()
                 }

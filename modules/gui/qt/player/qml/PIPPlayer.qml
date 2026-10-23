@@ -222,7 +222,7 @@ T.Control {
             dragYMin: root.dragYMin
             dragYMax: root.dragYMax
 
-            onAddRequested: DialogsProvider.PLAppendDialog()
+            onAddRequested: DialogsProvider.simpleOpenDialog(MainPlaylistController.count === 0)
             onDragStarted: root._detach()
         }
 
