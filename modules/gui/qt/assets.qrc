@@ -139,6 +139,7 @@
         <file alias="new_indicator.svg">pixmaps/misc/new_indicator.svg</file>
         <file alias="onboarding_system_tile.svg">pixmaps/misc/onboarding_system_tile.svg</file>
         <file alias="cone_flat.svg">pixmaps/misc/cone_flat.svg</file>
+        <file alias="cone_rounded.svg">pixmaps/misc/cone_rounded.svg</file>
         <file alias="rail_home_selected.svg">pixmaps/misc/rail_home_selected.svg</file>
         <file alias="rail_video_selected.svg">pixmaps/misc/rail_video_selected.svg</file>
         <file alias="rail_music_selected.svg">pixmaps/misc/rail_music_selected.svg</file>

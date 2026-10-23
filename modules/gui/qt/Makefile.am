@@ -1042,6 +1042,7 @@ libqt_plugin_la_RES = \
 	pixmaps/misc/theme_light.svg \
 	pixmaps/misc/volume_fill.svg \
 	pixmaps/misc/cone_flat.svg \
+	pixmaps/misc/cone_rounded.svg \
 	pixmaps/misc/rail_home_selected.svg \
 	pixmaps/flags/ad.svg \
 	pixmaps/flags/ae.svg \

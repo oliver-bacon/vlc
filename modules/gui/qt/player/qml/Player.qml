@@ -65,7 +65,7 @@ FocusScope {
     readonly property bool _audioOnly: Player.audioTracks.count > 0 && Player.videoTracks.count === 0
     readonly property string noArtCover: _audioOnly
         ? VLCStyle.noArtAlbumCover
-        : SVGColorImage.colorize("qrc:///misc/cone_flat.svg").accent(windowTheme.accent).uri()
+        : SVGColorImage.colorize("qrc:///misc/cone_rounded.svg").accent(windowTheme.accent).uri()
 
     // Only applicable in video mode:
     property bool displayFadeRectangles: !_controlsUnderVideo && (height > (implicitFadeRectangleHeight * 3))
@@ -726,13 +726,16 @@ FocusScope {
                                                                                                               })
                                 }
 
+                                // no shadows around the cone placeholder: plain background
                                 Widgets.RoundedRectangleShadow {
+                                    visible: !audioFocusScope.showingCone
                                     color: Qt.rgba(0, 0, 0, .18)
                                     yOffset: VLCStyle.dp(24, VLCStyle.scale)
                                     blurRadius: VLCStyle.dp(54, VLCStyle.scale)
                                 }
 
                                 Widgets.RoundedRectangleShadow {
+                                    visible: !audioFocusScope.showingCone
                                     color: Qt.rgba(0, 0, 0, .22)
                                     yOffset: VLCStyle.dp(5, VLCStyle.scale)
                                     blurRadius: VLCStyle.dp(14, VLCStyle.scale)
