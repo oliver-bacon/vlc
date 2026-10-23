@@ -37,6 +37,8 @@ T.Control {
     readonly property real cardPadding: VLCStyle.dp(6, VLCStyle.scale)
     padding: cardPadding
     readonly property bool dark: VLCStyle.palette?.isDark ?? true
+    readonly property real videoRadius: VLCStyle.dp(5, VLCStyle.scale)
+    readonly property color trackColor: dark ? "#090909" : "#D5D5D5"
     readonly property bool cardHovered: hoverHandler.hovered || playButton.hovered || closeButton.hovered
                                     || fullscreenButton.hovered || prevButton.hovered || nextButton.hovered
 
@@ -139,6 +141,7 @@ T.Control {
     }
 
     background: Rectangle {
+        id: cardBackground
         radius: VLCStyle.dp(12, VLCStyle.scale)
         color: root.dark ? "#1F1F1F" : "#E7E7E7"
 
@@ -160,6 +163,43 @@ T.Control {
 
             videoSurfaceProvider: MainCtx.videoSurfaceProvider
             color: root.cardHovered ? "#40000000" : "transparent"
+        }
+
+        // Figma "Miniplayer": the video has 5 px rounded corners and a 2 px
+        // outline (#090909, centered on the edge). The corners are covered
+        // with the card color: a border whose inner edge is the rounded video
+        // frame, clipped to the video
+        Item {
+            x: videoSurface.x
+            y: videoSurface.y
+            width: videoSurface.width
+            height: videoSurface.height
+            clip: true
+
+            Rectangle {
+                readonly property real cover: root.videoRadius + VLCStyle.dp(2, VLCStyle.scale)
+                anchors.fill: parent
+                anchors.margins: -cover
+                radius: root.videoRadius + cover
+                color: "transparent"
+                border.width: cover
+                border.color: cardBackground.color
+                antialiasing: true
+            }
+        }
+
+        Rectangle {
+            readonly property real lineWidth: VLCStyle.dp(2, VLCStyle.scale)
+            x: videoSurface.x - lineWidth / 2
+            y: videoSurface.y - lineWidth / 2
+            width: videoSurface.width + lineWidth
+            height: videoSurface.height + lineWidth
+            radius: root.videoRadius + lineWidth / 2
+            color: "transparent"
+            border.width: lineWidth
+            // no light Figma frame: same color as the progress track, like dark
+            border.color: root.trackColor
+            antialiasing: true
         }
     }
 
@@ -266,7 +306,7 @@ T.Control {
             Layout.fillWidth: true
             Layout.preferredHeight: VLCStyle.dp(8, VLCStyle.scale)
             radius: height / 2
-            color: root.dark ? "#090909" : "#D5D5D5"
+            color: root.trackColor
 
             Rectangle {
                 width: Math.max(height, parent.width * Player.position)
