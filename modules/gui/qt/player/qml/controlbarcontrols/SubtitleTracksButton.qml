@@ -26,7 +26,8 @@ import VLC.Util
 // audio and subtitle buttons at the bottom right)
 LangButton {
     tab: 2
-    text: VLCIcons.subtitle
+    // Figma player bar: subtitle box, filled while the popover is open
+    text: checked ? VLCIcons.audiosub_active : VLCIcons.audiosub
     description: qsTr("Subtitle tracks")
     AccessibleCompat.id: "subtitleTracksButton"
 }

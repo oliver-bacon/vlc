@@ -27,7 +27,8 @@ import VLC.Player
 Widgets.IconToolButton {
     id: extdSettingsBtn
 
-    text: VLCIcons.playback_settings
+    // Figma: filled gear while the panel is open
+    text: checked ? VLCIcons.playback_settings_active : VLCIcons.playback_settings
 
     description: qsTr("Playback settings")
     checked: panel.opened

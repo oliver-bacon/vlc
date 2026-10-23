@@ -155,6 +155,10 @@
         {"key":"chapters_sel_accent", "path": "./icons/figma/chapters_selected_accent.svg"},
         {"key":"playback_tab", "path": "./icons/figma/playback_tab.svg"},
         {"key":"playback_tab_sel", "path": "./icons/figma/playback_tab_selected.svg"},
-        {"key":"playback_tab_sel_accent", "path": "./icons/figma/playback_tab_selected_accent.svg"}
+        {"key":"playback_tab_sel_accent", "path": "./icons/figma/playback_tab_selected_accent.svg"},
+        {"key":"visualization_active", "path": "./icons/figma/audio_active.svg"},
+        {"key":"audiosub_active", "path": "./icons/figma/subtitles_active.svg"},
+        {"key":"playback_settings_active", "path": "./icons/figma/playback_settings_active.svg"},
+        {"key":"lists_active", "path": "./icons/figma/lists_active.svg"}
     ]
 }

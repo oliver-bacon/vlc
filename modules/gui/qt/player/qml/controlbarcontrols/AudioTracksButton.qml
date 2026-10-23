@@ -26,7 +26,8 @@ import VLC.Util
 // audio and subtitle buttons at the bottom right)
 LangButton {
     tab: 1
-    text: VLCIcons.visualization
+    // Figma: bolder full-accent icon while the popover is open
+    text: checked ? VLCIcons.visualization_active : VLCIcons.visualization
     description: qsTr("Audio tracks and output")
     AccessibleCompat.id: "audioTracksButton"
 }

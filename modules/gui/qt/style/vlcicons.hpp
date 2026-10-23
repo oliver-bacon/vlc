@@ -165,6 +165,10 @@ class VLCIcons : public QObject {
     Q_PROPERTY(QChar playback_tab MEMBER playback_tab CONSTANT FINAL)
     Q_PROPERTY(QChar playback_tab_sel MEMBER playback_tab_sel CONSTANT FINAL)
     Q_PROPERTY(QChar playback_tab_sel_accent MEMBER playback_tab_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar visualization_active MEMBER visualization_active CONSTANT FINAL)
+    Q_PROPERTY(QChar audiosub_active MEMBER audiosub_active CONSTANT FINAL)
+    Q_PROPERTY(QChar playback_settings_active MEMBER playback_settings_active CONSTANT FINAL)
+    Q_PROPERTY(QChar lists_active MEMBER lists_active CONSTANT FINAL)
 
 
 public:
@@ -326,6 +330,10 @@ public:
     static constexpr inline QChar playback_tab{ u'\ue094' };
     static constexpr inline QChar playback_tab_sel{ u'\ue095' };
     static constexpr inline QChar playback_tab_sel_accent{ u'\ue096' };
+    static constexpr inline QChar visualization_active{ u'\ue097' };
+    static constexpr inline QChar audiosub_active{ u'\ue098' };
+    static constexpr inline QChar playback_settings_active{ u'\ue099' };
+    static constexpr inline QChar lists_active{ u'\ue09a' };
 
 };
 

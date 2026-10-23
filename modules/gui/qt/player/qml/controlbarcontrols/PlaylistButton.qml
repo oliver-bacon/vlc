@@ -28,7 +28,8 @@ import VLC.Player
 Widgets.IconToolButton {
     id: playlistBtn
 
-    text: VLCIcons.playlist
+    // Figma player bar: queue list, bolder in the accent colour while open
+    text: checked ? VLCIcons.lists_active : VLCIcons.lists
     signal requestLockUnlockAutoHide(bool lock)
 
     // Queue / Bookmarks / Chapters card on the right side of the player, like

@@ -47,9 +47,13 @@ Widgets.IconToolButton {
 
     // Settings
 
-    text: VLCIcons.audiosub
+    text: checked ? VLCIcons.audiosub_active : VLCIcons.audiosub
 
     enabled: menuLoader.status === Loader.Ready
+
+    // highlighted while its popover is open (on its own tab)
+    checked: menuLoader.status === Loader.Ready && menuLoader.item.opened
+             && (root.tab < 0 || menuLoader.item.currentTab === root.tab)
 
     description: qsTr("Languages and tracks")
 
