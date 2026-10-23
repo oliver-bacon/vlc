@@ -272,7 +272,10 @@ QVariant MLMediaModel::itemRoleData(const MLItem *item, int role) const
         {
             vlc_ml_thumbnail_status_t status;
             const QString thumbnail(video->smallCover(&status));
-            if (status == VLC_ML_THUMBNAIL_STATUS_MISSING || status == VLC_ML_THUMBNAIL_STATUS_FAILURE)
+            // also retry "persistent" failures: they are often only a timeout
+            // on a slow drive or a large file, which may work the next time
+            if (status == VLC_ML_THUMBNAIL_STATUS_MISSING || status == VLC_ML_THUMBNAIL_STATUS_FAILURE
+                || status == VLC_ML_THUMBNAIL_STATUS_PERSISTENT_FAILURE)
                 generateThumbnail(video);
             return QVariant::fromValue(thumbnail);
         }

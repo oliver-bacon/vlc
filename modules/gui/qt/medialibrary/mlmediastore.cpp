@@ -203,7 +203,8 @@ void MLMediaStore::setMedia(const QString &mrl, MLMedia media)
     vlc_ml_thumbnail_status_t status;
     media.smallCover(&status);
     if (media.type() == VLC_ML_MEDIA_TYPE_VIDEO
-        && (status == VLC_ML_THUMBNAIL_STATUS_MISSING || status == VLC_ML_THUMBNAIL_STATUS_FAILURE))
+        && (status == VLC_ML_THUMBNAIL_STATUS_MISSING || status == VLC_ML_THUMBNAIL_STATUS_FAILURE
+            || status == VLC_ML_THUMBNAIL_STATUS_PERSISTENT_FAILURE))
     {
         static QSet<int64_t> requested;
         const int64_t id = media.getId().id;

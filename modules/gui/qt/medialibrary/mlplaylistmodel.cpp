@@ -331,7 +331,8 @@ QVariant MLPlaylistModel::itemRoleData(const MLItem *item, int role) const /* ov
             QString thumbnail = media->smallCover(&status);
             if ((media->type() == VLC_ML_MEDIA_TYPE_VIDEO)
                 && (status == VLC_ML_THUMBNAIL_STATUS_MISSING
-                    || status == VLC_ML_THUMBNAIL_STATUS_FAILURE))
+                    || status == VLC_ML_THUMBNAIL_STATUS_FAILURE
+                    || status == VLC_ML_THUMBNAIL_STATUS_PERSISTENT_FAILURE))
             {
                 generateThumbnail(item->getId());
             }
