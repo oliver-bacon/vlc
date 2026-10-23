@@ -873,6 +873,7 @@ qml_modules += {
        'player/qml/controlbarcontrols/ChapterPreviousButton.qml',
        'player/qml/controlbarcontrols/DvdMenuButton.qml',
        'player/qml/controlbarcontrols/ExpandingSpacerWidget.qml',
+       'player/qml/controlbarcontrols/SeekBarWidget.qml',
        'player/qml/controlbarcontrols/ExtendedSettingsButton.qml',
        'player/qml/controlbarcontrols/FasterButton.qml',
        'player/qml/controlbarcontrols/FrameNextButton.qml',

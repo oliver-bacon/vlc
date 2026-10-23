@@ -64,7 +64,7 @@ Item {
         for (const m of barModels) {
             if (!m)
                 continue
-            lists.push(m.left, m.center, m.right)
+            lists.push(m.left, m.center, m.right, m.top)
         }
         return lists.filter((l) => !!l)
     }

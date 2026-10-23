@@ -60,23 +60,42 @@ FocusScope {
         }
     }
 
-    Binding on Layout.maximumWidth {
+    // width of the controls at their implicit sizes
+    property real _contentWidth: 0
+    // a control takes all the free width (the seek bar, VLC Redesign)
+    property bool expands: false
+
+    Binding on _contentWidth {
         delayed: true
         when: controlLayout._componentCompleted
         value: {
-            let maximumWidth = 0
+            let width = 0
             const count = repeater.count
 
             for (let i = 0; i < count; ++i) {
                 const item = repeater.itemAt(i)
-                maximumWidth += item.implicitWidth
+                width += item.implicitWidth
             }
 
-            maximumWidth += ((count - 1 + ((alignment & (Qt.AlignLeft | Qt.AlignRight)) ? 1 : 0)) * playerControlLayout.spacing)
+            width += ((count - 1 + ((alignment & (Qt.AlignLeft | Qt.AlignRight)) ? 1 : 0)) * playerControlLayout.spacing)
 
-            return maximumWidth
+            return width
         }
     }
+
+    Binding on expands {
+        delayed: true
+        when: controlLayout._componentCompleted
+        value: {
+            for (let i = 0; i < repeater.count; ++i) {
+                if (repeater.itemAt(i)?.item?.expands === true)
+                    return true
+            }
+            return false
+        }
+    }
+
+    Layout.maximumWidth: expands ? Number.POSITIVE_INFINITY : _contentWidth
 
     property alias alignment: repeater.alignment
 
@@ -95,6 +114,8 @@ FocusScope {
 
     property alias model: repeater.model
 
+    readonly property alias count: repeater.count
+
     property alias spacing: rowLayout.spacing
 
     // Signals
@@ -106,7 +127,7 @@ FocusScope {
 
     // Settings
 
-    implicitWidth: Layout.maximumWidth
+    implicitWidth: _contentWidth
     implicitHeight: rowLayout.implicitHeight
 
     Navigation.navigable: {

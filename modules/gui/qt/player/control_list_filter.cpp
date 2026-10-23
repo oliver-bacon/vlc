@@ -62,10 +62,6 @@ bool ControlListFilter::filterAcceptsRow(int source_row, const QModelIndex &) co
     ControlListModel::ControlType type
         = static_cast<ControlListModel::ControlType> (variant.toInt());
 
-    // the seek bar is placed by the control bar itself (ControlBar.qml)
-    if (type == ControlListModel::SEEK_BAR)
-        return false;
-
     // NOTE: These controls are completely hidden when the current media does not support them.
     if (type == ControlListModel::NAVIGATION_BUTTONS)
     {

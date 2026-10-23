@@ -1494,14 +1494,10 @@ FocusScope {
         bottomPadding: VLCStyle.applicationVerticalMargin + VLCStyle.margin_xsmall
         topPadding: VLCStyle.margin_xsmall
 
-        // Single-row bar when the control layout allows it (no center
-        // controls, e.g. the "Modern Style" profile); otherwise the
-        // classic two-row bar.
-        // Seek bar in the bar when it is alone in the center of the layout,
-        // else in a row of its own with the times on its sides (VLC
-        // Redesign: video player of the Figma file)
-        textPosition: canInline ? ControlBar.TimeTextPosition.Inline
-                                : ControlBar.TimeTextPosition.LeftRightSlider
+        // The seek bar is a control of the bar, with the times on its sides
+        // (VLC Redesign): in the bar or in the row above it
+        seekBarControl: true
+        textPosition: ControlBar.TimeTextPosition.LeftRightSlider
 
         // hide right text so that it won't overlap with play queue
         showRemainingTime: (textPosition !== ControlBar.TimeTextPosition.AboveSlider)

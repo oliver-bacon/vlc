@@ -39,6 +39,10 @@ class PlayerControlbarModel : public QObject
     Q_PROPERTY(ControlListModel* left READ left CONSTANT FINAL)
     Q_PROPERTY(ControlListModel* center READ center CONSTANT FINAL)
     Q_PROPERTY(ControlListModel* right READ right CONSTANT FINAL)
+    // VLC Redesign: the row above the bar (seek row); the controls before the
+    // seek bar (ControlListModel::SEEK_BAR) are on its left, those after it
+    // on its right
+    Q_PROPERTY(ControlListModel* top READ top CONSTANT FINAL)
 
 public:
     // When there is a need to add a new Player, just
@@ -63,6 +67,9 @@ public:
     // added entry without any other modification.
     // (except for the translation)
 
+    // left, center, right, top
+    using Data = std::array<QVector<int>, 4>;
+
     static const QMap<PlayerIdentifier, const char*> playerIdentifierDictionary;
 
     static QJSValue getPlaylistIdentifierListModel(class QQmlEngine *engine,
@@ -74,12 +81,13 @@ public:
     bool dirty() const;
     bool empty() const;
 
-    std::array<QVector<int>, 3> serializeModels() const;
-    void loadModels(const std::array<QVector<int>, 3>& array);
+    Data serializeModels() const;
+    void loadModels(const Data& array);
 
     ControlListModel* left() const;
     ControlListModel* center() const;
     ControlListModel* right() const;
+    ControlListModel* top() const;
 
     bool operator==(const PlayerControlbarModel& model) const;
     bool operator!=(const PlayerControlbarModel& model) const {
@@ -101,6 +109,7 @@ private:
     ControlListModel* m_left = nullptr;
     ControlListModel* m_center = nullptr;
     ControlListModel* m_right = nullptr;
+    ControlListModel* m_top = nullptr;
 
 private slots:
     void contentChanged();

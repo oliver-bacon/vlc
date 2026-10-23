@@ -56,7 +56,8 @@ Repeater {
 
         Layout.fillWidth: (item && item.Layout.minimumWidth > 0)
         Layout.minimumWidth: Layout.fillWidth ? item.Layout.minimumWidth : (item ? item.implicitWidth : -1)
-        Layout.maximumWidth: Layout.fillWidth ? (item ? item.implicitWidth : -1) : -1
+        // controls with `expands` (the seek bar) take all the free width
+        Layout.maximumWidth: Layout.fillWidth ? (item ? (item.expands === true ? Number.POSITIVE_INFINITY : item.implicitWidth) : -1) : -1
 
         Layout.minimumHeight: 0
         Layout.maximumHeight: Math.min((item && item.implicitHeight <= 0) ? Number.MAX_VALUE : item.implicitHeight, repeater.availableHeight)

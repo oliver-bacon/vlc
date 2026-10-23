@@ -63,7 +63,7 @@ PlayerControlbarModel *ControlbarProfile::getModel(int identifier) const
     }
 }
 
-void ControlbarProfile::setModelData(int identifier, const std::array<QVector<int>, 3> &data)
+void ControlbarProfile::setModelData(int identifier, const PlayerControlbarModel::Data &data)
 {
     auto ptrModel = getModel(identifier);
 
@@ -84,7 +84,7 @@ void ControlbarProfile::setModelData(int identifier, const std::array<QVector<in
     ptrModel->setDirty(true);
 }
 
-std::array<QVector<int>, 3> ControlbarProfile::getModelData(int identifier) const
+PlayerControlbarModel::Data ControlbarProfile::getModelData(int identifier) const
 {
     const auto ptrModel = getModel(identifier);
 
@@ -177,7 +177,9 @@ void ControlbarProfile::generateLinearControlList()
 
     for (const auto& i : m_models)
     {
-        linearControls.append(i->serializeModels()[0] + i->serializeModels()[1] + i->serializeModels()[2]);
+        const auto data = i->serializeModels();
+        for (const auto& list : data)
+            linearControls.append(list);
     }
 
     emit controlListChanged(linearControls);

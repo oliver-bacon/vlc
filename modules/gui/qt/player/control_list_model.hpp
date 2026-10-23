@@ -69,8 +69,8 @@ public:
         PLAYBACK_SPEED_BUTTON,
         HIGH_RESOLUTION_TIME_WIDGET,
         FRAME_PREV_BUTTON,
-        // VLC Redesign: the seek bar. Alone in the center of a player bar it
-        // is shown in the bar (single row), else in a row above the bar.
+        // VLC Redesign: the seek bar (with the times), a control that takes
+        // the free width of its part of the bar
         SEEK_BAR,
 
         SPLITTER = 0x20,

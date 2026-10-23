@@ -20,6 +20,8 @@
 #include <QSettings>
 #include <QChar>
 
+#include <algorithm>
+
 #include "qt.hpp"
 #include "controlbar_profile.hpp"
 #include "player/control_list_model.hpp"
@@ -567,7 +569,7 @@ ControlbarProfileModel::ControlbarProfileModel(QSettings* settings, QObject *par
 
 // VLC Redesign: top bar of the player ("..." menu, library side panel,
 // folder of the media; title in the middle), the same for every style
-static const std::array<QVector<int>, 3> defaultTopbar {
+static const PlayerControlbarModel::Data defaultTopbar {
     QVector<int> { ControlListModel::MENU_BUTTON, ControlListModel::LIBRARY_BUTTON,
                    ControlListModel::DIVIDER, ControlListModel::FOLDER_NAME_LABEL },
     QVector<int> { ControlListModel::MEDIA_TITLE_LABEL },
@@ -575,20 +577,32 @@ static const std::array<QVector<int>, 3> defaultTopbar {
 };
 
 // Settings key: version of the saved layouts (VLC Redesign): 1 = they have
-// the SEEK_BAR control, 2 = the centered video bar of 1 is back to one row
+// the SEEK_BAR control, 2 = the centered video bar of 1 is back to one row,
+// 3 = the seek bar can be anywhere: a bar without it in its left, center or
+// right part has it in the row above (top)
 constexpr QLatin1String SETTINGS_KEY_SEEKBAR {"SeekBarControl"};
-constexpr int SEEKBAR_LAYOUT_VERSION = 2;
+constexpr int SEEKBAR_LAYOUT_VERSION = 3;
 
-// Bars of the styles have no center controls where the seek bar is in the
-// bar (VLC Redesign): it is there as SEEK_BAR
-static void addInlineSeekBar(ControlbarProfile* profile)
+static bool hasSeekBar(const PlayerControlbarModel::Data& data)
+{
+    return std::any_of(data.cbegin(), data.cend(), [](const QVector<int>& list) {
+        return list.contains(ControlListModel::SEEK_BAR);
+    });
+}
+
+// Bars of the styles get the seek bar (VLC Redesign): in the bar when it has
+// no center controls (single row), else in the row above
+static void addSeekBar(ControlbarProfile* profile)
 {
     for (const int identifier : { PlayerControlbarModel::Videoplayer, PlayerControlbarModel::Audioplayer })
     {
         auto data = profile->getModelData(identifier);
-        if (!data[1].isEmpty())
+        if (hasSeekBar(data))
             continue;
-        data[1] = { ControlListModel::SEEK_BAR };
+        if (data[1].isEmpty())
+            data[1] = { ControlListModel::SEEK_BAR };
+        else
+            data[3] = { ControlListModel::SEEK_BAR };
         profile->setModelData(identifier, data);
     }
 }
@@ -607,7 +621,7 @@ void ControlbarProfileModel::insertDefaults()
 
         ptrNewProfile->injectModel(i.modelData);
         ptrNewProfile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
-        addInlineSeekBar(ptrNewProfile);
+        addSeekBar(ptrNewProfile);
         ptrNewProfile->resetDirty(); // default profiles should not be dirty initially
     }
 
@@ -626,7 +640,7 @@ bool ControlbarProfileModel::restoreSelectedDefault()
             continue;
         profile->injectModel(i.modelData);
         profile->setModelData(PlayerControlbarModel::Topbar, defaultTopbar);
-        addInlineSeekBar(profile);
+        addSeekBar(profile);
         return true;
     }
     return false;
@@ -861,7 +875,9 @@ void ControlbarProfileModel::save(bool clearDirty) const
                    SETTINGS_CONFIGURATION_SEPARATOR %
                    join(serializedModels[1]) %
                    SETTINGS_CONFIGURATION_SEPARATOR %
-                   join(serializedModels[2]);
+                   join(serializedModels[2]) %
+                   SETTINGS_CONFIGURATION_SEPARATOR %
+                   join(serializedModels[3]);
         }
 
         if (clearDirty)
@@ -923,7 +939,8 @@ bool ControlbarProfileModel::reload()
 
             const auto alignments = j.split(SETTINGS_CONFIGURATION_SEPARATOR);
 
-            if (alignments.length() != 4)
+            // identifier, left, center, right and (VLC Redesign) top
+            if (alignments.length() != 4 && alignments.length() != 5)
                 continue;
 
             bool ok = false;
@@ -948,9 +965,11 @@ bool ControlbarProfileModel::reload()
                 return list;
             };
 
-            const std::array<QVector<int>, 3> data { split(alignments[1]),
+            const PlayerControlbarModel::Data data { split(alignments[1]),
                                                      split(alignments[2]),
-                                                     split(alignments[3]) };
+                                                     split(alignments[3]),
+                                                     (alignments.length() > 4) ? split(alignments[4])
+                                                                               : QVector<int> {} };
 
             ptrNewProfile->setModelData(identifier, data);
             ptrNewProfile->resetDirty(); // Newly loaded model can not be dirty
@@ -970,7 +989,7 @@ bool ControlbarProfileModel::reload()
                                           ControlListModel::NEXT_BUTTON };
             // an empty center meant the seek bar in the bar
             if (layoutVersion < 1)
-                addInlineSeekBar(ptrNewProfile);
+                addSeekBar(ptrNewProfile);
             // version 1 had the "Modern Style" video controls in the middle
             // with the seek bar above: back to one row
             auto video = ptrNewProfile->getModelData(PlayerControlbarModel::Videoplayer);
@@ -980,6 +999,8 @@ bool ControlbarProfileModel::reload()
                 video[1] = { ControlListModel::SEEK_BAR };
                 ptrNewProfile->setModelData(PlayerControlbarModel::Videoplayer, video);
             }
+            // before version 3 a bar without the seek bar in it had it above
+            addSeekBar(ptrNewProfile);
             ptrNewProfile->resetDirty();
         }
 
@@ -1179,7 +1200,7 @@ ControlbarProfile *ControlbarProfileModel::generateProfileFromStyle(const Style 
         {
             const auto ptrNewProfile = new ControlbarProfile();
             ptrNewProfile->injectModel(i.modelData);
-            addInlineSeekBar(ptrNewProfile);
+            addSeekBar(ptrNewProfile);
             ptrNewProfile->setName(i.name);
             ptrNewProfile->resetDirty(); // default profiles should not be dirty initially
             return ptrNewProfile;

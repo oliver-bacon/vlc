@@ -36,22 +36,23 @@ FocusScope {
 
     property int identifier: -1
 
-    // Items placed between the left and the right controls, filling the
-    // free space (used by the single-row control bar to host the seek bar).
-    // Only shown when the layout has no center controls.
-    property list<Item> inlineItems
-    property real inlineMinimumWidth: VLCStyle.dp(120, VLCStyle.scale)
-
-    // the center controls, without the seek bar (ControlListModel.SEEK_BAR)
-    readonly property var _centerIds: {
-        if (!model?.center)
-            return []
+    // the part (0 left, 1 center, 2 right) with the seek bar
+    // (ControlListModel.SEEK_BAR, VLC Redesign), -1 without: that part takes
+    // the free width of the bar
+    readonly property int seekPart: {
+        if (!model?.left || !model?.center || !model?.right)
+            return -1
+        void model.left.count
         void model.center.count
-        return model.center.getControls()
+        void model.right.count
+        const parts = [model.left, model.center, model.right]
+        return parts.findIndex((part) => part.getControls().includes(ControlListModel.SEEK_BAR))
     }
-    readonly property bool hasCenterControls: _centerIds.some((id) => id !== ControlListModel.SEEK_BAR)
-    // the seek bar is in this bar, between the left and right controls
-    readonly property bool seekBarInline: !hasCenterControls && _centerIds.includes(ControlListModel.SEEK_BAR)
+    readonly property bool hasCenterControls: (model?.center?.count ?? 0) > 0
+
+    // the seek bar can be dropped in this bar (Customize Player)
+    readonly property bool acceptsSeekBar: identifier === PlayerControlbarModel.Videoplayer ||
+                                           identifier === PlayerControlbarModel.Audioplayer
 
     // VLC Redesign "Customize Player": the bar is edited in place
     readonly property bool editing: MainCtx.playerCustomizing && !!model
@@ -79,10 +80,12 @@ FocusScope {
     // Settings
 
     implicitWidth: editing ? editRow.implicitWidth
+                           : loaderSeek.active ? loaderSeek.implicitWidth
                            : loaderLeftRight.active ? loaderLeftRight.implicitWidth
                                                     : (loaderLeft.implicitWidth + loaderCenter.implicitWidth + loaderRight.implicitWidth)
 
     implicitHeight: editing ? editRow.implicitHeight
+                            : loaderSeek.active ? loaderSeek.implicitHeight
                             : loaderLeftRight.active ? loaderLeftRight.implicitHeight
                                                      : Math.max(loaderLeft.implicitHeight, loaderCenter.implicitHeight, loaderRight.implicitHeight)
 
@@ -93,11 +96,30 @@ FocusScope {
     // Children
 
     // as in the normal bar: the center part in the middle, the left and
-    // right parts take the free width on each side
+    // right parts take the free width on each side; with the seek bar, its
+    // part takes the free width
     Item {
         id: editRow
 
         readonly property real gap: VLCStyle.margin_xsmall
+        readonly property int seekPart: playerControlLayout.seekPart
+        readonly property var sections: [editLeft, editCenter, editRight]
+
+        // width of the part with the seek bar
+        readonly property real seekWidth: {
+            if (seekPart < 0)
+                return 0
+            let fixed = 2 * gap
+            for (let i = 0; i < 3; ++i) {
+                if (i !== seekPart)
+                    fixed += sections[i].implicitWidth
+            }
+            return Math.max(sections[seekPart].implicitWidth, width - fixed)
+        }
+
+        function partWidth(part) {
+            return (seekPart === part) ? seekWidth : sections[part].implicitWidth
+        }
 
         anchors.fill: parent
         visible: playerControlLayout.editing
@@ -105,30 +127,109 @@ FocusScope {
         implicitWidth: editLeft.implicitWidth + editCenter.implicitWidth + editRight.implicitWidth + 2 * gap
         implicitHeight: Math.max(editLeft.implicitHeight, editCenter.implicitHeight, editRight.implicitHeight)
 
-        // with the seek bar in the bar, the left and right parts take their
-        // controls and the seek bar the rest (as loaderLeftRight)
-        readonly property bool seekInline: playerControlLayout.seekBarInline
-
         LiveBarSection {
             id: editLeft
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-            width: editRow.seekInline ? implicitWidth : (editCenter.x - editRow.gap)
+            width: editRow.seekPart >= 0 ? editRow.partWidth(0) : (editCenter.x - editRow.gap)
             model: playerControlLayout.model?.left ?? null
+            acceptsSeekBar: playerControlLayout.acceptsSeekBar
         }
         LiveBarSection {
             id: editCenter
             anchors { top: parent.top; bottom: parent.bottom }
-            x: editRow.seekInline ? editLeft.width + editRow.gap : (parent.width - width) / 2
-            width: editRow.seekInline ? Math.max(implicitWidth, editRight.x - editRow.gap - x) : implicitWidth
+            x: editRow.seekPart >= 0 ? editLeft.width + editRow.gap : (parent.width - width) / 2
+            width: editRow.seekPart >= 0 ? editRow.partWidth(1) : implicitWidth
             model: playerControlLayout.model?.center ?? null
+            acceptsSeekBar: playerControlLayout.acceptsSeekBar
         }
         LiveBarSection {
             id: editRight
             anchors { top: parent.top; bottom: parent.bottom }
-            width: editRow.seekInline ? implicitWidth : (parent.width - x)
-            x: editRow.seekInline ? parent.width - width : editCenter.x + editCenter.width + editRow.gap
+            width: editRow.seekPart >= 0 ? editRow.partWidth(2) : (parent.width - x)
+            x: editRow.seekPart >= 0 ? parent.width - width : editCenter.x + editCenter.width + editRow.gap
             alignRight: true
             model: playerControlLayout.model?.right ?? null
+            acceptsSeekBar: playerControlLayout.acceptsSeekBar
+        }
+    }
+
+    // with the seek bar (VLC Redesign): the three parts in a row, the one
+    // with the seek bar takes the free width
+    Loader {
+        id: loaderSeek
+
+        visible: !playerControlLayout.editing
+
+        anchors.fill: parent
+
+        active: playerControlLayout.seekPart >= 0
+
+        focus: active
+
+        sourceComponent: RowLayout {
+            id: seekRow
+
+            spacing: playerControlLayout.layoutSpacing
+
+            focus: true
+
+            component Part: ControlLayout {
+                id: part
+
+                required property int index
+                required property var sourceList
+
+                readonly property bool _seekPart: playerControlLayout.seekPart === index
+
+                visible: count > 0
+                Layout.fillWidth: _seekPart
+                Layout.fillHeight: true
+
+                model: ControlListFilter {
+                    sourceModel: part.sourceList
+
+                    player: Player
+                    ctx: MainCtx
+                }
+
+                // the seek bar's part has no filler around its controls
+                alignment: _seekPart ? Qt.AlignVCenter
+                                     : (index === 2) ? (Qt.AlignVCenter | Qt.AlignRight)
+                                                     : (Qt.AlignVCenter | Qt.AlignLeft)
+
+                spacing: playerControlLayout.spacing
+
+                altFocusAction: () => Navigation.defaultNavigationUp()
+
+                Navigation.parentItem: playerControlLayout
+
+                Component.onCompleted: {
+                    requestLockUnlockAutoHide.connect(playerControlLayout.requestLockUnlockAutoHide)
+                    menuOpened.connect(playerControlLayout.menuOpened)
+                    playerControlLayout.forceUnlock.connect(part.forceUnlock)
+                }
+            }
+
+            Part {
+                id: seekLeft
+                index: 0
+                sourceList: playerControlLayout.model.left
+                focus: true
+                Navigation.rightItem: seekCenter.visible ? seekCenter : seekRight
+            }
+            Part {
+                id: seekCenter
+                index: 1
+                sourceList: playerControlLayout.model.center
+                Navigation.leftItem: seekLeft
+                Navigation.rightItem: seekRight
+            }
+            Part {
+                id: seekRight
+                index: 2
+                sourceList: playerControlLayout.model.right
+                Navigation.leftItem: seekCenter.visible ? seekCenter : seekLeft
+            }
         }
     }
 
@@ -139,7 +240,7 @@ FocusScope {
 
         anchors.fill: parent
 
-        active: !loaderCenter.active &&
+        active: !loaderSeek.active && !loaderCenter.active &&
                 playerControlLayout.model &&
                 ((playerControlLayout.model.left && (playerControlLayout.model.left.count > 0)) ||
                 (playerControlLayout.model.right && (playerControlLayout.model.right.count > 0)))
@@ -194,29 +295,12 @@ FocusScope {
                     return false
                 }
 
-                readonly property bool hasInlineItems: playerControlLayout.inlineItems.length > 0
-
-                Layout.minimumWidth: {
-                    if (hasInlineItems)
-                        return playerControlLayout.inlineMinimumWidth
-                    return (containsVisibleItem(leftRepeater) && containsVisibleItem(rightRepeater)) ? playerControlLayout.layoutSpacing
-                                                                                                     : 0
-                }
+                Layout.minimumWidth: (containsVisibleItem(leftRepeater) && containsVisibleItem(rightRepeater)) ? playerControlLayout.layoutSpacing
+                                                                                                               : 0
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                // Spacing for the filler acts as padding around the inline items
-                Layout.leftMargin: hasInlineItems ? playerControlLayout.layoutSpacing - playerControlLayout.spacing : 0
-                Layout.rightMargin: Layout.leftMargin
                 visible: true
-
-                RowLayout {
-                    anchors.fill: parent
-
-                    spacing: VLCStyle.margin_xsmall
-
-                    children: playerControlLayout.inlineItems
-                }
             }
 
             ControlRepeater {
@@ -266,7 +350,8 @@ FocusScope {
             rightMargin: layoutSpacing - spacing
         }
 
-        active: !!playerControlLayout.model?.left && (playerControlLayout.model.left.count > 0) &&
+        active: !loaderSeek.active &&
+                !!playerControlLayout.model?.left && (playerControlLayout.model.left.count > 0) &&
                 !loaderLeftRight.active
 
         focus: active
@@ -312,7 +397,7 @@ FocusScope {
         }
 
         // TODO: "ControlListFilter"'s count......
-        active: playerControlLayout.hasCenterControls
+        active: !loaderSeek.active && playerControlLayout.hasCenterControls
 
         Binding on width {
             delayed: true
@@ -380,7 +465,8 @@ FocusScope {
             leftMargin: layoutSpacing - spacing
         }
 
-        active: !!playerControlLayout.model && !!playerControlLayout.model.right && (playerControlLayout.model.right.count > 0) &&
+        active: !loaderSeek.active &&
+                !!playerControlLayout.model && !!playerControlLayout.model.right && (playerControlLayout.model.right.count > 0) &&
                 !loaderLeftRight.active
 
         sourceComponent: ControlLayout {

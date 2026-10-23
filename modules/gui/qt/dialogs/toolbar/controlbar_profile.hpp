@@ -25,7 +25,7 @@
 
 Q_MOC_INCLUDE( "player/player_controlbar_model.hpp" )
 
-class PlayerControlbarModel;
+#include "player/player_controlbar_model.hpp"
 
 class ControlbarProfile : public QObject
 {
@@ -42,8 +42,8 @@ public:
     PlayerControlbarModel* newModel(int identifier);
     Q_INVOKABLE PlayerControlbarModel* getModel(int identifier) const;
 
-    void setModelData(int identifier, const std::array<QVector<int>, 3>& data);
-    std::array<QVector<int>, 3> getModelData(int identifier) const;
+    void setModelData(int identifier, const PlayerControlbarModel::Data& data);
+    PlayerControlbarModel::Data getModelData(int identifier) const;
 
     void deleteModel(int identifier);
 
@@ -76,7 +76,7 @@ private:
 
     struct Configuration {
         int identifier;
-        std::array<QVector<int>, 3> data;
+        PlayerControlbarModel::Data data;
     };
 
 private:

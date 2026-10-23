@@ -38,7 +38,7 @@ T.Pane {
         AboveSlider,
         LeftRightSlider,
         // Single row: [left controls] time [seek track] length [right controls].
-        // Only valid when the seek bar is alone in the center, see `canInline`.
+        // (not used by the VLC Redesign player bar, see `seekBarControl`)
         Inline
     }
 
@@ -58,14 +58,23 @@ T.Pane {
     // (Customize Player: also from the top, the seek bar row is a dashed box)
     // (VLC Redesign: also with the times left and right of the seek bar row,
     // the bar is one solid surface)
-    readonly property real sliderY: (_inline || _redesignRow || MainCtx.playerCustomizing) ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
+    readonly property real sliderY: (_inline || _redesignRow || seekBarControl || MainCtx.playerCustomizing) ? 0 : mapFromItem(contentItem, 0, contentItem.sliderY).y
     // seek bar in a row of its own above the controls (VLC Redesign look)
     readonly property bool _redesignRow: (textPosition === ControlBar.TimeTextPosition.LeftRightSlider)
     property int textPosition: ControlBar.TimeTextPosition.AboveSlider
 
-    // Whether the current control layout can use TimeTextPosition.Inline
-    // (the seek bar is alone in the center of the layout, ControlListModel.SEEK_BAR)
-    readonly property bool canInline: contentItem?.playerControlLayout?.seekBarInline ?? false
+    // VLC Redesign: the seek bar is a control of the bar
+    // (ControlListModel.SEEK_BAR, SeekBarWidget.qml) that can be anywhere in
+    // the bar or in the row above it (the bar's `top` controls)
+    property bool seekBarControl: false
+
+    // SeekBarWidget: the seek bar control shows these items
+    readonly property bool isSeekBarHost: seekBarControl
+    property Item seekSlot: null
+    readonly property list<Item> seekBarItems: [mediaTime, trackPositionSlider, mediaRemainingTime]
+
+    // the seek bar is in the bar itself (single row)
+    readonly property bool _seekInBar: seekBarControl && ((contentItem?.playerControlLayout?.seekPart ?? -1) >= 0)
 
     property int identifier: -1
     property real sliderHeight: VLCStyle.heightBar_xxsmall
@@ -147,7 +156,7 @@ T.Pane {
 
         // Hairline separating the single-row control bar from the video
         Rectangle {
-            visible: root._inline
+            visible: root._inline || root._seekInBar
             anchors { top: parent.top; left: parent.left; right: parent.right }
             height: VLCStyle.border
             color: theme.border
@@ -283,44 +292,29 @@ T.Pane {
                     Navigation.defaultKeyAction(event)
                 }
             },
-            // Customize Player: the seek bar row as a dashed box (Figma
-            // "Player - customize"); the seek bar itself is not moved
-            DashedBorder {
-                parent: root
-                z: 10
-                visible: MainCtx.playerCustomizing && row2.visible
-                x: root.leftPadding + row2.x - VLCStyle.margin_xsmall
-                y: root.topPadding + row2.y - VLCStyle.margin_xxsmall
-                width: row2.width + 2 * VLCStyle.margin_xsmall
-                height: row2.height + 2 * VLCStyle.margin_xxsmall
-                radius: VLCStyle.dp(4, VLCStyle.scale)
-                dash: 4
-                gap: 3
-                color: Qt.alpha(theme.fg.secondary, 0.6)
-
-                // the seek bar is not used while customizing
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: parent.visible
-                }
-            },
             Loader {
                 id: bookmarksLoader
 
-                parent: root
-                // FIXME: bookmarks are positioned below row2, which is empty
-                // in the single-row layout; they are not shown there yet.
-                active: MainCtx.mediaLibraryAvailable && !root._inline
+                // the seek bar control: below it
+                readonly property Item slot: root.seekBarControl ? root.seekSlot : null
+
+                parent: slot ?? root
+                // FIXME: bookmarks are positioned below the seek bar row; in
+                // the single-row layout they are not shown yet.
+                active: MainCtx.mediaLibraryAvailable && !root._inline && !root._seekInBar &&
+                        (!root.seekBarControl || !!slot)
                 source: "qrc:///qt/qml/VLC/MediaLibrary/Bookmarks.qml"
 
-                x: root.leftPadding + trackPositionSlider.x + row2.Layout.leftMargin
-                y: row2.y + row2.height + VLCStyle.margin_xxsmall
+                x: slot ? trackPositionSlider.x : root.leftPadding + trackPositionSlider.x + row2.Layout.leftMargin
+                y: slot ? slot.height + VLCStyle.margin_xxsmall : row2.y + row2.height + VLCStyle.margin_xxsmall
                 width: trackPositionSlider.width
 
                 onLoaded: {
                    item.barHeight = Qt.binding(function() { return bookmarksHeight })
                    item.controlBarHovered = Qt.binding(function() { return root.hovered })
-                   item.yShift = Qt.binding(function() { return row2.height + VLCStyle.margin_xxsmall })
+                   item.yShift = Qt.binding(function() {
+                       return (slot ? slot.height : row2.height) + VLCStyle.margin_xxsmall
+                   })
                 }
             }
         ]
@@ -342,6 +336,8 @@ T.Pane {
             visible: children.length > 0
 
             children: {
+                if (root.seekBarControl)
+                    return []
                 switch (textPosition) {
                 case ControlBar.TimeTextPosition.AboveSlider:
                     return [mediaTime, mediaRemainingTime]
@@ -358,6 +354,8 @@ T.Pane {
             id: row2
 
             children: {
+                if (root.seekBarControl)
+                    return []
                 switch (textPosition) {
                 case ControlBar.TimeTextPosition.Hide:
                 case ControlBar.TimeTextPosition.AboveSlider:
@@ -384,6 +382,65 @@ T.Pane {
             Layout.rightMargin: Layout.leftMargin
         }
 
+        // VLC Redesign: the row above the bar (seek row), the bar's `top`
+        // controls; while customizing a box to drop controls in, also empty
+        Loader {
+            id: topRowLoader
+
+            readonly property var topModel: playerControlLayout.model?.top ?? null
+
+            Layout.fillWidth: true
+            Layout.leftMargin: VLCStyle.margin_large
+            Layout.rightMargin: VLCStyle.margin_large
+
+            active: root.seekBarControl && !!topModel && (MainCtx.playerCustomizing || topModel.count > 0)
+            visible: active
+
+            sourceComponent: MainCtx.playerCustomizing ? topEditComponent : topRowComponent
+
+            Component {
+                id: topRowComponent
+
+                ControlLayout {
+                    id: topRow
+
+                    model: ControlListFilter {
+                        sourceModel: topRowLoader.topModel
+
+                        player: Player
+                        ctx: MainCtx
+                    }
+
+                    // without the seek bar the controls start on the left
+                    alignment: expands ? Qt.AlignVCenter : (Qt.AlignVCenter | Qt.AlignLeft)
+
+                    spacing: playerControlLayout.spacing
+
+                    focus: true
+
+                    altFocusAction: () => Navigation.defaultNavigationDown()
+
+                    Navigation.parentItem: root
+                    Navigation.downItem: playerControlLayout
+
+                    onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
+
+                    onMenuOpened: (menu) => root.applyMenu(menu)
+
+                    Component.onCompleted: root.forceUnlock.connect(topRow.forceUnlock)
+                }
+            }
+
+            Component {
+                id: topEditComponent
+
+                LiveBarSection {
+                    model: topRowLoader.topModel
+                    acceptsSeekBar: true
+                }
+            }
+        }
+
         PlayerControlLayout {
             id: playerControlLayout
 
@@ -394,10 +451,8 @@ T.Pane {
 
             identifier: root.identifier
 
-            inlineItems: root._inline ? [mediaTime, trackPositionSlider, mediaRemainingTime] : []
-
             implicitHeight: {
-                const h = (MainCtx.pinVideoControls || root._inline) ? VLCStyle.controlLayoutHeightPinned
+                const h = (MainCtx.pinVideoControls || root._inline || root._seekInBar) ? VLCStyle.controlLayoutHeightPinned
                                                                      : VLCStyle.controlLayoutHeight
                 // the dashed boxes of Customize Player need a bit more
                 return editing ? Math.max(h, editHeight) : h
@@ -407,7 +462,8 @@ T.Pane {
 
             // In the single-row layout the slider is part of this row and
             // is reached with Tab / left-right navigation instead.
-            Navigation.upItem: (trackPositionSlider.enabled && !root._inline) ? trackPositionSlider : root.Navigation.upItem
+            Navigation.upItem: root.seekBarControl ? (topRowLoader.item && !MainCtx.playerCustomizing ? topRowLoader.item : root.Navigation.upItem)
+                                                   : (trackPositionSlider.enabled && !root._inline) ? trackPositionSlider : root.Navigation.upItem
 
             onRequestLockUnlockAutoHide: (lock) => root.requestLockUnlockAutoHide(lock)
 

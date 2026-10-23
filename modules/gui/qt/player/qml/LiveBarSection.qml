@@ -44,9 +44,23 @@ Item {
     // the controls at the right end (right part of a bar)
     property bool alignRight: false
 
+    // the seek bar (ControlListModel.SEEK_BAR) can be dropped here
+    property bool acceptsSeekBar: false
+
     readonly property bool _hasSeekBar: {
         void repeater.count
         return !!model && model.getControls().includes(ControlListModel.SEEK_BAR)
+    }
+
+    // width of the controls other than the seek bar, which takes the rest
+    readonly property real _fixedWidth: {
+        let width = 0
+        for (let i = 0; i < repeater.count; ++i) {
+            const item = repeater.itemAt(i)
+            if (item && !item._seekBar)
+                width += item.implicitWidth
+        }
+        return width + Math.max(0, repeater.count - 1) * row.spacing
     }
 
     readonly property ColorContext colorContext: ColorContext {
@@ -57,16 +71,18 @@ Item {
     readonly property real _pad: VLCStyle.dp(3, VLCStyle.scale)
 
     implicitWidth: Math.max(row.implicitWidth + 2 * _pad, VLCStyle.dp(40, VLCStyle.scale))
-    implicitHeight: row.implicitHeight + 2 * _pad
+    // (also when empty, to drop controls in)
+    implicitHeight: Math.max(row.implicitHeight, VLCStyle.icon_toolbar + 2 * _pad) + 2 * _pad
 
-    // moves, adds or takes over the dragged control so that it is at `index`
-    // whether the dragged control can be dropped here: the seek bar
-    // (ControlListModel.SEEK_BAR) is not moved, and nothing goes next to it
+    // whether the dragged control can be dropped here (the seek bar only in
+    // the player bars)
     function accepts(src) {
         if (!src || src.barControlId === undefined || !section.model)
             return false
-        return src.barControlId !== ControlListModel.SEEK_BAR && !section._hasSeekBar
+        return src.barControlId !== ControlListModel.SEEK_BAR || section.acceptsSeekBar
     }
+
+    // moves, adds or takes over the dragged control so that it is at `index`
 
     function dropAt(drop, index) {
         const src = drop.source
@@ -110,7 +126,7 @@ Item {
     }
 
     Rectangle {
-        visible: endDrop.containsDrag && !row.childDrop && !section._hasSeekBar
+        visible: endDrop.containsDrag && !row.childDrop
         x: row.x + row.width
         anchors.verticalCenter: parent.verticalCenter
         width: VLCStyle.dp(2, VLCStyle.scale)
@@ -145,14 +161,14 @@ Item {
                 readonly property int barIndex: index
 
                 readonly property bool _seekBar: barControlId === ControlListModel.SEEK_BAR
-                readonly property var _control: _seekBar ? { "label": "", "source": "" }
+                readonly property var _control: _seekBar ? { "label": VLCIcons.time, "source": "" }
                                                          : PlayerControlbarControls.control(barControlId)
 
                 implicitWidth: _seekBar ? VLCStyle.dp(160, VLCStyle.scale)
                                         : Math.max(loader.implicitWidth, VLCStyle.dp(20, VLCStyle.scale)) + 2 * section._pad
                 implicitHeight: Math.max(loader.implicitHeight, VLCStyle.icon_toolbar) + 2 * section._pad
-                // the seek bar takes the whole part (it is alone there)
-                width: _seekBar ? Math.max(implicitWidth, section.width - 2 * section._pad) : implicitWidth
+                // the seek bar takes the free width of the part
+                width: _seekBar ? Math.max(implicitWidth, section.width - 2 * section._pad - section._fixedWidth) : implicitWidth
                 height: implicitHeight
 
                 // the seek bar: times and track as in the bar
@@ -218,19 +234,22 @@ Item {
                     color: Qt.alpha(theme.fg.secondary, mouse.containsMouse ? 0.9 : 0.5)
                 }
 
-                // dropped before this control
+                // dropped before this control, or after it on its right half
                 DropArea {
                     id: drop
+
+                    readonly property bool after: drag.x > width / 2
 
                     anchors.fill: parent
                     onEntered: (drag) => { drag.accepted = section.accepts(drag.source) }
                     onContainsDragChanged: row.childDrop = containsDrag
-                    onDropped: (drop) => section.dropAt(drop, entry.index)
+                    onDropped: (drop) => section.dropAt(drop, entry.index + (after ? 1 : 0))
                 }
 
                 Rectangle {
                     visible: drop.containsDrag && drop.drag.source !== entry
-                    x: -VLCStyle.dp(3, VLCStyle.scale)
+                    x: drop.after ? parent.width + VLCStyle.dp(1, VLCStyle.scale)
+                                  : -VLCStyle.dp(3, VLCStyle.scale)
                     anchors.verticalCenter: parent.verticalCenter
                     width: VLCStyle.dp(2, VLCStyle.scale)
                     height: VLCStyle.icon_medium
@@ -241,7 +260,6 @@ Item {
                     id: mouse
 
                     anchors.fill: parent
-                    enabled: !entry._seekBar // the seek bar stays where it is
                     hoverEnabled: true
                     cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                     preventStealing: true

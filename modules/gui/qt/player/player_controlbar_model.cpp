@@ -73,18 +73,22 @@ PlayerControlbarModel::PlayerControlbarModel(QObject *parent) : QObject(parent)
     m_left = new ControlListModel(this);
     m_center = new ControlListModel(this);
     m_right = new ControlListModel(this);
+    m_top = new ControlListModel(this);
 
     connect(m_left, &ControlListModel::countChanged, this, &PlayerControlbarModel::contentChanged);
     connect(m_center, &ControlListModel::countChanged, this, &PlayerControlbarModel::contentChanged);
     connect(m_right, &ControlListModel::countChanged, this, &PlayerControlbarModel::contentChanged);
+    connect(m_top, &ControlListModel::countChanged, this, &PlayerControlbarModel::contentChanged);
 
     connect(m_left, &QAbstractListModel::dataChanged, this, &PlayerControlbarModel::contentChanged);
     connect(m_center, &QAbstractListModel::dataChanged, this, &PlayerControlbarModel::contentChanged);
     connect(m_right, &QAbstractListModel::dataChanged, this, &PlayerControlbarModel::contentChanged);
+    connect(m_top, &QAbstractListModel::dataChanged, this, &PlayerControlbarModel::contentChanged);
 
     connect(m_left, &QAbstractListModel::rowsMoved, this, &PlayerControlbarModel::contentChanged);
     connect(m_center, &QAbstractListModel::rowsMoved, this, &PlayerControlbarModel::contentChanged);
     connect(m_right, &QAbstractListModel::rowsMoved, this, &PlayerControlbarModel::contentChanged);
+    connect(m_top, &QAbstractListModel::rowsMoved, this, &PlayerControlbarModel::contentChanged);
 }
 
 PlayerControlbarModel::~PlayerControlbarModel()
@@ -102,18 +106,20 @@ bool PlayerControlbarModel::empty() const
     return m_empty;
 }
 
-std::array<QVector<int>, 3> PlayerControlbarModel::serializeModels() const
+PlayerControlbarModel::Data PlayerControlbarModel::serializeModels() const
 {
     return { left()->getControls(),
             center()->getControls(),
-            right()->getControls() };
+            right()->getControls(),
+            top()->getControls() };
 }
 
-void PlayerControlbarModel::loadModels(const std::array<QVector<int>, 3> &array)
+void PlayerControlbarModel::loadModels(const Data &array)
 {
     left()->setControls(array.at(0));
     center()->setControls(array.at(1));
     right()->setControls(array.at(2));
+    top()->setControls(array.at(3));
 }
 
 ControlListModel *PlayerControlbarModel::left() const
@@ -131,6 +137,11 @@ ControlListModel *PlayerControlbarModel::right() const
     return m_right;
 }
 
+ControlListModel *PlayerControlbarModel::top() const
+{
+    return m_top;
+}
+
 bool PlayerControlbarModel::operator==(const PlayerControlbarModel &model) const
 {
     assert(m_left && model.m_left);
@@ -146,6 +157,9 @@ bool PlayerControlbarModel::operator==(const PlayerControlbarModel &model) const
         return false;
 
     if (*m_right != *model.m_right)
+        return false;
+
+    if (*m_top != *model.m_top)
         return false;
 
     return true;
@@ -168,7 +182,8 @@ void PlayerControlbarModel::contentChanged()
         bool empty = true;
         if ((m_left && m_left->rowCount() > 0) ||
             (m_center && m_center->rowCount() > 0) ||
-            (m_right && m_right->rowCount() > 0))
+            (m_right && m_right->rowCount() > 0) ||
+            (m_top && m_top->rowCount() > 0))
             empty = false;
 
         if (empty != m_empty)
