@@ -32,7 +32,6 @@ import VLC.Style
 //   option    VLC option name
 //   kind      optional: "segmented", "slider", "number", "colorScheme",
 //             "accent", "filter", "action"
-//   advanced  shown only after "Advanced Options" is expanded
 //   unit      optional suffix for numbers ("ms", "s", "%")
 //   scale     optional: the stored value is `scale` times the shown one
 //             (e.g. 1000 to show milliseconds as seconds)
@@ -68,12 +67,12 @@ QtObject {
                     { label: qsTr("Save a log"), option: "file-logging" },
                     { label: qsTr("Log file"), option: "logfile" },
                     { label: qsTr("Log details"), option: "log-verbose" },
-                    { label: qsTr("Log format"), option: "logmode", advanced: true },
-                    { label: qsTr("Collect playback statistics"), option: "stats", advanced: true },
-                    { label: qsTr("Write to the system log"), option: "syslog", advanced: true },
-                    { label: qsTr("Include debug messages in the system log"), option: "syslog-debug", advanced: true },
-                    { label: qsTr("System log identity"), option: "syslog-ident", advanced: true },
-                    { label: qsTr("System log facility"), option: "syslog-facility", advanced: true }
+                    { label: qsTr("Log format"), option: "logmode" },
+                    { label: qsTr("Collect playback statistics"), option: "stats" },
+                    { label: qsTr("Write to the system log"), option: "syslog" },
+                    { label: qsTr("Include debug messages in the system log"), option: "syslog-debug" },
+                    { label: qsTr("System log identity"), option: "syslog-ident" },
+                    { label: qsTr("System log facility"), option: "syslog-facility" }
                 ]}
             ]
         },
@@ -87,20 +86,20 @@ QtObject {
                     { label: qsTr("Show window decorations"), option: "qt-titlebar" },
                     { label: qsTr("Show the file name in the title bar"), option: "qt-name-in-title" },
                     { label: qsTr("Open fullscreen on"), option: "qt-fullscreen-screennumber" },
-                    { label: qsTr("Window opacity"), option: "qt-opacity", kind: "slider", unit: "%", scale: 0.01, advanced: true },
-                    { label: qsTr("Pause video when window is minimized"), option: "qt-pause-minimized", advanced: true },
-                    { label: qsTr("Bring VLC to the front when playback starts"), option: "qt-auto-raise", advanced: true },
-                    { label: qsTr("Show cover art in the window when playing audio"), option: "qt-bgcone", advanced: true },
-                    { label: qsTr("Show the file browser inside the open dialog"), option: "qt-embedded-open", advanced: true },
-                    { label: qsTr("Allow the app icon to change"), option: "qt-icon-change", advanced: true }
+                    { label: qsTr("Window opacity"), option: "qt-opacity", kind: "slider", unit: "%", scale: 0.01 },
+                    { label: qsTr("Pause video when window is minimized"), option: "qt-pause-minimized" },
+                    { label: qsTr("Bring VLC to the front when playback starts"), option: "qt-auto-raise" },
+                    { label: qsTr("Show cover art in the window when playing audio"), option: "qt-bgcone" },
+                    { label: qsTr("Show the file browser inside the open dialog"), option: "qt-embedded-open" },
+                    { label: qsTr("Allow the app icon to change"), option: "qt-icon-change" }
                 ]},
                 { title: qsTr("Playback Controls"), rows: [
                     { label: qsTr("Start in compact mode"), option: "qt-minimal-view" },
                     { label: qsTr("Keep the controls visible"), option: "qt-pin-controls" },
                     { label: qsTr("Hide after"), option: "mouse-hide-timeout", kind: "slider", unit: "s", scale: 1000, min: 0, max: 10, step: 0.5 },
                     { label: qsTr("Show controls in fullscreen"), option: "qt-fs-controller" },
-                    { label: qsTr("Fullscreen controls opacity"), option: "qt-fs-opacity", kind: "slider", unit: "%", scale: 0.01, advanced: true },
-                    { label: qsTr("Fullscreen controls sensitivity"), option: "qt-fs-sensitivity", advanced: true }
+                    { label: qsTr("Fullscreen controls opacity"), option: "qt-fs-opacity", kind: "slider", unit: "%", scale: 0.01 },
+                    { label: qsTr("Fullscreen controls sensitivity"), option: "qt-fs-sensitivity" }
                 ]},
                 { title: qsTr("Notifications and System Tray"), rows: [
                     { label: qsTr("Show a system tray icon"), option: "qt-system-tray" },
@@ -120,7 +119,7 @@ QtObject {
                     { label: qsTr("Fetch titles and cover art from the internet"), option: "metadata-network-access" },
                     { label: qsTr("Last.fm username"), option: "lastfm-username" },
                     { label: qsTr("Last.fm password"), option: "lastfm-password" },
-                    { label: qsTr("Last.fm submission URL"), option: "scrobbler-url", advanced: true }
+                    { label: qsTr("Last.fm submission URL"), option: "scrobbler-url" }
                 ]}
             ]
         },
@@ -173,8 +172,8 @@ QtObject {
                     { label: qsTr("Default optical drive"), option: "dvd" },
                     { label: qsTr("Repair damaged AVI files"), option: "avi-index" },
                     { label: qsTr("Load matching .mkv files from the same folder"), option: "mkv-preload-local-dir" },
-                    { label: qsTr("Time-shift buffer folder"), option: "input-timeshift-path", advanced: true },
-                    { label: qsTr("Time-shift buffer granularity"), option: "input-timeshift-granularity", kind: "number", advanced: true }
+                    { label: qsTr("Time-shift buffer folder"), option: "input-timeshift-path" },
+                    { label: qsTr("Time-shift buffer granularity"), option: "input-timeshift-granularity", kind: "number" }
                 ]}
             ]
         },
@@ -186,7 +185,7 @@ QtObject {
                     { label: qsTr("Start videos in fullscreen"), option: "fullscreen" },
                     { label: qsTr("Stop the screensaver during playback"), option: "disable-screensaver" },
                     { label: qsTr("Play video as desktop wallpaper"), option: "video-wallpaper" },
-                    { label: qsTr("Show window decorations around the video"), option: "video-deco", advanced: true }
+                    { label: qsTr("Show window decorations around the video"), option: "video-deco" }
                 ]},
                 { title: qsTr("Deinterlacing"), rows: [
                     { label: qsTr("Deinterlacing"), option: "deinterlace" },
@@ -198,9 +197,9 @@ QtObject {
                     { label: qsTr("Scale video to the window"), option: "autoscale" },
                     { label: qsTr("Zoom"), option: "zoom", kind: "number" },
                     { label: qsTr("Position in the window"), option: "align" },
-                    { label: qsTr("Custom aspect ratios"), option: "custom-aspect-ratios", advanced: true },
-                    { label: qsTr("Custom crop ratios"), option: "custom-crop-ratios", advanced: true },
-                    { label: qsTr("Monitor pixel aspect ratio"), option: "monitor-par", advanced: true }
+                    { label: qsTr("Custom aspect ratios"), option: "custom-aspect-ratios" },
+                    { label: qsTr("Custom crop ratios"), option: "custom-crop-ratios" },
+                    { label: qsTr("Monitor pixel aspect ratio"), option: "monitor-par" }
                 ]},
                 { title: qsTr("Snapshots"), rows: [
                     { label: qsTr("Save to"), option: "snapshot-path" },
@@ -220,9 +219,9 @@ QtObject {
                     { label: qsTr("Enable audio"), option: "audio" },
                     { label: qsTr("Output module"), option: "aout" },
                     { label: qsTr("Speaker setup"), option: "stereo-mode" },
-                    { label: qsTr("Pass compressed audio to the receiver"), option: "spdif", advanced: true },
-                    { label: qsTr("Detect Dolby Surround"), option: "force-dolby-surround", advanced: true },
-                    { label: qsTr("Media role"), option: "role", advanced: true }
+                    { label: qsTr("Pass compressed audio to the receiver"), option: "spdif" },
+                    { label: qsTr("Detect Dolby Surround"), option: "force-dolby-surround" },
+                    { label: qsTr("Media role"), option: "role" }
                 ]},
                 { title: qsTr("Volume"), rows: [
                     { label: qsTr("Maximum volume"), option: "qt-max-volume", kind: "slider", unit: "%" },
@@ -270,7 +269,7 @@ QtObject {
                 { title: qsTr("Loading Subtitles"), rows: [
                     { label: qsTr("Load subtitle files automatically"), option: "sub-autodetect-file" },
                     { label: qsTr("File name matching"), option: "sub-autodetect-fuzzy" },
-                    { label: qsTr("Load subtitles from these folders"), option: "sub-autodetect-path", advanced: true }
+                    { label: qsTr("Load subtitles from these folders"), option: "sub-autodetect-path" }
                 ]},
                 { title: qsTr("Appearance"), rows: [
                     { label: qsTr("Font"), option: "freetype-font" },
@@ -286,10 +285,10 @@ QtObject {
                     { label: qsTr("Background opacity"), option: "freetype-background-opacity", kind: "slider" },
                     { label: qsTr("Background color"), option: "freetype-background-color" },
                     { label: qsTr("Vertical position"), option: "sub-margin", kind: "number", unit: "px" },
-                    { label: qsTr("Shadow angle"), option: "freetype-shadow-angle", kind: "number", advanced: true },
-                    { label: qsTr("Shadow distance"), option: "freetype-shadow-distance", kind: "number", advanced: true },
-                    { label: qsTr("Text direction"), option: "freetype-text-direction", advanced: true },
-                    { label: qsTr("Monospace font"), option: "freetype-monofont", advanced: true }
+                    { label: qsTr("Shadow angle"), option: "freetype-shadow-angle", kind: "number" },
+                    { label: qsTr("Shadow distance"), option: "freetype-shadow-distance", kind: "number" },
+                    { label: qsTr("Text direction"), option: "freetype-text-direction" },
+                    { label: qsTr("Monospace font"), option: "freetype-monofont" }
                 ]},
                 { title: qsTr("On-Screen Messages"), rows: [
                     { label: qsTr("Show feedback for shortcuts"), option: "osd" },
@@ -348,8 +347,8 @@ QtObject {
                 { title: qsTr("Smooth Playback"), rows: [
                     { label: qsTr("Drop frames when the system can't keep up"), option: "drop-late-frames" },
                     { label: qsTr("Give VLC real-time priority"), option: "high-priority" },
-                    { label: qsTr("Clock synchronisation"), option: "clock-synchro", advanced: true },
-                    { label: qsTr("Clock jitter"), option: "clock-jitter", kind: "number", unit: "ms", advanced: true }
+                    { label: qsTr("Clock synchronisation"), option: "clock-synchro" },
+                    { label: qsTr("Clock jitter"), option: "clock-jitter", kind: "number", unit: "ms" }
                 ]}
             ]
         },

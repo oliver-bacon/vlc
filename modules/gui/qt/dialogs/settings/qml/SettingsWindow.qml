@@ -28,7 +28,7 @@ import VLC.Widgets as Widgets
 // Settings window from the "VLC Redesign" Figma file: categories on the
 // left (App / Media / System), a search field, and the options of the
 // selected category on the right. Every change is saved immediately.
-// Options without a place here stay reachable through "Advanced Options",
+// Options without a place here stay reachable through "All Settings…",
 // which opens the classic preferences dialog.
 Window {
     id: root
@@ -47,7 +47,6 @@ Window {
     color: theme.bg.primary
 
     property string currentPage: "general"
-    property bool showAdvanced: false
     readonly property string searchText: searchField.text.trim().toLowerCase()
     readonly property bool searching: searchText !== ""
 
@@ -61,12 +60,10 @@ Window {
         requestActivate()
     }
 
-    // a page with its advanced options shown ("Open Advanced Settings" of
-    // the player's settings panel)
+    // a page ("Open Advanced Settings" of the player's settings panel)
     function openPage(page) {
         searchField.text = ""
         currentPage = page
-        showAdvanced = true
         open()
     }
 
@@ -102,14 +99,7 @@ Window {
     function rowShown(row, section) {
         if (!rowAvailable(row))
             return false
-        if (searching)
-            return rowMatches(row, section)
-        return !row.advanced || showAdvanced
-    }
-
-    function pageHasAdvanced(pageId) {
-        const page = settingsModel.pages[pageId]
-        return page.sections.some((section) => section.rows.some((row) => row.advanced && rowAvailable(row)))
+        return !searching || rowMatches(row, section)
     }
 
     // Pages shown on the right: the selected one, or every page while searching
@@ -123,10 +113,7 @@ Window {
         return result
     }
 
-    onCurrentPageChanged: {
-        showAdvanced = false
-        contentFlickable.contentY = 0
-    }
+    onCurrentPageChanged: contentFlickable.contentY = 0
 
     Component.onCompleted: {
         if (MainCtx.createWindowWithoutRedirectionSurface) { // Win32
@@ -529,63 +516,16 @@ Window {
                             }
                         }
 
-                        // Expands the rows marked as advanced, and links to
-                        // the classic preferences for everything else
+                        // Links to the classic preferences for everything else
                         RowLayout {
                             Layout.fillWidth: true
                             visible: !root.searching
                             spacing: VLCStyle.margin_xsmall
 
                             T.AbstractButton {
-                                id: advancedButton
-
-                                Layout.fillWidth: true
-                                implicitHeight: VLCStyle.dp(38, VLCStyle.scale)
-                                visible: root.pageHasAdvanced(pageColumn.modelData)
-
-                                onClicked: root.showAdvanced = !root.showAdvanced
-
-                                Accessible.role: Accessible.Button
-                                Accessible.name: qsTr("Advanced Options")
-
-                                background: Rectangle {
-                                    radius: VLCStyle.dp(2, VLCStyle.scale)
-                                    color: Qt.alpha(windowTheme.bg.primary, advancedButton.hovered ? 1.0 : 0.95)
-                                    border.width: advancedButton.visualFocus ? VLCStyle.focus_border : 0
-                                    border.color: theme.visualFocus
-                                }
-
-                                contentItem: Item {
-                                    implicitHeight: advancedRow.implicitHeight
-
-                                    Row {
-                                        id: advancedRow
-                                        anchors.centerIn: parent
-                                        spacing: VLCStyle.margin_xsmall
-
-                                        T.Label {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: root.showAdvanced ? qsTr("Fewer Options") : qsTr("Advanced Options")
-                                            color: theme.fg.secondary
-                                            font.pixelSize: VLCStyle.fontSize_large
-                                        }
-
-                                        T.Label {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: root.showAdvanced ? VLCIcons.chevron_up : VLCIcons.chevron_down
-                                            font.family: VLCIcons.fontFamily
-                                            font.pixelSize: VLCStyle.icon_normal
-                                            color: theme.fg.secondary
-                                        }
-                                    }
-                                }
-                            }
-
-                            T.AbstractButton {
                                 id: allSettingsButton
 
-                                Layout.fillWidth: !advancedButton.visible
-                                Layout.preferredWidth: advancedButton.visible ? implicitContentWidth + 2 * VLCStyle.margin_normal : -1
+                                Layout.fillWidth: true
                                 implicitHeight: VLCStyle.dp(38, VLCStyle.scale)
 
                                 onClicked: root.openAdvancedSettings()
