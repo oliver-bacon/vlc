@@ -202,44 +202,57 @@ PlayerSidePopup {
             Layout.topMargin: 14 * root.dp1
         }
 
-        // Figma "Button": full-width bar, Dark/BG/B2, Dark/BG/A4 on hover
-        T.Button {
-            id: advanced
+        FooterButton {
+            Layout.topMargin: 6 * root.dp1
+            glyph: VLCIcons.history
+            text: qsTr("Restore Defaults")
+            onClicked: root.restoreDefaults(root.currentTab)
+        }
 
-            Layout.fillWidth: true
-            Layout.leftMargin: 20 * root.dp1
-            Layout.rightMargin: 20 * root.dp1
+        FooterButton {
             Layout.topMargin: 6 * root.dp1
             Layout.bottomMargin: 8 * root.dp1
-            implicitHeight: 32 * root.dp1
-            background: Rectangle {
-                radius: 4 * root.dp1
-                color: advanced.hovered ? root.ringColor : root.wellColor
-            }
-            contentItem: Item {
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 8 * root.dp1
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        font.family: VLCIcons.fontFamily
-                        font.pixelSize: 18 * root.dp1
-                        text: VLCIcons.settings
-                        color: advanced.hovered ? root.textColor : root.dimColor
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("Open Advanced Settings")
-                        font.pixelSize: 14 * root.dp1
-                        color: advanced.hovered ? root.textColor : root.dimColor
-                    }
-                }
-            }
+            glyph: VLCIcons.settings
+            text: qsTr("Open Advanced Settings")
             // the settings window on the page of the current tab
             onClicked: {
                 const page = ["playback", "video", "audio", "subtitles"][root.currentTab] ?? "playback"
                 root.close()
                 DialogsProvider.settingsPageDialog(page)
+            }
+        }
+    }
+
+    // Figma "Button": full-width bar, Dark/BG/B2, Dark/BG/A4 on hover
+    component FooterButton: T.Button {
+        id: footerButton
+        property string glyph
+
+        Layout.fillWidth: true
+        Layout.leftMargin: 20 * root.dp1
+        Layout.rightMargin: 20 * root.dp1
+        implicitHeight: 32 * root.dp1
+        background: Rectangle {
+            radius: 4 * root.dp1
+            color: footerButton.hovered ? root.ringColor : root.wellColor
+        }
+        contentItem: Item {
+            Row {
+                anchors.centerIn: parent
+                spacing: 8 * root.dp1
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    font.family: VLCIcons.fontFamily
+                    font.pixelSize: 18 * root.dp1
+                    text: footerButton.glyph
+                    color: footerButton.hovered ? root.textColor : root.dimColor
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: footerButton.text
+                    font.pixelSize: 14 * root.dp1
+                    color: footerButton.hovered ? root.textColor : root.dimColor
+                }
             }
         }
     }
@@ -752,6 +765,68 @@ PlayerSidePopup {
             subtitleSizeScale = preset.sizeValues === "scale"
             VLCConfig.setUiValue("Player/SubtitleSizeValues", preset.sizeValues)
         }
+        configRevision++
+        pagesActive = false
+        pagesActive = true
+    }
+
+    // ---- "Restore Defaults": the settings of one tab back to VLC's defaults
+
+    readonly property var tabDefaults: [
+        { "config": [], "audio": [], "video": [], "audioModules": [], "videoModules": [] },
+        { "config": ["d3d11-hdr-mode", "preferred-resolution"], "audio": [], "video": videoPresetOptions,
+          "audioModules": [],
+          "videoModules": ["adjust", "sharpen", "gradfun", "grain", "extract", "colorthres",
+                           "invert", "posterize", "gradient", "sepia"] },
+        { "config": ["audio-track", "audio-language"], "audio": audioPresetOptions, "video": [],
+          "audioModules": ["equalizer", "compressor", "spatializer", "stereo_widen"], "videoModules": [] },
+        { "config": ["freetype-font", "freetype-color", "freetype-outline-color", "freetype-outline-thickness",
+                     "freetype-background-opacity", "sub-margin", "sub-language", "sub-track"],
+          "audio": [], "video": [], "audioModules": [], "videoModules": [] }
+    ]
+
+    function restoreDefaults(tab) {
+        const d = tabDefaults[tab]
+        if (!d)
+            return
+        for (const option of d.config)
+            if (VLCConfig.exists(option))
+                VLCConfig.resetValue(option)
+        for (const option of d.audio)
+            if (VLCConfig.exists(option))
+                VLCEffects.setAudioValue(option, VLCConfig.defaultValue(option))
+        for (const option of d.video)
+            if (VLCConfig.exists(option))
+                VLCEffects.setVideoValue(option, VLCConfig.defaultValue(option))
+        // only the filters of the panel: filters chosen elsewhere stay
+        for (const module of d.audioModules)
+            VLCEffects.setAudioFilterEnabled(module, false)
+        for (const module of d.videoModules)
+            VLCEffects.setVideoFilterEnabled(module, false)
+
+        switch (tab) {
+        case 0:
+            if (Player.ratechangable)
+                Player.rate = 1
+            VLCConfig.setUiValue("Player/SubtitleTimeline", false)
+            break
+        case 1:
+            VLCEffects.setOrientation(0, 0)
+            VLCEffects.setCrop(0, 0, 0, 0)
+            break
+        case 2:
+            Player.audioDelayMS = 0
+            break
+        case 3:
+            Player.subtitleDelayMS = 0
+            Player.subtitleFPS = 1
+            setTextScale(100)
+            subtitleSizeScale = false
+            VLCConfig.setUiValue("Player/SubtitleSizeValues", "relative")
+            break
+        }
+
+        // the pages read their values when they are created
         configRevision++
         pagesActive = false
         pagesActive = true
