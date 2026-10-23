@@ -63,6 +63,7 @@ PlayerSidePopup {
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
     readonly property color dimColor: "#6B6B6B"
     readonly property color faintColor: dark ? "#404040" : "#9B9B9B"
+    readonly property color tickColor: dark ? "#1A1611" : "#C8C8C8"
     readonly property color accentColor: VLCStyle.palette.orange500
     // tab icons: grey part and accent details (Figma Dark/FG/A2, Dark/Accent/Dim)
     readonly property color iconColor: dark ? "#8F8F8F" : "#2E2E2E"
@@ -169,32 +170,40 @@ PlayerSidePopup {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            contentHeight: pages.implicitHeight + 20 * root.dp1
+            contentHeight: pageColumn.implicitHeight + 14 * root.dp1
             boundsBehavior: Flickable.StopAtBounds
 
-            StackLayout {
-                id: pages
+            ColumnLayout {
+                id: pageColumn
 
                 x: 20 * root.dp1
                 width: flick.width - 40 * root.dp1
-                currentIndex: root.currentTab
-                implicitHeight: children[currentIndex]?.implicitHeight ?? 0
+                spacing: 0
 
-                Loader { active: root.pagesActive; sourceComponent: Component { PlaybackPage {} } }
-                Loader { active: root.pagesActive; sourceComponent: Component { VideoPage {} } }
-                Loader { active: root.pagesActive; sourceComponent: Component { AudioPage {} } }
-                Loader { active: root.pagesActive; sourceComponent: Component { SubtitlesPage {} } }
+                StackLayout {
+                    id: pages
+
+                    Layout.fillWidth: true
+                    currentIndex: root.currentTab
+                    Layout.preferredHeight: children[currentIndex]?.implicitHeight ?? 0
+
+                    Loader { active: root.pagesActive; sourceComponent: Component { PlaybackPage {} } }
+                    Loader { active: root.pagesActive; sourceComponent: Component { VideoPage {} } }
+                    Loader { active: root.pagesActive; sourceComponent: Component { AudioPage {} } }
+                    Loader { active: root.pagesActive; sourceComponent: Component { SubtitlesPage {} } }
+                }
+
+                // at the end of the page: resets the open tab
+                FooterButton {
+                    Layout.topMargin: 20 * root.dp1
+                    Layout.leftMargin: 0
+                    Layout.rightMargin: 0
+                    flat: true
+                    glyph: VLCIcons.history
+                    text: qsTr("Restore Defaults")
+                    onClicked: root.restoreDefaults(root.currentTab)
+                }
             }
-        }
-
-        // below the page, above the footer: resets the open tab
-        FooterButton {
-            Layout.topMargin: 8 * root.dp1
-            Layout.bottomMargin: 14 * root.dp1
-            flat: true
-            glyph: VLCIcons.history
-            text: qsTr("Restore Defaults")
-            onClicked: root.restoreDefaults(root.currentTab)
         }
 
         // footer
