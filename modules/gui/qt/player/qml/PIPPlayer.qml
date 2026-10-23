@@ -31,7 +31,7 @@ T.Control {
     id: root
     // Figma "Miniplayer" card: video, progress, title, folder / artist and
     // the play queue toggle; controls over the video on hover
-    width: Math.round(VLCStyle.dp(360, VLCStyle.scale))
+    width: Math.round(VLCStyle.dp(391, VLCStyle.scale))
     height: Math.round(cardColumn.implicitHeight + 2 * cardPadding)
 
     readonly property real cardPadding: VLCStyle.dp(9, VLCStyle.scale)
@@ -142,7 +142,7 @@ T.Control {
 
     background: Rectangle {
         id: cardBackground
-        radius: VLCStyle.dp(12, VLCStyle.scale)
+        radius: VLCStyle.dp(14, VLCStyle.scale)
         color: root.dark ? "#1F1F1F" : "#E7E7E7"
 
         Widgets.DefaultShadow {
