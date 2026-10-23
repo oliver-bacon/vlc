@@ -446,8 +446,8 @@ bool ConfigBridge::isDeletableFile(const QString& fileUrl) const
     const QFileInfo info(path);
     if (!info.isFile())
         return false;
-    if (!(QFile::permissions(path) & QFileDevice::WriteUser))
-        return false;
+    // like File Explorer, a read-only file can be deleted: only its folder
+    // has to be writable (deleteFile() clears the read-only flag)
     return QFile::permissions(info.absolutePath()) & QFileDevice::WriteUser;
 }
 
@@ -455,7 +455,11 @@ bool ConfigBridge::deleteFile(const QString& fileUrl) const
 {
     if (!isDeletableFile(fileUrl))
         return false;
-    return QFile::remove(QUrl(fileUrl).toLocalFile());
+    const QString path = QUrl(fileUrl).toLocalFile();
+    const QFileDevice::Permissions perms = QFile::permissions(path);
+    if (!(perms & QFileDevice::WriteUser))
+        QFile::setPermissions(path, perms | QFileDevice::WriteUser | QFileDevice::WriteOwner);
+    return QFile::remove(path);
 }
 
 QVariant ConfigBridge::browseNode(const QString& folderUrl) const
