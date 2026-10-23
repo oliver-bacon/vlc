@@ -187,6 +187,16 @@ PlayerSidePopup {
             }
         }
 
+        // below the page, above the footer: resets the open tab
+        FooterButton {
+            Layout.topMargin: 8 * root.dp1
+            Layout.bottomMargin: 14 * root.dp1
+            flat: true
+            glyph: VLCIcons.history
+            text: qsTr("Restore Defaults")
+            onClicked: root.restoreDefaults(root.currentTab)
+        }
+
         // footer
         Rectangle {
             Layout.fillWidth: true
@@ -203,15 +213,9 @@ PlayerSidePopup {
         }
 
         FooterButton {
-            Layout.topMargin: 6 * root.dp1
-            glyph: VLCIcons.history
-            text: qsTr("Restore Defaults")
-            onClicked: root.restoreDefaults(root.currentTab)
-        }
-
-        FooterButton {
-            Layout.topMargin: 6 * root.dp1
-            Layout.bottomMargin: 8 * root.dp1
+            Layout.topMargin: 8 * root.dp1
+            Layout.bottomMargin: 14 * root.dp1
+            flat: true
             glyph: VLCIcons.settings
             text: qsTr("Open Advanced Settings")
             // the settings window on the page of the current tab
@@ -223,7 +227,8 @@ PlayerSidePopup {
         }
     }
 
-    // Figma "Button": full-width bar, Dark/BG/B2, Dark/BG/A4 on hover
+    // Figma "Button": full-width bar, Dark/BG/B2, Dark/BG/A4 on hover;
+    // flat: icon and text only (Figma panel footer "Open Advanced Settings")
     component FooterButton: T.Button {
         id: footerButton
         property string glyph
@@ -234,6 +239,7 @@ PlayerSidePopup {
         implicitHeight: 32 * root.dp1
         background: Rectangle {
             radius: 4 * root.dp1
+            visible: !footerButton.flat
             color: footerButton.hovered ? root.ringColor : root.wellColor
         }
         contentItem: Item {
