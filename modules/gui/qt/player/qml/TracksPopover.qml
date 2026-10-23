@@ -49,8 +49,10 @@ T.Popup {
     closePolicy: T.Popup.CloseOnEscape | T.Popup.CloseOnPressOutsideParent
 
     readonly property bool dark: VLCStyle.palette?.isDark ?? true
-    readonly property color panelColor: dark ? "#191919" : "#E7E7E7"
-    readonly property color tabsColor: dark ? "#151515" : "#DEDEDE"
+    // Dark/BG/B1 at 95 %, tab bar Dark/BG/B2 (Figma player settings panel)
+    readonly property color panelColor: dark ? Qt.rgba(14 / 255, 14 / 255, 14 / 255, 0.95) : "#E7E7E7"
+    readonly property color tabsColor: dark ? "#090909" : "#DEDEDE"
+    readonly property color hoverColor: dark ? "#191919" : "#DEDEDE"
     readonly property color dividerColor: dark ? "#222222" : "#ACACAC"
     readonly property color titleColor: dark ? "#C6C6C6" : "#161616"
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
@@ -240,7 +242,7 @@ T.Popup {
             implicitHeight: 30 * root.dp1
             background: Rectangle {
                 radius: 4 * root.dp1
-                color: prefs.hovered ? root.tabsColor : Qt.darker(root.tabsColor, root.dark ? 1.2 : 1.05)
+                color: prefs.hovered ? root.hoverColor : root.tabsColor
             }
             contentItem: Text {
                 horizontalAlignment: Text.AlignHCenter
@@ -327,7 +329,7 @@ T.Popup {
 
         background: Rectangle {
             radius: 4 * root.dp1
-            color: choice.hovered ? root.tabsColor : "transparent"
+            color: choice.hovered ? root.hoverColor : "transparent"
         }
         contentItem: RowLayout {
             spacing: 10 * root.dp1
