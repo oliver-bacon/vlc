@@ -331,12 +331,14 @@ Window {
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
 
-                    T.ScrollBar.vertical: Widgets.ScrollBarExt { }
+                    T.ScrollBar.vertical: Widgets.ScrollBarExt { id: sidebarScrollBar }
 
                     ColumnLayout {
                         id: categoryColumn
 
-                        width: parent.width
+                        // keep the list clear of the scroll bar
+                        width: parent.width - (sidebarScrollBar._shown
+                                               ? VLCStyle.scrollBarInteractingSize + VLCStyle.margin_xsmall : 0)
                         spacing: VLCStyle.dp(2, VLCStyle.scale)
 
                         Repeater {
@@ -349,21 +351,22 @@ Window {
                                 required property var modelData
 
                                 readonly property bool isOpen: !!root.expanded[modelData.cat]
-                                readonly property real pad: isOpen ? VLCStyle.dp(3, VLCStyle.scale) : 0
+                                // the pages panel sits right inside the outline
+                                readonly property real pad: isOpen ? border.width : 0
 
                                 Layout.fillWidth: true
                                 implicitHeight: categoryItems.implicitHeight + 2 * pad
                                 radius: VLCStyle.dp(6, VLCStyle.scale)
                                 color: "transparent"
-                                border.width: isOpen ? VLCStyle.border : 0
-                                border.color: Qt.alpha(theme.fg.primary, 0.15)
+                                border.width: isOpen ? 2 * VLCStyle.border : 0
+                                border.color: windowTheme.border
 
                                 ColumnLayout {
                                 id: categoryItems
 
                                 anchors { left: parent.left; right: parent.right; top: parent.top }
                                 anchors.margins: category.pad
-                                spacing: VLCStyle.dp(2, VLCStyle.scale)
+                                spacing: 0
 
                                 SidebarButton {
                                     id: categoryButton
@@ -437,7 +440,11 @@ Window {
                                     Layout.fillWidth: true
                                     visible: category.isOpen && category.modelData.subcats.length > 0
                                     implicitHeight: pageList.implicitHeight + 2 * pageList.anchors.margins
-                                    radius: VLCStyle.dp(4, VLCStyle.scale)
+                                    // sharp under the tab, rounded with the outline below
+                                    topLeftRadius: 0
+                                    topRightRadius: 0
+                                    bottomLeftRadius: category.radius - category.border.width
+                                    bottomRightRadius: category.radius - category.border.width
                                     color: Qt.darker(windowTheme.bg.primary, 1.25)
 
                                     ColumnLayout {

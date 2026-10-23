@@ -344,7 +344,7 @@ FocusScope {
                     implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
                     implicitHeight: contentItem.implicitHeight + topPadding + bottomPadding
                     width: Math.min(implicitWidth, VLCStyle.dp(360, VLCStyle.scale))
-                    padding: VLCStyle.margin_xsmall
+                    padding: VLCStyle.margin_small
 
                     contentItem: T.Label {
                         text: infoTip.text
@@ -352,9 +352,12 @@ FocusScope {
                         wrapMode: Text.Wrap
                         font.pixelSize: VLCStyle.fontSize_normal
                     }
+                    // with the 2 px well frame of the redesign's drop-downs
                     background: Rectangle {
                         color: windowTheme.bg.primary
-                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        radius: root._radius
+                        border.width: VLCStyle.dp(2, VLCStyle.scale)
+                        border.color: root._well
                     }
                 }
             }
