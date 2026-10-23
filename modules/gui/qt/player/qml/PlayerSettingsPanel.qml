@@ -1046,17 +1046,18 @@ PlayerSidePopup {
         }
         FxSlider {
             from: fs.from; to: fs.to
-            stepSize: fs.decimals === 0 ? 1 : (fs.to - fs.from) / 200
+            // move in steps of the shown precision (0.1 for one decimal)
+            stepSize: Math.pow(10, -fs.decimals)
             value: fs.current
             tickLabels: []
             onMoved: {
-                fs.current = value
+                fs.current = Number(value.toFixed(fs.decimals))
                 if (fs.option === "") {
-                    fs.valueSet(value)
+                    fs.valueSet(fs.current)
                 } else if (fs.audio) {
-                    VLCEffects.setAudioValue(fs.option, value)
+                    VLCEffects.setAudioValue(fs.option, fs.current)
                 } else {
-                    VLCEffects.setVideoValue(fs.option, value)
+                    VLCEffects.setVideoValue(fs.option, fs.current)
                 }
                 if (fs.enables && fs.module !== "") {
                     if (fs.audio)
