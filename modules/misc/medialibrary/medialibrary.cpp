@@ -423,6 +423,12 @@ MediaLibrary* MediaLibrary::create( vlc_medialibrary_module_t* vlc_ml )
     cfg.logLevel = var_InheritBool( VLC_OBJECT( vlc_ml ), "ml-verbose" ) ?
                         medialibrary::LogLevel::Debug : medialibrary::LogLevel::Warning;
     cfg.logger = std::make_shared<Logger>( VLC_OBJECT( vlc_ml ) );
+    /* The media library keeps the logger in a global until the process
+     * exits. A shared medialibrary library stays loaded after this plugin is
+     * unloaded, and releasing the last reference then would call the
+     * destructor of the logger in unloaded code (crash on quit): keep one
+     * reference forever. */
+    new std::shared_ptr<medialibrary::ILogger>( cfg.logger );
 
     msg_Dbg(VLC_OBJECT(vlc_ml), "Opening medialibrary from %s, db at %s",
             dbPath.c_str(), mlFolderPath.c_str());
