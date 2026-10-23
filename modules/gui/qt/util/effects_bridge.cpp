@@ -184,8 +184,16 @@ void EffectsBridge::setVideoFilterEnabled(const QString& module, bool enabled)
     applyVideoFilters(list, false);
 }
 
-void EffectsBridge::applyVideoFilters(const QStringList& list, bool restart)
+void EffectsBridge::applyVideoFilters(const QStringList& filters, bool restart)
 {
+    // rotate and transform (flip) go last: transform changes the orientation
+    // of the picture format, and the filters after it would get a different
+    // input and output format (the Direct3D11 ones then refuse to load)
+    QStringList list = filters;
+    for (const QString& name : { QStringLiteral("rotate"), QStringLiteral("transform") })
+        if (list.removeAll(name) > 0)
+            list.append(name);
+
     const QString chain = list.join(':');
     putConfig(QStringLiteral("video-filter"), chain);
     for (const auto& vout : m_intf->p_mainPlayerController->getVouts())
