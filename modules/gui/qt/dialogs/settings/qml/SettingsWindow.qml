@@ -47,6 +47,8 @@ Window {
     color: theme.bg.primary
 
     property string currentPage: "general"
+    // rows marked `aout` show only for these audio outputs
+    property string currentAout: String(VLCConfig.value("aout") ?? "")
     readonly property string searchText: searchField.text.trim().toLowerCase()
     readonly property bool searching: searchText !== ""
 
@@ -75,13 +77,53 @@ Window {
         DialogsProvider.keyboardShortcutsDialog()
     }
 
+    function resetPreferences() {
+        VLCConfig.resetPreferences()
+    }
+
+    function fileAssociations() {
+        VLCConfig.fileAssociations()
+    }
+
+    function clearRecent() {
+        VLCConfig.clearRecentMedia()
+    }
+
+    function rescanLibrary() {
+        VLCConfig.reloadMediaLibrary()
+    }
+
+    function customizePlayer() {
+        DialogsProvider.customizePlayerDialog()
+    }
+
+    Connections {
+        target: VLCConfig
+        function onValueChanged(name) {
+            if (name === "" || name === "aout")
+                root.currentAout = String(VLCConfig.value("aout") ?? "")
+        }
+    }
+
     function openAddons() {
         DialogsProvider.pluginDialog()
     }
 
     function rowAvailable(row) {
-        if (row.kind === "colorScheme" || row.kind === "action")
+        if (row.os && Qt.platform.os !== row.os)
+            return false
+        if (row.needsML && !MainCtx.mediaLibraryAvailable)
+            return false
+        if (row.aout && !row.aout.includes(currentAout))
+            return false
+        if (["colorScheme", "action", "layout", "intfScale", "caching", "qtStyle", "startVolume"].includes(row.kind))
             return true
+        if (row.kind === "intf")
+            return VLCConfig.moduleExists(row.module)
+        if (row.kind === "language")
+            return VLCConfig.languages().length > 0
+        if (row.kind === "mediaFolders")
+            return MainCtx.mediaLibraryAvailable
         if (row.kind === "openSubtitles")
             return VLCOpenSubtitles.available
         if (row.greyIfMissing)

@@ -1377,10 +1377,57 @@ void SPrefsPanel::configML()
 #include "util/registry.hpp"
 
 void SPrefsPanel::cleanLang() {
+    cleanLanguage();
+}
+
+void SPrefsPanel::cleanLanguage() {
     QVLCRegistry qvReg( HKEY_CURRENT_USER );
     qvReg.DeleteValue( "Software\\VideoLAN\\VLC\\", "Lang" );
     qvReg.DeleteKey( "Software\\VideoLAN\\", "VLC" );
     qvReg.DeleteKey( "Software\\", "VideoLAN" );
+}
+
+QVariantList SPrefsPanel::languageChoices()
+{
+    QVariantList ret;
+    for( size_t i = 0; i < ARRAY_SIZE( language_map ); i++ )
+        ret.append( QVariantMap {
+            { QStringLiteral( "value" ), qfu( language_map[i].iso ) },
+            { QStringLiteral( "text" ), qfu( language_map[i].name ) },
+        } );
+    return ret;
+}
+
+QString SPrefsPanel::savedLanguage()
+{
+    QString ret = QStringLiteral( "auto" );
+    HKEY h_key;
+    if( RegOpenKeyEx( HKEY_CURRENT_USER, TEXT("Software\\VideoLAN\\VLC\\"), 0, KEY_READ, &h_key )
+            == ERROR_SUCCESS )
+    {
+        WCHAR szData[256];
+        DWORD len = sizeof( szData );
+        if( RegQueryValueEx( h_key, TEXT("Lang"), NULL, NULL, (LPBYTE) &szData, &len ) == ERROR_SUCCESS )
+        {
+            char *langReg = FromWide( szData );
+            if( langReg )
+                ret = qfu( langReg );
+            free( langReg );
+        }
+        RegCloseKey( h_key );
+    }
+    return ret;
+}
+
+void SPrefsPanel::saveLanguage( const QString &iso )
+{
+    if( iso.isEmpty() || iso.startsWith( QLatin1String( "auto" ) ) )
+        cleanLanguage();
+    else
+    {
+        QVLCRegistry qvReg( HKEY_CURRENT_USER );
+        qvReg.WriteRegistry( "Software\\VideoLAN\\VLC\\", "Lang", qtu( iso ) );
+    }
 }
 
 void SPrefsPanel::saveLang() {
@@ -1396,8 +1443,12 @@ void SPrefsPanel::saveLang() {
     }
 }
 
-bool SPrefsPanel::addType( const char * psz_ext, QTreeWidgetItem* current,
-                           QTreeWidgetItem* parent, QVLCRegistry *qvReg )
+static void updateAssoCheckBoxes( QTreeWidgetItem* item, int column );
+static void saveAsso( const QList<QTreeWidgetItem *> &listAsso );
+
+static bool addType( const char * psz_ext, QTreeWidgetItem* current,
+                     QTreeWidgetItem* parent, QVLCRegistry *qvReg,
+                     QList<QTreeWidgetItem *> &listAsso )
 {
     bool b_temp;
     const char* psz_VLC = "VLC";
@@ -1423,6 +1474,12 @@ bool SPrefsPanel::addType( const char * psz_ext, QTreeWidgetItem* current,
 
 void SPrefsPanel::assoDialog()
 {
+    showFileAssociations( this );
+}
+
+void SPrefsPanel::showFileAssociations( QWidget *parent )
+{
+    QList<QTreeWidgetItem *> listAsso;
     HRESULT hr;
 
     hr = CoInitializeEx( NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE );
@@ -1443,7 +1500,7 @@ void SPrefsPanel::assoDialog()
     if( SUCCEEDED(hr) )
         return;
 
-    QDialog *d = new QDialog( this );
+    QDialog *d = new QDialog( parent );
     d->setWindowTitle( qtr( "File associations" ) );
     QGridLayout *assoLayout = new QGridLayout( d );
 
@@ -1468,9 +1525,9 @@ void SPrefsPanel::assoDialog()
     QTreeWidgetItem *currentItem = NULL;
 
     int i_temp = 0;
-#define aTa( name ) i_temp += addType( name, currentItem, audioType, &qvReg )
-#define aTv( name ) i_temp += addType( name, currentItem, videoType, &qvReg )
-#define aTo( name ) i_temp += addType( name, currentItem, otherType, &qvReg )
+#define aTa( name ) i_temp += addType( name, currentItem, audioType, &qvReg, listAsso )
+#define aTv( name ) i_temp += addType( name, currentItem, videoType, &qvReg, listAsso )
+#define aTo( name ) i_temp += addType( name, currentItem, otherType, &qvReg, listAsso )
 
     aTa( ".3ga" ); aTa( ".669" ); aTa( ".a52" ); aTa( ".aac" ); aTa( ".ac3" );
     aTa( ".adt" ); aTa( ".adts" ); aTa( ".aif" ); aTa( ".aifc" ); aTa( ".aiff" );
@@ -1518,7 +1575,7 @@ void SPrefsPanel::assoDialog()
 #undef aTv
 #undef aTa
 
-    connect( filetypeList, &QTreeWidget::itemChanged, this, &SPrefsPanel::updateCheckBoxes );
+    QObject::connect( filetypeList, &QTreeWidget::itemChanged, filetypeList, &updateAssoCheckBoxes );
 
     QDialogButtonBox *buttonBox = new QDialogButtonBox( d );
     QPushButton *closeButton = new QPushButton( qtr( "&Apply" ) );
@@ -1528,16 +1585,16 @@ void SPrefsPanel::assoDialog()
 
     assoLayout->addWidget( buttonBox, 1, 2, 1, 2 );
 
-    connect( closeButton, &QPushButton::clicked, [=]() {
-        this->saveAsso();
-        d->reject();
+    QObject::connect( closeButton, &QPushButton::clicked, d, [&listAsso]() {
+        saveAsso( listAsso );
     } );
+    QObject::connect( clearButton, &QPushButton::clicked, d, &QDialog::reject );
     d->resize( 300, 400 );
     d->exec();
-    listAsso.clear();
+    delete d;
 }
 
-void SPrefsPanel::updateCheckBoxes(QTreeWidgetItem* item, int column)
+static void updateAssoCheckBoxes(QTreeWidgetItem* item, int column)
 {
     if( column != 0 )
         return;
@@ -1632,7 +1689,7 @@ void delAsso( QVLCRegistry *qvReg, const char *psz_ext )
     free( psz_value );
 }
 
-void SPrefsPanel::saveAsso()
+static void saveAsso( const QList<QTreeWidgetItem *> &listAsso )
 {
     QVLCRegistry qvReg( HKEY_CLASSES_ROOT );
     for( int i = 0; i < listAsso.size(); i ++ )
@@ -1647,7 +1704,8 @@ void SPrefsPanel::saveAsso()
         }
     }
     /* Gruik ? Naaah */
-    qobject_cast<QDialog *>(listAsso[0]->treeWidget()->parent())->accept();
+    if( !listAsso.isEmpty() )
+        qobject_cast<QDialog *>(listAsso[0]->treeWidget()->parent())->accept();
 }
 
 #endif /* _WIN32 */

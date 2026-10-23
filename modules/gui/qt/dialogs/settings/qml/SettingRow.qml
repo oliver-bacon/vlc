@@ -50,10 +50,92 @@ FocusScope {
         return spatialModes.some((m) => m.value === mode) ? mode : (spatialModes[0]?.value ?? "")
     }
 
+    // Simple-preferences settings that are not one option (see SettingsModel)
+    readonly property var layoutChoices: [
+        { value: "modern", text: qsTr("Modern") },
+        { value: "classic", text: qsTr("Classic") }
+    ].concat(VLCConfig.moduleExists("skins2") ? [{ value: "skins", text: qsTr("Skins") }] : [])
+
+    // as the classic "Caching policy" (network = value * 10 / 3)
+    readonly property var cachingChoices: [
+        { value: 0, text: qsTr("Custom") },
+        { value: 100, text: qsTr("Lowest latency") },
+        { value: 200, text: qsTr("Low latency") },
+        { value: 300, text: qsTr("Normal") },
+        { value: 500, text: qsTr("High latency") },
+        { value: 1000, text: qsTr("Higher latency") }
+    ]
+
+    function _layout() {
+        if (String(VLCConfig.value("intf") ?? "").indexOf("skin") >= 0)
+            return "skins"
+        const menu = !!VLCConfig.value("qt-menubar")
+        const title = !!VLCConfig.value("qt-titlebar")
+        const pin = !!VLCConfig.value("qt-pin-controls")
+        if (menu && title && pin)
+            return "classic"
+        if (!menu && !title && !pin)
+            return "modern"
+        return "" // a mix: neither preset
+    }
+
+    function _setLayout(layout) {
+        if (layout === "skins") {
+            VLCConfig.setValue("intf", "skins2,any")
+            return
+        }
+        VLCConfig.setValue("intf", "")
+        const classic = (layout === "classic")
+        VLCConfig.setValue("qt-menubar", classic)
+        VLCConfig.setValue("qt-titlebar", classic)
+        VLCConfig.setValue("qt-pin-controls", classic)
+        MainCtx.reloadPrefs()
+    }
+
+    function _caching() {
+        const file = Number(VLCConfig.value("file-caching"))
+        const same = Math.trunc(file * 10 / 3) === Number(VLCConfig.value("network-caching"))
+                  && file === Number(VLCConfig.value("disc-caching"))
+                  && file === Number(VLCConfig.value("live-caching"))
+        return (same && cachingChoices.some((c) => c.value === file)) ? file : 0
+    }
+
+    // options whose change refreshes the row
+    readonly property var _watched: {
+        switch (kind) {
+        case "intf": return ["control", "extraintf"]
+        case "startVolume": return ["aout", "#startVolume"]
+        case "layout": return ["intf", "qt-menubar", "qt-titlebar", "qt-pin-controls"]
+        case "caching": return ["file-caching", "network-caching", "disc-caching", "live-caching"]
+        case "language": return ["#language"]
+        case "qtStyle": return ["#qtStyle"]
+        }
+        return []
+    }
+
+    // "option" / "!option": the row is enabled only when that switch is on / off
+    readonly property string _reqOption: String(row.requires ?? "").replace(/^!/, "")
+    readonly property bool _reqNegated: String(row.requires ?? "").startsWith("!")
+    property var _reqValue: _reqOption !== "" ? VLCConfig.value(_reqOption) : true
+    readonly property bool _requirementMet: _reqOption === "" || (!!_reqValue !== _reqNegated)
+
     // Whether this build can do what the row sets
     readonly property bool supported: {
-        if (kind === "colorScheme" || kind === "action" || kind === "picker")
+        if (row.os && Qt.platform.os !== row.os)
+            return false
+        if (row.needsML && !MainCtx.mediaLibraryAvailable)
+            return false
+        if (kind === "colorScheme" || kind === "action" || kind === "picker" || kind === "layout"
+         || kind === "intfScale" || kind === "caching" || kind === "qtStyle")
             return true
+        if (kind === "intf")
+            return VLCConfig.moduleExists(row.module)
+        if (kind === "startVolume")
+            return Number(value) >= 0
+        if (kind === "language")
+            return choices.length > 0
+        if (kind === "mediaFolders")
+            return MainCtx.mediaLibraryAvailable
         if (kind === "openSubtitles")
             return VLCOpenSubtitles.available
         if (kind === "filter")
@@ -76,6 +158,14 @@ FocusScope {
             return spatialModes
         if (kind === "picker")
             return row.choices ?? []
+        if (kind === "layout")
+            return layoutChoices
+        if (kind === "caching")
+            return cachingChoices
+        if (kind === "language")
+            return VLCConfig.languages()
+        if (kind === "qtStyle")
+            return VLCConfig.qtStyles()
         return (option !== "" && kind !== "accent") ? VLCConfig.choices(option) : []
     }
     readonly property var range: (option !== "") ? VLCConfig.range(option) : ({})
@@ -92,6 +182,20 @@ FocusScope {
             return _spatialMode()
         if (kind === "picker")
             return row.value ?? ""
+        if (kind === "intf")
+            return VLCConfig.hasIntf(row.module)
+        if (kind === "startVolume")
+            return VLCConfig.startVolume()
+        if (kind === "language")
+            return VLCConfig.language()
+        if (kind === "qtStyle")
+            return VLCConfig.qtStyle()
+        if (kind === "intfScale")
+            return Math.round(MainCtx.getIntfUserScaleFactor() * 100)
+        if (kind === "layout")
+            return _layout()
+        if (kind === "caching")
+            return _caching()
         if (option === "")
             return undefined
         return VLCConfig.value(option)
@@ -110,6 +214,26 @@ FocusScope {
         if (kind === "picker") {
             root.value = newValue
             root.picked(newValue)
+        } else if (kind === "intf") {
+            VLCConfig.setIntf(row.module, !!newValue)
+        } else if (kind === "startVolume") {
+            VLCConfig.setStartVolume(Math.round(newValue))
+        } else if (kind === "language") {
+            VLCConfig.setLanguage(newValue)
+        } else if (kind === "qtStyle") {
+            VLCConfig.setQtStyle(newValue)
+        } else if (kind === "intfScale") {
+            MainCtx.setIntfUserScaleFactor(newValue / 100)
+        } else if (kind === "layout") {
+            _setLayout(newValue)
+        } else if (kind === "caching") {
+            if (newValue > 0) {
+                VLCConfig.setValue("file-caching", newValue)
+                VLCConfig.setValue("network-caching", Math.trunc(newValue * 10 / 3))
+                VLCConfig.setValue("disc-caching", newValue)
+                VLCConfig.setValue("live-caching", newValue)
+            }
+            root.value = _caching()
         } else if (kind === "filter") {
             VLCConfig.setModule(row.list, row.module, newValue)
             if (row.live)
@@ -124,6 +248,11 @@ FocusScope {
                 _setSpatial(true, newValue)
         } else if (option !== "") {
             VLCConfig.setValue(option, newValue)
+            // e.g. the disc drive sets the DVD, VCD and audio CD devices at once
+            if (newValue !== "")
+                for (const other of (row.alsoSet ?? []))
+                    if (VLCConfig.exists(other))
+                        VLCConfig.setValue(other, newValue)
             if (kind === "eqPreset")
                 VLCEffects.applyEqualizerPreset(newValue) // the bands of the preset
             else if (row.live)
@@ -134,9 +263,17 @@ FocusScope {
     Connections {
         target: VLCConfig
         function onValueChanged(name) {
-            if (name === "" || name === root.option || name === root.row.list)
+            if (name === "" || name === root.option || name === root.row.list || root._watched.includes(name))
                 root.value = root._read()
+            if (root._reqOption !== "" && (name === "" || name === root._reqOption))
+                root._reqValue = VLCConfig.value(root._reqOption)
         }
+    }
+
+    Connections {
+        target: MainCtx
+        enabled: root.kind === "intfScale"
+        function onIntfScaleFactorChanged() { root.value = root._read() }
     }
 
     // The control used for this row
@@ -148,6 +285,14 @@ FocusScope {
         case "spatial": return toggleComponent
         case "spatialMode": return dropdownComponent
         case "picker": return dropdownComponent
+        case "layout": return segmentedComponent
+        case "caching": return dropdownComponent
+        case "language": return dropdownComponent
+        case "qtStyle": return dropdownComponent
+        case "intf": return toggleComponent
+        case "startVolume": return sliderComponent
+        case "intfScale": return sliderComponent
+        case "mediaFolders": return foldersComponent
         case "eqPreset": return dropdownComponent
         case "equalizer": return null
         case "action": return actionComponent
@@ -174,8 +319,8 @@ FocusScope {
     }
 
     visible: available
-    enabled: supported
-    opacity: supported ? 1.0 : 0.4
+    enabled: supported && _requirementMet
+    opacity: enabled ? 1.0 : 0.4
 
     implicitWidth: rowLayout.implicitWidth
     implicitHeight: {
@@ -696,8 +841,9 @@ FocusScope {
 
             readonly property real scale: root.row.scale ?? 1
             readonly property real from: root.row.min ?? ((root.range.min ?? 0) / scale)
-            readonly property real to: root.row.max ?? ((root.range.max ?? 100) / scale)
-            readonly property real step: root.row.step ?? ((root.type === "int" && scale === 1) ? 1 : 0)
+            readonly property real to: (root.kind === "startVolume") ? Number(VLCConfig.value("qt-max-volume"))
+                                                                    : (root.row.max ?? ((root.range.max ?? 100) / scale))
+            readonly property real step: root.row.step ?? (((root.type === "int" || root.kind === "startVolume") && scale === 1) ? 1 : 0)
             readonly property string unit: root.row.unit ?? ""
 
             function format(v) {
@@ -909,13 +1055,84 @@ FocusScope {
         }
     }
 
-    // A button that triggers something in the window
+    // A button that triggers something in the window; with `confirm`, the
+    // first click asks for a second one (e.g. "Reset" -> "Confirm")
     Component {
         id: actionComponent
 
         SettingButton {
-            text: root.row.buttonText ?? qsTr("Open")
-            onClicked: root.actionRequested(root.row.action)
+            id: actionButton
+
+            property bool armed: false
+
+            text: armed ? root.row.confirm : (root.row.buttonText ?? qsTr("Open"))
+            highlighted: armed
+            onClicked: {
+                if (root.row.confirm && !armed) {
+                    armed = true
+                    disarmTimer.restart()
+                    return
+                }
+                armed = false
+                root.actionRequested(root.row.action)
+            }
+
+            Timer {
+                id: disarmTimer
+                interval: 4000
+                onTriggered: actionButton.armed = false
+            }
+        }
+    }
+
+    // Media library folders (row.banned: the excluded ones), with Remove
+    // buttons and one to add a folder
+    Component {
+        id: foldersComponent
+
+        ColumnLayout {
+            id: folders
+
+            readonly property var model: VLCConfig.mediaFolders(!!root.row.banned)
+
+            implicitWidth: root.controlWidth
+            spacing: VLCStyle.margin_xxsmall
+
+            Repeater {
+                model: folders.model
+
+                RowLayout {
+                    required property string display_url
+                    required property int index
+
+                    Layout.preferredWidth: root.controlWidth
+                    spacing: VLCStyle.margin_xsmall
+
+                    T.Label {
+                        Layout.fillWidth: true
+                        text: parent.display_url
+                        elide: Text.ElideMiddle
+                        color: root._text
+                        font.pixelSize: VLCStyle.fontSize_normal
+                    }
+
+                    SettingButton {
+                        text: qsTr("Remove")
+                        onClicked: folders.model.removeAt(parent.index)
+                    }
+                }
+            }
+
+            SettingButton {
+                Layout.alignment: Qt.AlignRight
+                implicitWidth: VLCStyle.dp(140, VLCStyle.scale)
+                text: root.row.banned ? qsTr("Exclude folder…") : qsTr("Add folder…")
+                onClicked: {
+                    const url = VLCConfig.browseFolder(root.row.label)
+                    if (url !== "")
+                        folders.model.add(url)
+                }
+            }
         }
     }
 
@@ -1030,7 +1247,7 @@ FocusScope {
             text: button.text
             font.pixelSize: VLCStyle.fontSize_large
             font.weight: Font.DemiBold
-            color: root._text
+            color: button.highlighted ? theme.accent : root._text
         }
     }
 }

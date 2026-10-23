@@ -50,6 +50,17 @@
 #include "util/vlchotkeyconverter.hpp"
 #include "network/networkmediamodel.hpp"
 #include "maininterface/mainctx.hpp"
+#include "medialibrary/medialib.hpp"
+#include "medialibrary/mlfoldersmodel.hpp"
+#include "dialogs/preferences/simple_preferences.hpp"
+
+#include <QApplication>
+#include <QStyle>
+#include <QStyleFactory>
+#include <cmath>
+
+#include <vlc_aout.h>
+#include <vlc_media_library.h>
 
 #include <vlc_media_source.h>
 #include <vlc_input_item.h>
@@ -853,6 +864,226 @@ QVariantList ConfigBridge::searchSettings(const QString& text, int limit) const
                 return ret;
     }
     return ret;
+}
+
+bool ConfigBridge::hasIntf(const QString& module) const
+{
+    return config_ExistIntf(module.toUtf8().constData());
+}
+
+void ConfigBridge::setIntf(const QString& module, bool enabled)
+{
+    const QByteArray name = module.toUtf8();
+    if (enabled)
+        config_AddIntf(name.constData());
+    else
+        config_RemoveIntf(name.constData());
+    save();
+    emit valueChanged(QStringLiteral("control"));
+    emit valueChanged(QStringLiteral("extraintf"));
+}
+
+// as the classic simple preferences (getDefaultAudioVolume)
+int ConfigBridge::startVolume() const
+{
+    const QByteArray aout = value(QStringLiteral("aout")).toString().toUtf8();
+    const char* name = aout.constData();
+
+    if (!strcmp(name, "") || !strcmp(name, "any"))
+#ifdef _WIN32
+        // every Windows output that can be chosen automatically keeps its
+        // volume; they all share it, so mmdevice's stands for them
+        return config_GetFloat("mmdevice-volume") * 100.f + .5f;
+#else
+        return -1;
+#endif
+
+    if (!strcmp(name, "pulse"))
+        return -1;
+#ifdef __linux__
+    if (!strcmp(name, "alsa") && module_exists("alsa"))
+        return cbrtf(config_GetFloat("alsa-gain")) * 100.f + .5f;
+#endif
+#ifdef _WIN32
+    if (!strcmp(name, "mmdevice"))
+        return config_GetFloat("mmdevice-volume") * 100.f + .5f;
+#endif
+#ifdef __APPLE__
+    if (!strcmp(name, "auhal") && module_exists("auhal"))
+        return (config_GetFloat("auhal-volume") * 100.f + .5f) / AOUT_VOLUME_DEFAULT;
+#endif
+    if (!strcmp(name, "jack"))
+        return cbrtf(config_GetFloat("jack-gain")) * 100.f + .5f;
+#ifdef __OS2__
+    if (!strcmp(name, "kai"))
+        return cbrtf(config_GetFloat("kai-gain")) * 100.f + .5f;
+#endif
+#ifdef _WIN32
+    if (!strcmp(name, "waveout"))
+        return config_GetFloat("waveout-volume") * 100.f + .5f;
+#endif
+    return -1;
+}
+
+// as the classic simple preferences (SPrefsPanel::apply)
+void ConfigBridge::setStartVolume(int percent)
+{
+    const QByteArray aout = value(QStringLiteral("aout")).toString().toUtf8();
+    const char* current = aout.isEmpty() ? nullptr : aout.constData();
+    const auto applies = [current](const char* name) {
+        return module_exists(name) && (!current || !strcmp(current, name) || !strcmp(current, "any"));
+    };
+    const float gain = powf(percent / 100.f, 3);
+    VLC_UNUSED(gain);
+
+#if defined(_WIN32)
+    if (applies("mmdevice"))
+        config_PutFloat("mmdevice-volume", percent / 100.f);
+    if (applies("waveout"))
+        config_PutFloat("waveout-volume", percent / 100.f);
+#elif defined(__APPLE__)
+    if (applies("auhal"))
+        config_PutFloat("auhal-volume", percent / 100.f * AOUT_VOLUME_DEFAULT);
+#elif defined(__OS2__)
+    if (applies("kai"))
+        config_PutFloat("kai-gain", gain);
+#else
+    if (applies("alsa"))
+        config_PutFloat("alsa-gain", gain);
+    if (applies("jack"))
+        config_PutFloat("jack-gain", gain);
+#endif
+    save();
+    emit valueChanged(QStringLiteral("#startVolume"));
+}
+
+QVariantList ConfigBridge::languages() const
+{
+#ifdef _WIN32
+    return SPrefsPanel::languageChoices();
+#else
+    return {};
+#endif
+}
+
+QString ConfigBridge::language() const
+{
+#ifdef _WIN32
+    return SPrefsPanel::savedLanguage();
+#else
+    return {};
+#endif
+}
+
+void ConfigBridge::setLanguage(const QString& iso)
+{
+#ifdef _WIN32
+    SPrefsPanel::saveLanguage(iso);
+    emit valueChanged(QStringLiteral("#language"));
+#else
+    VLC_UNUSED(iso);
+#endif
+}
+
+static const QString styleSettingsKey = QStringLiteral("MainWindow/QtStyle");
+
+QVariantList ConfigBridge::qtStyles() const
+{
+    const QString initialStyle = qApp->property("initialStyle").toString();
+    QVariantList ret {
+        QVariantMap {
+            { QStringLiteral("value"), QString {} },
+            { QStringLiteral("text"), qtr("System's default (%1)").arg(initialStyle) },
+        }
+    };
+    for (const QString& style : QStyleFactory::keys())
+        ret.append(QVariantMap {
+            { QStringLiteral("value"), style },
+            { QStringLiteral("text"), style },
+        });
+    return ret;
+}
+
+QString ConfigBridge::qtStyle() const
+{
+    QSettings* const settings = m_intf->mainSettings;
+    return settings ? settings->value(styleSettingsKey).toString() : QString {};
+}
+
+// as the classic simple preferences: applied at once, and kept for the
+// next start (qt.cpp reads the same key)
+void ConfigBridge::setQtStyle(const QString& style)
+{
+    if (QSettings* const settings = m_intf->mainSettings)
+    {
+        if (style.isEmpty())
+            settings->remove(styleSettingsKey);
+        else
+            settings->setValue(styleSettingsKey, style);
+    }
+    const QString applied = style.isEmpty() ? qApp->property("initialStyle").toString() : style;
+    QMetaObject::invokeMethod(qApp, [applied]() {
+        QApplication::setStyle(applied);
+    }, Qt::QueuedConnection);
+    emit valueChanged(QStringLiteral("#qtStyle"));
+}
+
+// as PrefsDialog::reset()
+void ConfigBridge::resetPreferences()
+{
+    config_ResetAll();
+    save();
+    if (QSettings* const settings = m_intf->mainSettings)
+        settings->clear();
+    m_intf->preferencesResetPending = true;
+    if (m_intf->p_mi)
+    {
+        m_intf->p_mi->reloadPrefs();
+        m_intf->p_mi->reloadFromSettings();
+    }
+#ifdef _WIN32
+    SPrefsPanel::cleanLanguage();
+#endif
+    emit valueChanged(QString {});
+}
+
+void ConfigBridge::fileAssociations() const
+{
+#ifdef _WIN32
+    SPrefsPanel::showFileAssociations(nullptr);
+#endif
+}
+
+void ConfigBridge::clearRecentMedia() const
+{
+    MediaLib* const mediaLib = m_intf->p_mi ? m_intf->p_mi->getMediaLibrary() : nullptr;
+    if (!mediaLib)
+        return;
+    mediaLib->runOnMLThread(this, [](vlc_medialibrary_t* ml) {
+        vlc_ml_clear_history(ml, VLC_ML_HISTORY_TYPE_GLOBAL);
+    });
+}
+
+QObject* ConfigBridge::mediaFolders(bool banned)
+{
+    if (!m_intf->p_mi || !m_intf->p_mi->hasMediaLibrary())
+        return nullptr;
+    QObject*& model = banned ? m_bannedFolders : m_mediaFolders;
+    if (!model)
+    {
+        MLFoldersBaseModel* folders = banned ? static_cast<MLFoldersBaseModel*>(new MLBannedFoldersModel(this))
+                                             : static_cast<MLFoldersBaseModel*>(new MLFoldersModel(this));
+        folders->setCtx(m_intf->p_mi);
+        model = folders;
+    }
+    return model;
+}
+
+void ConfigBridge::reloadMediaLibrary() const
+{
+    MediaLib* const mediaLib = m_intf->p_mi ? m_intf->p_mi->getMediaLibrary() : nullptr;
+    if (mediaLib)
+        mediaLib->reload();
 }
 
 void ConfigBridge::save()

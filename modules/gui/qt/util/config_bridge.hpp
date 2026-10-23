@@ -117,6 +117,36 @@ public:
     /// [{ option, place }], at most `limit`
     Q_INVOKABLE QVariantList searchSettings(const QString& text, int limit = 150) const;
 
+    // Settings of the classic simple preferences that are not one option
+
+    /// Whether an extra interface (e.g. "audioscrobbler") is started
+    Q_INVOKABLE bool hasIntf(const QString& module) const;
+    Q_INVOKABLE void setIntf(const QString& module, bool enabled);
+    /// Volume (%) the current audio output starts with when the volume is
+    /// not remembered; -1 when the output keeps its own volume
+    Q_INVOKABLE int startVolume() const;
+    Q_INVOKABLE void setStartVolume(int percent);
+    /// Interface language (Windows only; empty list elsewhere)
+    Q_INVOKABLE QVariantList languages() const;
+    Q_INVOKABLE QString language() const;
+    Q_INVOKABLE void setLanguage(const QString& iso);
+    /// Qt widget style of the classic dialogs ("" = system default)
+    Q_INVOKABLE QVariantList qtStyles() const;
+    Q_INVOKABLE QString qtStyle() const;
+    Q_INVOKABLE void setQtStyle(const QString& style);
+    /// Resets every preference, as the classic dialog's "Reset Preferences"
+    Q_INVOKABLE void resetPreferences();
+    /// Windows' file associations dialog
+    Q_INVOKABLE void fileAssociations() const;
+    /// Media library: forget the recently played media
+    Q_INVOKABLE void clearRecentMedia() const;
+    /// Media library folders (banned: the excluded ones), a list model with
+    /// the roles "display_url" and "url", add(url) and removeAt(index);
+    /// null without a media library
+    Q_INVOKABLE QObject* mediaFolders(bool banned);
+    /// Media library: scan the folders again
+    Q_INVOKABLE void reloadMediaLibrary() const;
+
     /// Interface state that is not a VLC option (for instance the items
     /// pinned to the library sidebar), kept in the Qt interface settings
     Q_INVOKABLE QVariant uiValue(const QString& key, const QVariant& defaultValue = {}) const;
@@ -131,6 +161,8 @@ private:
     void save();
 
     qt_intf_t* m_intf = nullptr;
+    QObject* m_mediaFolders = nullptr;
+    QObject* m_bannedFolders = nullptr;
 };
 
 #endif // VLC_QT_CONFIG_BRIDGE_HPP

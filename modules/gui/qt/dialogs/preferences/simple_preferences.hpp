@@ -44,6 +44,7 @@ class MLFoldersEditor;
 #endif
 
 #include <QWidget>
+#include <QVariant>
 class QLineEdit;
 class QLabel;
 class QPushButton;
@@ -100,6 +101,14 @@ public:
     void apply();
 #ifdef _WIN32
     void cleanLang();
+
+    /// Interface language (Windows registry), also used by the settings window
+    static QVariantList languageChoices();
+    static QString savedLanguage();
+    static void saveLanguage( const QString &iso );
+    static void cleanLanguage();
+    /// The file associations dialog
+    static void showFileAssociations( QWidget *parent );
 #endif
 
 private:
@@ -142,8 +151,6 @@ private:
     MLFoldersEditor *mlBannedFoldersEditor {};
 
 #ifdef _WIN32
-    QList<QTreeWidgetItem *> listAsso;
-    bool addType( const char * psz_ext, QTreeWidgetItem*, QTreeWidgetItem*, QVLCRegistry* );
     void saveLang();
 #endif
 
@@ -169,8 +176,6 @@ private slots:
     void updateLayoutSelection();
 #ifdef _WIN32
     void assoDialog();
-    void updateCheckBoxes( QTreeWidgetItem*, int );
-    void saveAsso();
 #endif
     void MLaddNewFolder( );
     void MLBanFolder( );

@@ -42,6 +42,19 @@ import VLC.Style
 //   (EqualizerPanel.qml); "spatial"/"spatialMode": spatial audio on/off and
 //   its filter (headphone virtualization or room effect)
 //   action    for kind "action": name of a function of the window
+//             (confirm: text of the button after a first click, which then
+//             has to be clicked again)
+//   os        only on this platform (Qt.platform.os, e.g. "windows")
+//   needsML   only with a media library
+//   aout      only while "aout" is one of these values
+//   requires  "option" / "!option": enabled only while that switch is on / off
+//   alsoSet   options that get the same value (the disc drive)
+//   kind "intf": an extra interface started with VLC (module); "startVolume":
+//   the volume at start; "layout": the classic Modern / Classic / Skins preset;
+//   "intfScale": interface zoom; "language", "qtStyle": interface language
+//   (Windows), style of the classic dialogs; "caching": the classic caching
+//   policy; "mediaFolders": media library folders (banned: excluded ones)
+
 //   kind "openSubtitles": sign in to opensubtitles.com (VLCOpenSubtitles)
 QtObject {
     id: root
@@ -73,6 +86,13 @@ QtObject {
                     { label: qsTr("Include debug messages in the system log"), option: "syslog-debug" },
                     { label: qsTr("System log identity"), option: "syslog-ident" },
                     { label: qsTr("System log facility"), option: "syslog-facility" }
+                ]},
+                { title: qsTr("Language"), rows: [
+                    { label: qsTr("Interface language (after restart)"), kind: "language" }
+                ]},
+                { title: qsTr("Reset"), rows: [
+                    { label: qsTr("Reset all preferences"), kind: "action", action: "resetPreferences",
+                      buttonText: qsTr("Reset"), confirm: qsTr("Confirm") }
                 ]}
             ]
         },
@@ -109,6 +129,14 @@ QtObject {
                 ]},
                 { title: qsTr("Playlist"), rows: [
                     { label: qsTr("Show the playlist as a tree"), option: "playlist-tree" }
+                ]},
+                { title: qsTr("Layout"), rows: [
+                    { label: qsTr("Layout"), kind: "layout" },
+                    { label: qsTr("Show the menu bar"), option: "qt-menubar" },
+                    { label: qsTr("Interface scale"), kind: "intfScale", min: 30, max: 300, step: 10, unit: "%" },
+                    { label: qsTr("Customize the player bar"), kind: "action", action: "customizePlayer", buttonText: qsTr("Customize") },
+                    { label: qsTr("Skin file"), option: "skins2-last" },
+                    { label: qsTr("Style of the classic dialogs"), kind: "qtStyle" }
                 ]}
             ]
         },
@@ -116,10 +144,18 @@ QtObject {
             name: qsTr("Privacy"), title: qsTr("Privacy Settings"), icon: VLCIcons.privacy,
             sections: [
                 { title: qsTr("Network"), rows: [
-                    { label: qsTr("Fetch titles and cover art from the internet"), option: "metadata-network-access" },
+                    { label: qsTr("Fetch titles and cover art from the internet"), option: "metadata-network-access" }
+                ]},
+                { title: qsTr("Last.fm"), rows: [
+                    { label: qsTr("Submit played tracks to Last.fm"), kind: "intf", module: "audioscrobbler" },
                     { label: qsTr("Last.fm username"), option: "lastfm-username" },
                     { label: qsTr("Last.fm password"), option: "lastfm-password" },
                     { label: qsTr("Last.fm submission URL"), option: "scrobbler-url" }
+                ]},
+                { title: qsTr("History"), rows: [
+                    { label: qsTr("Save recently played media"), option: "save-recentplay", needsML: true },
+                    { label: qsTr("Clear recently played media"), kind: "action", action: "clearRecent",
+                      buttonText: qsTr("Clear"), confirm: qsTr("Confirm"), needsML: true }
                 ]}
             ]
         },
@@ -142,6 +178,9 @@ QtObject {
                 { title: qsTr("Remotes"), rows: [
                     { label: qsTr("Web remote control port"), option: "http-port", kind: "number" },
                     { label: qsTr("Web remote control password"), option: "http-password" }
+                ]},
+                { title: qsTr("Media Keys"), rows: [
+                    { label: qsTr("Ignore the keyboard's volume keys"), option: "qt-disable-volume-keys" }
                 ]}
             ]
         },
@@ -169,11 +208,15 @@ QtObject {
                     { label: qsTr("Seek quickly to the nearest keyframe"), option: "input-fast-seek" }
                 ]},
                 { title: qsTr("Files & Discs"), rows: [
-                    { label: qsTr("Default optical drive"), option: "dvd" },
+                    { label: qsTr("Default optical drive"), option: "dvd", alsoSet: ["vcd", "cd-audio"] },
                     { label: qsTr("Repair damaged AVI files"), option: "avi-index" },
                     { label: qsTr("Load matching .mkv files from the same folder"), option: "mkv-preload-local-dir" },
                     { label: qsTr("Time-shift buffer folder"), option: "input-timeshift-path" },
                     { label: qsTr("Time-shift buffer granularity"), option: "input-timeshift-granularity", kind: "number" }
+                ]},
+                { title: qsTr("Resuming"), rows: [
+                    { label: qsTr("Continue playback where it stopped"), option: "restore-playback-pos", needsML: true },
+                    { label: qsTr("Pause on the last frame of a video"), option: "play-and-pause" }
                 ]}
             ]
         },
@@ -209,6 +252,12 @@ QtObject {
                     { label: qsTr("Height"), option: "snapshot-height", kind: "number" },
                     { label: qsTr("Number files sequentially"), option: "snapshot-sequential" },
                     { label: qsTr("Show a preview after capture"), option: "snapshot-preview" }
+                ]},
+                { title: qsTr("Output Module"), rows: [
+                    { label: qsTr("Output module"), option: "vout" },
+                    { label: qsTr("Hardware YUV to RGB conversion"), option: "directx-hw-yuv" },
+                    { label: qsTr("Workaround for T23 graphics"), option: "kva-fixt23" },
+                    { label: qsTr("KVA video mode"), option: "kva-video-mode" }
                 ]}
             ]
         },
@@ -255,6 +304,21 @@ QtObject {
                 ]},
                 { title: qsTr("Visualization"), rows: [
                     { label: qsTr("Visualizer"), option: "audio-visual" }
+                ]},
+                // the device of the audio output in use
+                { title: qsTr("Device"), rows: [
+                    { label: qsTr("Device"), option: "mmdevice-audio-device", aout: ["mmdevice", "any", ""] },
+                    { label: qsTr("Device"), option: "directx-audio-device", aout: ["directx"] },
+                    { label: qsTr("Device"), option: "waveout-audio-device", aout: ["waveout"] },
+                    { label: qsTr("Device"), option: "alsa-audio-device", aout: ["alsa"] },
+                    { label: qsTr("Device"), option: "oss-audio-device", aout: ["oss"] },
+                    { label: qsTr("Device"), option: "kai-audio-device", aout: ["kai"] },
+                    { label: qsTr("HDMI / S/PDIF passthrough"), option: "mmdevice-passthrough", aout: ["mmdevice", "any", ""] },
+                    { label: qsTr("Output file"), option: "audiofile-file", aout: ["afile"] }
+                ]},
+                { title: qsTr("Start & Speed"), rows: [
+                    { label: qsTr("Volume at start"), kind: "startVolume", unit: "%", requires: "!volume-save", greyIfMissing: true },
+                    { label: qsTr("Keep the pitch when changing the speed"), option: "audio-time-stretch" }
                 ]}
             ]
         },
@@ -294,6 +358,11 @@ QtObject {
                     { label: qsTr("Show feedback for shortcuts"), option: "osd" },
                     { label: qsTr("Show filename when a video starts"), option: "video-title-show" },
                     { label: qsTr("Show filename for"), option: "video-title-timeout", kind: "slider", unit: "s", scale: 1000, min: 1, max: 10, step: 0.5 }
+                ]},
+                { title: qsTr("Positions"), rows: [
+                    { label: qsTr("Filename position"), option: "video-title-position" },
+                    { label: qsTr("Secondary subtitle alignment"), option: "secondary-sub-alignment" },
+                    { label: qsTr("Secondary subtitle position"), option: "secondary-sub-margin", kind: "number", unit: "px" }
                 ]}
             ]
         },
@@ -311,6 +380,16 @@ QtObject {
                 ]},
                 { title: qsTr("Metadata & Artwork"), rows: [
                     { label: qsTr("Use the media library"), option: "media-library" }
+                ]},
+                { title: qsTr("Media Library Folders"), rows: [
+                    { label: qsTr("Folders"), kind: "mediaFolders", needsML: true },
+                    { label: qsTr("Excluded folders"), kind: "mediaFolders", banned: true, needsML: true },
+                    { label: qsTr("Scan the folders again"), kind: "action", action: "rescanLibrary",
+                      buttonText: qsTr("Rescan"), needsML: true }
+                ]},
+                { title: qsTr("File Associations"), rows: [
+                    { label: qsTr("File types opened with VLC Gold"), kind: "action", action: "fileAssociations",
+                      buttonText: qsTr("Choose"), os: "windows" }
                 ]}
             ]
         },
@@ -333,6 +412,12 @@ QtObject {
                 ]},
                 { title: qsTr("OpenSubtitles"), rows: [
                     { label: qsTr("Account for subtitle downloads"), kind: "openSubtitles" }
+                ]},
+                { title: qsTr("Buffering Preset"), rows: [
+                    { label: qsTr("Buffering preset"), kind: "caching" }
+                ]},
+                { title: qsTr("Streaming"), rows: [
+                    { label: qsTr("RTP over RTSP (TCP)"), option: "rtsp-tcp" }
                 ]}
             ]
         },
@@ -349,6 +434,9 @@ QtObject {
                     { label: qsTr("Give VLC real-time priority"), option: "high-priority" },
                     { label: qsTr("Clock synchronisation"), option: "clock-synchro" },
                     { label: qsTr("Clock jitter"), option: "clock-jitter", kind: "number", unit: "ms" }
+                ]},
+                { title: qsTr("Post-processing"), rows: [
+                    { label: qsTr("Post-processing quality"), option: "postproc-q" }
                 ]}
             ]
         },
@@ -358,6 +446,12 @@ QtObject {
                 { title: qsTr("Recording"), rows: [
                     { label: qsTr("Save recordings to"), option: "input-record-path" },
                     { label: qsTr("Record without re-encoding when possible"), option: "input-record-native" }
+                ]},
+                { title: qsTr("H.264 Encoder"), rows: [
+                    { label: qsTr("H.264 encoder preset"), option: "sout-x264-preset" },
+                    { label: qsTr("H.264 encoder tuning"), option: "sout-x264-tune" },
+                    { label: qsTr("H.264 profile"), option: "sout-x264-profile" },
+                    { label: qsTr("H.264 level"), option: "sout-x264-level" }
                 ]}
             ]
         },
