@@ -368,6 +368,51 @@ Window {
                     font.pixelSize: VLCStyle.fontSize_xlarge
                     elide: Text.ElideRight
                 }
+
+                // every VLC option (AllSettingsWindow.qml); flat icon and
+                // text, as the player panel's "Open Advanced Settings"
+                T.AbstractButton {
+                    id: allSettingsButton
+
+                    Layout.preferredHeight: VLCStyle.dp(34, VLCStyle.scale)
+                    implicitWidth: allSettingsRow.implicitWidth + 2 * VLCStyle.margin_xsmall
+
+                    onClicked: root.openAdvancedSettings()
+
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("All Settings")
+
+                    background: Rectangle {
+                        radius: VLCStyle.dp(6, VLCStyle.scale)
+                        color: allSettingsButton.hovered ? windowTheme.bg.primary : "transparent"
+                        border.width: allSettingsButton.visualFocus ? VLCStyle.focus_border : 0
+                        border.color: theme.visualFocus
+                    }
+
+                    contentItem: Item {
+                        Row {
+                            id: allSettingsRow
+
+                            anchors.centerIn: parent
+                            spacing: VLCStyle.margin_xsmall
+
+                            T.Label {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: VLCIcons.settings
+                                font.family: VLCIcons.fontFamily
+                                font.pixelSize: VLCStyle.icon_normal
+                                color: allSettingsButton.hovered ? theme.fg.primary : theme.fg.secondary
+                            }
+
+                            T.Label {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: qsTr("All Settings")
+                                font.pixelSize: VLCStyle.fontSize_large
+                                color: allSettingsButton.hovered ? theme.fg.primary : theme.fg.secondary
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -562,39 +607,6 @@ Window {
                             }
                         }
 
-                        // Links to every VLC option (AllSettingsWindow.qml)
-                        RowLayout {
-                            Layout.fillWidth: true
-                            visible: !root.searching
-                            spacing: VLCStyle.margin_xsmall
-
-                            T.AbstractButton {
-                                id: allSettingsButton
-
-                                Layout.fillWidth: true
-                                implicitHeight: VLCStyle.dp(38, VLCStyle.scale)
-
-                                onClicked: root.openAdvancedSettings()
-
-                                Accessible.role: Accessible.Button
-                                Accessible.name: qsTr("All Settings")
-
-                                background: Rectangle {
-                                    radius: VLCStyle.dp(2, VLCStyle.scale)
-                                    color: Qt.alpha(windowTheme.bg.primary, allSettingsButton.hovered ? 1.0 : 0.95)
-                                    border.width: allSettingsButton.visualFocus ? VLCStyle.focus_border : 0
-                                    border.color: theme.visualFocus
-                                }
-
-                                contentItem: T.Label {
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    text: qsTr("All Settings…")
-                                    color: theme.fg.secondary
-                                    font.pixelSize: VLCStyle.fontSize_large
-                                }
-                            }
-                        }
                     }
                 }
 
