@@ -140,6 +140,21 @@
         {"key":"vlc", "path": "./icons/figma/vlc.svg"},
         {"key":"window", "path": "./icons/figma/window.svg"},
         {"key":"wrench", "path": "./icons/figma/wrench.svg"},
-        {"key":"zoom", "path": "./icons/figma/zoom.svg"}
+        {"key":"zoom", "path": "./icons/figma/zoom.svg"},
+        {"key":"audiosub_sel", "path": "./icons/figma/subtitles_selected.svg"},
+        {"key":"audiosub_sel_accent", "path": "./icons/figma/subtitles_selected_accent.svg"},
+        {"key":"visualization_sel", "path": "./icons/figma/audio_selected.svg"},
+        {"key":"visualization_sel_accent", "path": "./icons/figma/audio_selected_accent.svg"},
+        {"key":"video_sel", "path": "./icons/figma/video_selected.svg"},
+        {"key":"video_sel_accent", "path": "./icons/figma/video_selected_accent.svg"},
+        {"key":"enqueue_sel", "path": "./icons/figma/queue_selected.svg"},
+        {"key":"enqueue_sel_accent", "path": "./icons/figma/queue_selected_accent.svg"},
+        {"key":"bookmarks_sel", "path": "./icons/figma/bookmarks_selected.svg"},
+        {"key":"bookmarks_sel_accent", "path": "./icons/figma/bookmarks_selected_accent.svg"},
+        {"key":"chapters_sel", "path": "./icons/figma/chapters_selected.svg"},
+        {"key":"chapters_sel_accent", "path": "./icons/figma/chapters_selected_accent.svg"},
+        {"key":"playback_tab", "path": "./icons/figma/playback_tab.svg"},
+        {"key":"playback_tab_sel", "path": "./icons/figma/playback_tab_selected.svg"},
+        {"key":"playback_tab_sel_accent", "path": "./icons/figma/playback_tab_selected_accent.svg"}
     ]
 }

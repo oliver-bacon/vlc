@@ -150,6 +150,21 @@ class VLCIcons : public QObject {
     Q_PROPERTY(QChar window MEMBER window CONSTANT FINAL)
     Q_PROPERTY(QChar wrench MEMBER wrench CONSTANT FINAL)
     Q_PROPERTY(QChar zoom MEMBER zoom CONSTANT FINAL)
+    Q_PROPERTY(QChar audiosub_sel MEMBER audiosub_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar audiosub_sel_accent MEMBER audiosub_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar visualization_sel MEMBER visualization_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar visualization_sel_accent MEMBER visualization_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar video_sel MEMBER video_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar video_sel_accent MEMBER video_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar enqueue_sel MEMBER enqueue_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar enqueue_sel_accent MEMBER enqueue_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar bookmarks_sel MEMBER bookmarks_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar bookmarks_sel_accent MEMBER bookmarks_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar chapters_sel MEMBER chapters_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar chapters_sel_accent MEMBER chapters_sel_accent CONSTANT FINAL)
+    Q_PROPERTY(QChar playback_tab MEMBER playback_tab CONSTANT FINAL)
+    Q_PROPERTY(QChar playback_tab_sel MEMBER playback_tab_sel CONSTANT FINAL)
+    Q_PROPERTY(QChar playback_tab_sel_accent MEMBER playback_tab_sel_accent CONSTANT FINAL)
 
 
 public:
@@ -296,6 +311,21 @@ public:
     static constexpr inline QChar window{ u'\ue085' };
     static constexpr inline QChar wrench{ u'\ue086' };
     static constexpr inline QChar zoom{ u'\ue087' };
+    static constexpr inline QChar audiosub_sel{ u'\ue088' };
+    static constexpr inline QChar audiosub_sel_accent{ u'\ue089' };
+    static constexpr inline QChar visualization_sel{ u'\ue08a' };
+    static constexpr inline QChar visualization_sel_accent{ u'\ue08b' };
+    static constexpr inline QChar video_sel{ u'\ue08c' };
+    static constexpr inline QChar video_sel_accent{ u'\ue08d' };
+    static constexpr inline QChar enqueue_sel{ u'\ue08e' };
+    static constexpr inline QChar enqueue_sel_accent{ u'\ue08f' };
+    static constexpr inline QChar bookmarks_sel{ u'\ue090' };
+    static constexpr inline QChar bookmarks_sel_accent{ u'\ue091' };
+    static constexpr inline QChar chapters_sel{ u'\ue092' };
+    static constexpr inline QChar chapters_sel_accent{ u'\ue093' };
+    static constexpr inline QChar playback_tab{ u'\ue094' };
+    static constexpr inline QChar playback_tab_sel{ u'\ue095' };
+    static constexpr inline QChar playback_tab_sel_accent{ u'\ue096' };
 
 };
 

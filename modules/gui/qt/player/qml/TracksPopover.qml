@@ -56,6 +56,9 @@ T.Popup {
     readonly property color textColor: dark ? "#8F8F8F" : "#2E2E2E"
     readonly property color dimColor: "#6B6B6B"
     readonly property color accentColor: VLCStyle.palette.orange500
+    // tab icons: grey part and accent details (Figma Dark/FG/A2, Dark/Accent/Dim)
+    readonly property color iconColor: dark ? "#8F8F8F" : "#2E2E2E"
+    readonly property color accentDimColor: VLCStyle.palette.accentDim
     readonly property real dp1: VLCStyle.dp(1, VLCStyle.scale)
 
     background: Rectangle {
@@ -87,9 +90,9 @@ T.Popup {
 
                 Repeater {
                     model: [
-                        { "text": qsTr("Video"), "glyph": VLCIcons.video },
-                        { "text": qsTr("Audio"), "glyph": VLCIcons.visualization },
-                        { "text": qsTr("Subtitles"), "glyph": VLCIcons.audiosub }
+                        { "text": qsTr("Video"), "glyph": VLCIcons.video, "sel": VLCIcons.video_sel, "selAccent": VLCIcons.video_sel_accent },
+                        { "text": qsTr("Audio"), "glyph": VLCIcons.visualization, "sel": VLCIcons.visualization_sel, "selAccent": VLCIcons.visualization_sel_accent },
+                        { "text": qsTr("Subtitles"), "glyph": VLCIcons.audiosub, "sel": VLCIcons.audiosub_sel, "selAccent": VLCIcons.audiosub_sel_accent }
                     ]
 
                     delegate: T.TabButton {
@@ -114,12 +117,27 @@ T.Popup {
                         contentItem: Row {
                             spacing: 6 * root.dp1
                             leftPadding: Math.max(0, (tab.width - implicitWidth) / 2)
-                            Text {
+                            // Figma: the selected tab icon is two-tone, grey with its details in the dim accent
+                            Item {
                                 anchors.verticalCenter: parent.verticalCenter
-                                font.family: VLCIcons.fontFamily
-                                font.pixelSize: 15 * root.dp1
-                                text: tab.modelData.glyph
-                                color: tab.checked ? root.accentColor : root.dimColor
+                                implicitWidth: tabIcon.implicitWidth
+                                implicitHeight: tabIcon.implicitHeight
+                                width: implicitWidth
+                                height: implicitHeight
+                                Text {
+                                    id: tabIcon
+                                    font.family: VLCIcons.fontFamily
+                                    font.pixelSize: 15 * root.dp1
+                                    text: tab.checked ? tab.modelData.sel : tab.modelData.glyph
+                                    color: tab.checked ? root.iconColor : root.dimColor
+                                }
+                                Text {
+                                    visible: tab.checked
+                                    font.family: VLCIcons.fontFamily
+                                    font.pixelSize: 15 * root.dp1
+                                    text: tab.modelData.selAccent
+                                    color: root.accentDimColor
+                                }
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
