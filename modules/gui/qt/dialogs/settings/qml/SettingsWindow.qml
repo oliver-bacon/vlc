@@ -81,6 +81,8 @@ Window {
     function rowAvailable(row) {
         if (row.kind === "colorScheme" || row.kind === "action")
             return true
+        if (row.kind === "openSubtitles")
+            return VLCOpenSubtitles.available
         if (row.greyIfMissing)
             return true // SettingRow greys it out when the build lacks it
         if (row.kind === "filter")

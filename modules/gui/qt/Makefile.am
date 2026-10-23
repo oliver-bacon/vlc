@@ -326,6 +326,7 @@ libqt_plugin_la_SOURCES = \
 	util/config_bridge.cpp util/config_bridge.hpp \
 	util/settings_profiles.cpp util/settings_profiles.hpp \
 	util/effects_bridge.cpp util/effects_bridge.hpp \
+	util/opensubtitles.cpp util/opensubtitles.hpp \
 	util/ui_notifier.cpp util/ui_notifier.hpp \
 	util/color_svg_image_provider.cpp util/color_svg_image_provider.hpp \
 	util/vlcaccess_image_provider.cpp util/vlcaccess_image_provider.hpp \
@@ -414,6 +415,15 @@ moc_verbose__0 = $(moc_verbose_0)
 
 # These MOC files depend on the configure settings:
 dialogs/dialogs_provider.moc.cpp dialogs/vlm/vlm.moc.cpp: $(top_builddir)/config.h
+
+# opensubtitles.com API key ("From OpenSubtitles" in Add Subtitles). It is
+# not in git: put it in a file named opensubtitles-api-key.txt at the top of
+# the source tree. Without the file the key is empty and the feature is off.
+BUILT_SOURCES += util/opensubtitles_key.h
+util/opensubtitles_key.h: $(wildcard $(top_srcdir)/opensubtitles-api-key.txt)
+	$(AM_V_GEN)$(MKDIR_P) util; \
+	key=`cat "$(top_srcdir)/opensubtitles-api-key.txt" 2>/dev/null | tr -cd 'A-Za-z0-9_-'`; \
+	echo "#define OPENSUBTITLES_API_KEY \"$$key\"" > $@.tmp && mv -f $@.tmp $@
 
 nodist_libqt_plugin_la_SOURCES = \
 	dialogs/bookmarks/bookmarks.moc.cpp \
@@ -527,6 +537,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	util/color_scheme_model.moc.cpp \
 	util/config_bridge.moc.cpp \
 	util/effects_bridge.moc.cpp \
+	util/opensubtitles.moc.cpp \
 	util/ui_notifier.moc.cpp \
 	util/color_svg_image_provider.moc.cpp \
 	util/vlcaccess_image_provider.moc.cpp \

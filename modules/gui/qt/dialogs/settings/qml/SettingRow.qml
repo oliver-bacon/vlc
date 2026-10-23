@@ -52,6 +52,8 @@ FocusScope {
     readonly property bool supported: {
         if (kind === "colorScheme" || kind === "action")
             return true
+        if (kind === "openSubtitles")
+            return VLCOpenSubtitles.available
         if (kind === "filter")
             return VLCConfig.exists(row.list) && VLCConfig.moduleExists(row.module)
         if (kind === "equalizer")
@@ -139,6 +141,7 @@ FocusScope {
         case "eqPreset": return dropdownComponent
         case "equalizer": return null
         case "action": return actionComponent
+        case "openSubtitles": return openSubtitlesComponent
         case "slider": return sliderComponent
         case "number": return numberComponent
         }
@@ -828,6 +831,99 @@ FocusScope {
             text: root.row.buttonText ?? qsTr("Open")
             onClicked: root.actionRequested(root.row.action)
         }
+    }
+
+    // opensubtitles.com account: user name, password and Sign in, or the
+    // account and Sign out. The password goes to VLC's keystore.
+    Component {
+        id: openSubtitlesComponent
+
+        ColumnLayout {
+            id: osAccount
+
+            spacing: VLCStyle.margin_xsmall
+
+            function signIn() {
+                if (osUser.text.trim() !== "" && osPassword.text !== "")
+                    VLCOpenSubtitles.signIn(osUser.text, osPassword.text)
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                visible: !VLCOpenSubtitles.signedIn
+                spacing: VLCStyle.margin_xsmall
+
+                onVisibleChanged: {
+                    if (!visible)
+                        osPassword.text = ""
+                }
+
+                InputField {
+                    id: osUser
+                    Layout.preferredWidth: VLCStyle.dp(150, VLCStyle.scale)
+                    Accessible.name: qsTr("User name")
+                    onAccepted: osPassword.forceActiveFocus()
+
+                    FieldPlaceholder { field: osUser; text: qsTr("User name") }
+                }
+
+                InputField {
+                    id: osPassword
+                    Layout.preferredWidth: VLCStyle.dp(150, VLCStyle.scale)
+                    echoMode: TextInput.Password
+                    Accessible.name: qsTr("Password")
+                    onAccepted: osAccount.signIn()
+
+                    FieldPlaceholder { field: osPassword; text: qsTr("Password") }
+                }
+
+                SettingButton {
+                    text: VLCOpenSubtitles.signingIn ? qsTr("Signing in…") : qsTr("Sign in")
+                    enabled: !VLCOpenSubtitles.signingIn && osUser.text.trim() !== "" && osPassword.text !== ""
+                    onClicked: osAccount.signIn()
+                }
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                visible: VLCOpenSubtitles.signedIn
+                spacing: VLCStyle.margin_normal
+
+                T.Label {
+                    text: VLCOpenSubtitles.allowedDownloads > 0
+                          ? qsTr("Signed in as %1 (%2 downloads a day)").arg(VLCOpenSubtitles.username).arg(VLCOpenSubtitles.allowedDownloads)
+                          : qsTr("Signed in as %1").arg(VLCOpenSubtitles.username)
+                    color: root._text
+                    font.pixelSize: VLCStyle.fontSize_large
+                }
+
+                SettingButton {
+                    text: qsTr("Sign out")
+                    onClicked: VLCOpenSubtitles.signOut()
+                }
+            }
+
+            T.Label {
+                Layout.alignment: Qt.AlignRight
+                visible: text !== ""
+                text: VLCOpenSubtitles.signedIn ? "" : VLCOpenSubtitles.accountError
+                color: theme.accent
+                font.pixelSize: VLCStyle.fontSize_normal
+            }
+        }
+    }
+
+    // the template text field draws no placeholder
+    component FieldPlaceholder: T.Label {
+        required property T.TextField field
+
+        anchors.fill: parent
+        leftPadding: field.leftPadding
+        verticalAlignment: Text.AlignVCenter
+        visible: field.text === "" && !field.activeFocus
+        color: root._mutedText
+        font: field.font
+        elide: Text.ElideRight
     }
 
     component SettingButton: T.Button {

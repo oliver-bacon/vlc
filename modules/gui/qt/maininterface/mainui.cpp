@@ -41,6 +41,7 @@
 #include "playlist/playlist_controller.hpp"
 
 #include "util/config_bridge.hpp"
+#include "util/opensubtitles.hpp"
 #include "util/effects_bridge.hpp"
 #include "util/csdmenu.hpp"
 #include "util/item_key_event_filter.hpp"
@@ -247,6 +248,7 @@ void MainUI::registerQMLTypes()
         qmlRegisterSingletonInstance<NavigationHistory>(uri, versionMajor, versionMinor, "History", new NavigationHistory(this));
         qmlRegisterSingletonInstance<ConfigBridge>(uri, versionMajor, versionMinor, "VLCConfig", new ConfigBridge(m_mainCtx->getIntf(), this));
         qmlRegisterSingletonInstance<EffectsBridge>(uri, versionMajor, versionMinor, "VLCEffects", new EffectsBridge(m_mainCtx->getIntf(), this));
+        qmlRegisterSingletonInstance<OpenSubtitles>(uri, versionMajor, versionMinor, "VLCOpenSubtitles", new OpenSubtitles(m_mainCtx->getIntf(), this));
         qmlRegisterType<VideoSurface>(uri, versionMajor, versionMinor, "VideoSurface");
         qmlRegisterUncreatableType<BaseModel>( uri, versionMajor, versionMinor, "BaseModel", "Base Model is uncreatable." );
         qmlRegisterUncreatableType<VLCVarChoiceModel>(uri, versionMajor, versionMinor, "VLCVarChoiceModel", "generic variable with choice model" );

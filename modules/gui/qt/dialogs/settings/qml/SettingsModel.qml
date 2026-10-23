@@ -43,6 +43,7 @@ import VLC.Style
 //   (EqualizerPanel.qml); "spatial"/"spatialMode": spatial audio on/off and
 //   its filter (headphone virtualization or room effect)
 //   action    for kind "action": name of a function of the window
+//   kind "openSubtitles": sign in to opensubtitles.com (VLCOpenSubtitles)
 QtObject {
     id: root
 
@@ -330,6 +331,9 @@ QtObject {
                 { title: qsTr("Security"), rows: [
                     { label: qsTr("Verify certificates against the system trust store"), option: "gnutls-system-trust" },
                     { label: qsTr("Cipher preference"), option: "gnutls-priorities" }
+                ]},
+                { title: qsTr("OpenSubtitles"), rows: [
+                    { label: qsTr("Account for subtitle downloads"), kind: "openSubtitles" }
                 ]}
             ]
         },

@@ -9,6 +9,18 @@ qt_include_dir = include_directories('.')
 qt_extra_deps = []
 qt_extra_flags = ['-DQT_STRICT_ITERATORS','-DQT_USE_QSTRINGBUILDER','-DQT_NO_CAST_TO_ASCII','-DQT_NO_CAST_FROM_BYTEARRAY']
 qt_cppargs = []
+
+# opensubtitles.com API key ("From OpenSubtitles" in Add Subtitles). It is
+# not in git: pass -Dopensubtitles_api_key=... or put it in a file named
+# opensubtitles-api-key.txt at the top of the source tree.
+qt_opensubtitles_key = get_option('opensubtitles_api_key')
+qt_opensubtitles_key_file = meson.project_source_root() / 'opensubtitles-api-key.txt'
+if qt_opensubtitles_key == '' and import('fs').is_file(qt_opensubtitles_key_file)
+    qt_opensubtitles_key = import('fs').read(qt_opensubtitles_key_file).strip()
+endif
+if qt_opensubtitles_key != ''
+    qt_cppargs += '-DOPENSUBTITLES_API_KEY="' + qt_opensubtitles_key + '"'
+endif
 qt_link_args = [gc_sections_linkargs]
 
 qt6_dep = dependency('qt6',
@@ -141,6 +153,7 @@ moc_headers = files(
     'util/base_model.hpp',
     'util/color_scheme_model.hpp',
     'util/config_bridge.hpp',
+    'util/opensubtitles.hpp',
     'util/ui_notifier.hpp',
     'util/color_svg_image_provider.hpp',
     'util/vlcaccess_image_provider.hpp',
@@ -466,6 +479,8 @@ qt_plugin_sources = files(
     'util/settings_profiles.cpp',
     'util/effects_bridge.cpp',
     'util/effects_bridge.hpp',
+    'util/opensubtitles.cpp',
+    'util/opensubtitles.hpp',
     'util/settings_profiles.hpp',
     'util/config_bridge.hpp',
     'util/ui_notifier.cpp',

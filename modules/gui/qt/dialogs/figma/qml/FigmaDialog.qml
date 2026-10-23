@@ -41,6 +41,8 @@ Window {
     property string saveText: qsTr("Save")
     property string cancelText: qsTr("Cancel")
     property bool saveEnabled: true
+    // false: Save only emits accepted(), the dialog closes itself later
+    property bool closeOnAccept: true
     property bool showButtons: true
     // optional third button next to Cancel (e.g. "Restore Default")
     property string extraText: ""
@@ -95,7 +97,8 @@ Window {
 
     function accept() {
         accepted()
-        close()
+        if (closeOnAccept)
+            close()
     }
 
     function reject() {

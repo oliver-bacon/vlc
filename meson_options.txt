@@ -165,6 +165,11 @@ option('qt_qml_debug',
     value: false,
     description: 'Enable/disable Qt QML debugger')
 
+option('opensubtitles_api_key',
+    type : 'string',
+    value : '',
+    description : 'opensubtitles.com API key for the Qt interface (default: the file opensubtitles-api-key.txt at the top of the source tree, if any)')
+
 option('skins2',
     type : 'feature',
     value : 'auto',
