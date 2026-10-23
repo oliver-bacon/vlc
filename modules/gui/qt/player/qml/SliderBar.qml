@@ -873,7 +873,8 @@ T.ProgressBar {
         // lower for other aspect ratios (wide films, portrait videos)
         readonly property real _maxW: 252 * dp1
         readonly property real _maxH: 142 * dp1
-        readonly property real _aspect: (previewImage.implicitWidth > 0 && previewImage.implicitHeight > 0)
+        readonly property real _aspect: (previewImage.status === Image.Ready
+                                         && previewImage.implicitWidth > 0 && previewImage.implicitHeight > 0)
                                         ? previewImage.implicitWidth / previewImage.implicitHeight
                                         : 16 / 9
         readonly property real _frameW: Math.round(Math.min(_maxW, _maxH * _aspect))
@@ -887,14 +888,17 @@ T.ProgressBar {
         x: Helpers.clamp((hoverHandler.point.position.x) - width / 2, 0, Math.max(0, control.width - width))
         y: -height - 12 * dp1
 
-        Image {
+        // Figma: frame with 4 px rounded corners
+        Widgets.ImageExt {
             id: previewImage
 
             anchors.horizontalCenter: parent.horizontalCenter
             y: 10 * previewCard.dp1
             width: previewCard._frameW
             height: previewCard._frameH
-            fillMode: Image.PreserveAspectFit
+            radius: 4 * previewCard.dp1
+            // the frame already has the video's aspect ratio: crop away rounding gaps
+            fillMode: Image.PreserveAspectCrop
             asynchronous: false
             cache: false
             source: SeekPreview.source
