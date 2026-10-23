@@ -75,6 +75,12 @@ public:
     /// crop in pixels of the current video (not saved, like VLC's dialog)
     Q_INVOKABLE void setCrop(int top, int bottom, int left, int right);
 
+    /// flip (0 none, 1 horizontal, 2 vertical) and clockwise rotation in
+    /// degrees, as { flip, angle }; saved, through the "transform" and
+    /// "rotate" video filters
+    Q_INVOKABLE QVariantMap orientation() const;
+    Q_INVOKABLE void setOrientation(int flip, int angle);
+
 signals:
     void changed();
     void sleepTimerChanged();
@@ -82,6 +88,7 @@ signals:
 private:
     void putConfig(const QString& option, const QVariant& value);
     void scheduleSave();
+    void applyVideoFilters(const QStringList& list, bool restart);
 
     qt_intf_t* m_intf;
     QTimer m_saveTimer;

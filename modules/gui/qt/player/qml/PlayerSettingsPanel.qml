@@ -252,6 +252,74 @@ PlayerSidePopup {
     }
 
     component VideoPage: Page {
+        id: videoPage
+
+        // flip and rotation of the picture (VLCEffects keeps them in the
+        // transform / rotate filters, so they are saved like the filters)
+        property var orientation: VLCEffects.orientation()
+        function setOrientation(flip, angle) {
+            VLCEffects.setOrientation(flip, angle)
+            orientation = VLCEffects.orientation()
+        }
+        onVisibleChanged: if (visible) orientation = VLCEffects.orientation()
+
+        SectionTitle { text: qsTr("Defaults") }
+
+        Label2 { text: qsTr("Flip") }
+        Segmented {
+            id: flipChoice
+            Layout.fillWidth: true
+            spacing: 1
+            buttonWidth: (width - 2 * spacing) / 3
+            options: [qsTr("None"), qsTr("Horizontal"), qsTr("Vertical")]
+            current: videoPage.orientation.flip
+            onChosen: (i) => videoPage.setOrientation(i, videoPage.orientation.angle)
+        }
+        Row2 {
+            label: qsTr("Rotate")
+            UnitBox {
+                implicitWidth: 136 * root.dp1
+                Layout.fillWidth: false
+                unit: qsTr("deg")
+                maxValue: 359
+                value: videoPage.orientation.angle
+                onEdited: (v) => videoPage.setOrientation(videoPage.orientation.flip, v)
+            }
+        }
+        // zoom, aspect ratio and crop of the current video (VLC's Video menu)
+        Row2 {
+            label: qsTr("Zoom")
+            visible: zoomDropdown.count > 0
+            VarChoiceDropdown { id: zoomDropdown; Layout.preferredWidth: 216 * root.dp1; model: Player.zoom }
+        }
+        // Direct3D11 only (Windows): read when the next video starts
+        Row2 {
+            label: qsTr("HDR")
+            visible: VLCConfig.exists("d3d11-hdr-mode")
+            Dropdown { Layout.preferredWidth: 216 * root.dp1; option: "d3d11-hdr-mode" }
+        }
+        // preferred resolution of adaptive streams (YouTube, DASH, HLS)
+        Row2 {
+            label: qsTr("Resolution")
+            Dropdown { Layout.preferredWidth: 216 * root.dp1; option: "preferred-resolution" }
+        }
+        Row2 {
+            label: qsTr("Aspect Ratio")
+            visible: aspectDropdown.count > 0
+            VarChoiceDropdown { id: aspectDropdown; Layout.preferredWidth: 216 * root.dp1; model: Player.aspectRatio }
+        }
+        Row2 {
+            label: qsTr("Crop")
+            visible: cropDropdown.count > 0
+            VarChoiceDropdown { id: cropDropdown; Layout.preferredWidth: 216 * root.dp1; model: Player.crop }
+        }
+        // play here ("Local") or on a renderer found on the network (Chromecast)
+        Row2 {
+            label: qsTr("Render")
+            RendererDropdown { Layout.preferredWidth: 216 * root.dp1 }
+        }
+
+        Divider {}
         SectionTitle { text: qsTr("Filters") }
 
         Label2 { text: qsTr("Essential") }
@@ -915,6 +983,7 @@ PlayerSidePopup {
         id: seg
         property var options: []
         property int current: 0
+        property real buttonWidth: 68 * root.dp1
         signal chosen(int index)
         spacing: 0
         Repeater {
@@ -924,7 +993,7 @@ PlayerSidePopup {
                 required property var modelData
                 required property int index
                 readonly property bool selected: index === seg.current
-                implicitWidth: 68 * root.dp1
+                implicitWidth: seg.buttonWidth
                 implicitHeight: 28 * root.dp1
                 background: Rectangle {
                     radius: 4 * root.dp1
@@ -1248,6 +1317,78 @@ PlayerSidePopup {
                 else if (dd.video) VLCEffects.setVideoValue(dd.option, value)
                 else VLCConfig.setValue(dd.option, value)
                 dd.current = value
+            }
+        }
+    }
+
+    // "Local" and the renderers found so far; looks for renderers while the
+    // page is shown, like VLC's Playback > Renderer menu while it is open
+    component RendererDropdown: T.Button {
+        id: rd
+        readonly property var manager: Player.rendererManager
+        property int _revision: 0
+        readonly property var names: {
+            _revision
+            const list = []
+            for (let i = 0; i < manager.rowCount(); ++i)
+                list.push(manager.data(manager.index(i, 0), Qt.DisplayRole))
+            return list
+        }
+        readonly property int selected: {
+            _revision
+            for (let i = 0; i < manager.rowCount(); ++i)
+                if (manager.data(manager.index(i, 0), Qt.CheckStateRole) == Qt.Checked)
+                    return i
+            return -1
+        }
+
+        Connections {
+            target: rd.manager
+            function onDataChanged() { rd._revision++ }
+            function onModelReset() { rd._revision++ }
+            function onRowsInserted() { rd._revision++ }
+            function onRowsRemoved() { rd._revision++ }
+            function onUseRendererChanged() { rd._revision++ }
+        }
+        // the scan stops by itself after 20 s
+        onVisibleChanged: if (visible) manager.StartScan()
+
+        implicitHeight: 34 * root.dp1
+        background: Rectangle { radius: 4 * root.dp1; color: rd.hovered ? root.cardColor : root.tabsColor }
+        contentItem: RowLayout {
+            Text {
+                Layout.fillWidth: true
+                Layout.leftMargin: 4 * root.dp1
+                text: rd.selected >= 0 ? rd.names[rd.selected] : qsTr("Local")
+                color: root.titleColor
+                font.pixelSize: 12 * root.dp1
+                elide: Text.ElideRight
+            }
+            Text {
+                font.family: VLCIcons.fontFamily
+                font.pixelSize: 13 * root.dp1
+                text: VLCIcons.chevron_down
+                color: root.textColor
+            }
+        }
+        onClicked: {
+            manager.StartScan()
+            const items = [{ "text": qsTr("Local"), "checked": selected < 0 }]
+            for (let i = 0; i < names.length; ++i)
+                items.push({ "text": names[i], "checked": i === selected })
+            rendererMenu.popup(mapToGlobal(0, height + 4 * root.dp1), items)
+        }
+
+        StringListMenu {
+            id: rendererMenu
+            ctx: MainCtx
+            onSelected: (index, _) => {
+                if (index === 0) {
+                    if (rd.selected >= 0)
+                        rd.manager.setData(rd.manager.index(rd.selected, 0), false, Qt.CheckStateRole)
+                } else {
+                    rd.manager.setData(rd.manager.index(index - 1, 0), true, Qt.CheckStateRole)
+                }
             }
         }
     }

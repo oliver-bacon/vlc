@@ -21,6 +21,7 @@
 
 #include "effects_bridge.hpp"
 
+#include <QSettings>
 #include <QStringList>
 
 #include <algorithm>
@@ -180,10 +181,21 @@ void EffectsBridge::setVideoFilterEnabled(const QString& module, bool enabled)
         list.append(module);
     else
         list.removeAll(module);
+    applyVideoFilters(list, false);
+}
+
+void EffectsBridge::applyVideoFilters(const QStringList& list, bool restart)
+{
     const QString chain = list.join(':');
     putConfig(QStringLiteral("video-filter"), chain);
     for (const auto& vout : m_intf->p_mainPlayerController->getVouts())
+    {
+        // the vout only rebuilds its filters when the chain changes: an
+        // empty chain first makes filters read their options again
+        if (restart)
+            var_SetString(vout.get(), "video-filter", "");
         var_SetString(vout.get(), "video-filter", qtu(chain));
+    }
 }
 
 QVariant EffectsBridge::audioValue(const QString& option) const
@@ -297,4 +309,80 @@ void EffectsBridge::setCrop(int top, int bottom, int left, int right)
         var_SetInteger(vout.get(), "crop-left", left);
         var_SetInteger(vout.get(), "crop-right", right);
     }
+}
+
+namespace {
+
+/* "transform-type" for a flip of the picture as shown after a clockwise
+ * rotation by a multiple of 90 degrees (index: flip * 4 + angle / 90) */
+const char* const kTransformTypes[] = {
+    "",      "90",            "180",   "270",
+    "hflip", "transpose",     "vflip", "antitranspose",
+    "vflip", "antitranspose", "hflip", "transpose",
+};
+
+} // namespace
+
+QVariantMap EffectsBridge::orientation() const
+{
+    const QStringList list = chainOf("video-filter");
+    const QString type = list.contains(QStringLiteral("transform"))
+                             ? getConfig("transform-type").toString() : QString();
+    const int rest = list.contains(QStringLiteral("rotate"))
+                         ? qRound(-getConfig("rotate-angle").toDouble()) : 0;
+
+    // the values chosen in the panel, when the filters still match them
+    // (a flip with a rotation has two names, e.g. transpose)
+    QSettings* const settings = m_intf->mainSettings;
+    const int savedFlip = settings ? settings->value(QStringLiteral("Player/VideoFlip"), 0).toInt() : -1;
+    const int savedAngle = settings ? settings->value(QStringLiteral("Player/VideoRotate"), 0).toInt() : -1;
+    if (savedFlip >= 0 && savedFlip <= 2 && savedAngle >= 0 && savedAngle < 360
+        && type == QLatin1String(kTransformTypes[savedFlip * 4 + savedAngle / 90])
+        && rest == savedAngle % 90)
+        return { { QStringLiteral("flip"), savedFlip }, { QStringLiteral("angle"), savedAngle } };
+
+    for (int i = 0; i < 12; ++i)
+        if (type == QLatin1String(kTransformTypes[i]))
+            return { { QStringLiteral("flip"), i / 4 },
+                     { QStringLiteral("angle"), ((i % 4) * 90 + rest + 360) % 360 } };
+    return { { QStringLiteral("flip"), 0 }, { QStringLiteral("angle"), (rest + 360) % 360 } };
+}
+
+void EffectsBridge::setOrientation(int flip, int angle)
+{
+    flip = std::clamp(flip, 0, 2);
+    angle = ((angle % 360) + 360) % 360;
+    if (QSettings* const settings = m_intf->mainSettings)
+    {
+        settings->setValue(QStringLiteral("Player/VideoFlip"), flip);
+        settings->setValue(QStringLiteral("Player/VideoRotate"), angle);
+    }
+
+    // flips and multiples of 90 degrees only change the orientation of the
+    // picture (applied when it is shown, after the pixel filters); the rest
+    // goes to the rotate filter (counter-clockwise, in place: corners are cut)
+    const char* type = kTransformTypes[flip * 4 + angle / 90];
+    const int rest = angle % 90;
+
+    QStringList list = chainOf("video-filter");
+    list.removeAll(QStringLiteral("transform"));
+    list.removeAll(QStringLiteral("rotate"));
+    if (rest != 0)
+    {
+        putConfig(QStringLiteral("rotate-angle"), -rest);
+        list.append(QStringLiteral("rotate"));
+    }
+    if (*type)
+    {
+        putConfig(QStringLiteral("transform-type"), QString::fromLatin1(type));
+        list.append(QStringLiteral("transform"));
+    }
+    for (const auto& vout : m_intf->p_mainPlayerController->getVouts())
+    {
+        if (rest != 0)
+            setVar(VLC_OBJECT(vout.get()), "rotate-angle", -rest);
+        if (*type)
+            setVar(VLC_OBJECT(vout.get()), "transform-type", QString::fromLatin1(type));
+    }
+    applyVideoFilters(list, true);
 }
