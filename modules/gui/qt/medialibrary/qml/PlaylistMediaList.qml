@@ -533,8 +533,6 @@ MainViewLoader {
 
             text: qsTr("No playlists found")
 
-            cover: VLCStyle.noArtAlbumCover
-
             button.text: qsTr("New Playlist")
             button.iconTxt: VLCIcons.add
 

@@ -97,7 +97,6 @@ Widgets.PageExt {
             focus: visible
             text: qsTr("No tracks found\nPlease try adding sources")
             Navigation.parentItem: root
-            cover: VLCStyle.noArtAlbumCover
         }
     }
 }

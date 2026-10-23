@@ -330,11 +330,6 @@ Widgets.PageExt {
                     opacity: 0.8
                 }
 
-                // FIXME: find better cover
-                cover: VLCStyle.noArtVideoCover
-                coverWidth : VLCStyle.dp(182, VLCStyle.scale)
-                coverHeight: VLCStyle.dp(114, VLCStyle.scale)
-
                 text: qsTr("Nothing to see here, go back.")
 
                 button.iconTxt: VLCIcons.back

@@ -21,6 +21,7 @@ import QtQuick.Templates as T
 
 import VLC.Style
 import VLC.Widgets as Widgets
+import VLC.Util
 
 T.Control {
     id: root
@@ -75,9 +76,8 @@ T.Control {
 
             fillMode: Image.PreserveAspectFit
 
-            Widgets.DefaultShadow {
-
-            }
+            // VLC Redesign: empty views show the cone
+            source: SVGColorImage.colorize("qrc:///misc/cone.svg").accent(theme.accent).uri()
         }
 
         T.Label {

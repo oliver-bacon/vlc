@@ -249,14 +249,9 @@ MainViewLoader {
         id: emptylabel
 
         Widgets.EmptyLabelButton {
-            coverWidth : VLCStyle.dp(182, VLCStyle.scale)
-            coverHeight: VLCStyle.dp(114, VLCStyle.scale)
-
             focus: true
 
             text: qsTr("No video found\nPlease try adding sources")
-
-            cover: VLCStyle.noArtVideoCover
 
             Navigation.parentItem: root
         }

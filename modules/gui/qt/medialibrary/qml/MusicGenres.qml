@@ -312,7 +312,6 @@ MainViewLoader {
         Widgets.EmptyLabelButton {
             text: qsTr("No genres found\nPlease try adding sources")
             Navigation.parentItem: root
-            cover: VLCStyle.noArtAlbumCover
         }
     }
 }

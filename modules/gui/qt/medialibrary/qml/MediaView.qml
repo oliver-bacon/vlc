@@ -316,8 +316,6 @@ MainViewLoader {
         Widgets.EmptyLabelButton {
             focus: true
 
-            cover: VLCStyle.noArtAlbumCover // TODO: better fallback image
-
             text: qsTr("No media found\nPlease try adding sources")
 
             Navigation.parentItem: root
