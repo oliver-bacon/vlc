@@ -14,6 +14,14 @@
         <file alias="atob.svg">pixmaps/icons/atob.svg</file>
         <file alias="ic_fluent_arrow_download_24_regular.svg">pixmaps/icons/ic_fluent_arrow_download_24_regular.svg</file>
         <file alias="ic_fluent_arrow_sync_24_regular.svg">pixmaps/icons/ic_fluent_arrow_sync_24_regular.svg</file>
+        <file alias="figma/backward_10_sec.svg">pixmaps/icons/figma/backward_10_sec.svg</file>
+        <file alias="figma/forward_10_sec.svg">pixmaps/icons/figma/forward_10_sec.svg</file>
+        <file alias="figma/lists.svg">pixmaps/icons/figma/lists.svg</file>
+        <file alias="figma/preferences.svg">pixmaps/icons/figma/preferences.svg</file>
+        <file alias="figma/speed.svg">pixmaps/icons/figma/speed.svg</file>
+        <file alias="figma/volume_high.svg">pixmaps/icons/figma/volume_high.svg</file>
+        <file alias="figma/volume_low.svg">pixmaps/icons/figma/close_low.svg</file>
+        <file alias="figma/volume_muted.svg">pixmaps/icons/figma/close_none.svg</file>
     </qresource>
     <qresource prefix="/menu">
         <file alias="add.svg">pixmaps/menu/add.svg</file>

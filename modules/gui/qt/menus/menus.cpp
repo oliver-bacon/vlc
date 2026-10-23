@@ -178,17 +178,17 @@ void VLCMenuBar::FileMenu(qt_intf_t *p_intf, QMenu *menu)
 
     //use a lambda here as the Triggrered signal is emiting and it will pass false (checked) as a first argument
     addDPStaticEntry( menu, qtr( "Open &File..." ),
-        ":/menu/file.svg", []() { THEDP->simpleOpenDialog(); } , "Ctrl+O" );
+        ":/menu/figma/main_open_file_s.svg", []() { THEDP->simpleOpenDialog(); } , "Ctrl+O" );
     addDPStaticEntry( menu, qtr( "&Open Multiple Files..." ),
-        ":/menu/file.svg", &DialogsProvider::openFileDialog, "Ctrl+Shift+O" );
+        ":/menu/figma/main_open_file_s.svg", &DialogsProvider::openFileDialog, "Ctrl+Shift+O" );
     addDPStaticEntry( menu, qfut( I_OP_OPDIR ),
-        ":/menu/folder.svg", &DialogsProvider::PLOpenDir, "Ctrl+F" );
+        ":/menu/figma/main_open_folder.svg", &DialogsProvider::PLOpenDir, "Ctrl+F" );
     addDPStaticEntry( menu, qtr( "Open &Disc..." ),
-        ":/menu/disc.svg", &DialogsProvider::openDiscDialog, "Ctrl+D" );
+        ":/menu/figma/main_open_disc.svg", &DialogsProvider::openDiscDialog, "Ctrl+D" );
     addDPStaticEntry( menu, qtr( "Open &Network Stream..." ),
-        ":/menu/network.svg", &DialogsProvider::openNetDialog, "Ctrl+N" );
+        ":/menu/figma/main_open_network_stream.svg", &DialogsProvider::openNetDialog, "Ctrl+N" );
     addDPStaticEntry( menu, qtr( "Open &Capture Device..." ),
-        ":/menu/capture-card.svg", &DialogsProvider::openCaptureDialog, "Ctrl+C" );
+        ":/menu/figma/main_open_capture_device.svg", &DialogsProvider::openCaptureDialog, "Ctrl+C" );
 
     addDPStaticEntry( menu, qtr( "Open &Location from clipboard" ),
                       NULL, &DialogsProvider::openUrlDialog, "Ctrl+V" );
@@ -212,7 +212,7 @@ void VLCMenuBar::FileMenu(qt_intf_t *p_intf, QMenu *menu)
     addDPStaticEntry( menu, qtr( "Conve&rt / Save..." ), "",
         &DialogsProvider::openAndTranscodingDialogs, "Ctrl+R" );
     addDPStaticEntry( menu, qtr( "&Stream..." ),
-        ":/menu/stream.svg", &DialogsProvider::openAndStreamingDialogs, "Ctrl+S" );
+        ":/menu/figma/file_stream.svg", &DialogsProvider::openAndStreamingDialogs, "Ctrl+S" );
     menu->addSeparator();
 
     action = menu->addAction( qtr( "Quit at the end of play queue" ), [playlist = THEMPL](bool checked){
@@ -232,7 +232,7 @@ void VLCMenuBar::FileMenu(qt_intf_t *p_intf, QMenu *menu)
     }
 
     addDPStaticEntry( menu, qtr( "&Quit" ) ,
-        ":/menu/exit.svg", &DialogsProvider::quit, "Ctrl+Q" );
+        ":/menu/figma/player_quit_vlc.svg", &DialogsProvider::quit, "Ctrl+Q" );
 }
 
 /**
@@ -240,17 +240,17 @@ void VLCMenuBar::FileMenu(qt_intf_t *p_intf, QMenu *menu)
  **/
 void VLCMenuBar::ToolsMenu( qt_intf_t *p_intf, QMenu *menu )
 {
-    addDPStaticEntry( menu, qtr( "&Effects and Filters"), ":/menu/ic_fluent_options.svg",
+    addDPStaticEntry( menu, qtr( "&Effects and Filters"), ":/icons/figma/preferences.svg",
             &DialogsProvider::extendedDialog, "Ctrl+E" );
 
-    addDPStaticEntry( menu, qtr( "&Track Synchronization"), ":/menu/ic_fluent_options.svg",
+    addDPStaticEntry( menu, qtr( "&Track Synchronization"), ":/icons/figma/preferences.svg",
             &DialogsProvider::synchroDialog, "" );
 
-    addDPStaticEntry( menu, qfut( I_MENU_INFO ) , ":/menu/info.svg",
+    addDPStaticEntry( menu, qfut( I_MENU_INFO ) , ":/menu/figma/file_properties_metadata.svg",
         QOverload<>::of(&DialogsProvider::mediaInfoDialog), "Ctrl+I" );
 
     addDPStaticEntry( menu, qfut( I_MENU_CODECINFO ) ,
-        ":/menu/info.svg", &DialogsProvider::mediaCodecDialog, "Ctrl+J" );
+        ":/menu/figma/folder_info.svg", &DialogsProvider::mediaCodecDialog, "Ctrl+J" );
 
 #ifdef ENABLE_VLM
     addDPStaticEntry( menu, qfut( I_MENU_VLM ), "", &DialogsProvider::vlmDialog,
@@ -261,7 +261,7 @@ void VLCMenuBar::ToolsMenu( qt_intf_t *p_intf, QMenu *menu )
         "" );
 
     addDPStaticEntry( menu, qfut( I_MENU_MSG ),
-        ":/menu/messages.svg", &DialogsProvider::messagesDialog, "Ctrl+M" );
+        ":/icons/figma/lists.svg", &DialogsProvider::messagesDialog, "Ctrl+M" );
 
     addDPStaticEntry( menu, qtr( "Plu&gins and extensions" ),
         "", &DialogsProvider::pluginDialog );
@@ -269,10 +269,10 @@ void VLCMenuBar::ToolsMenu( qt_intf_t *p_intf, QMenu *menu )
 
     if( !p_intf->b_isDialogProvider )
         addDPStaticEntry( menu, qtr( "Customi&ze Interface..." ),
-            ":/menu/preferences.svg", &DialogsProvider::showToolbarEditorDialog);
+            ":/menu/figma/main_customize_player.svg", &DialogsProvider::showToolbarEditorDialog);
 
     addDPStaticEntry( menu, qtr( "&Preferences" ),
-        ":/menu/preferences.svg", &DialogsProvider::settingsDialog, "Ctrl+P", QAction::PreferencesRole );
+        ":/menu/figma/main_settings.svg", &DialogsProvider::settingsDialog, "Ctrl+P", QAction::PreferencesRole );
 }
 
 /**
@@ -301,7 +301,7 @@ void VLCMenuBar::ViewMenu(qt_intf_t *p_intf, QMenu *menu)
 
     action = menu->addAction(
 #ifndef __APPLE__
-            ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_playlist.svg", menu ),
+            ColorizedSvgIcon::colorizedIconForWidget( ":/menu/figma/player_playlist.svg", menu ),
 #endif
             qtr( "Play &Queue" ));
     action->setShortcut(QString( "Ctrl+L" ));
@@ -401,9 +401,9 @@ void VLCMenuBar::VolumeEntries( qt_intf_t *p_intf, QMenu *current )
 {
     current->addSeparator();
 
-    current->addAction( QIcon( ":/menu/volume-high.svg" ), qtr( "&Increase Volume" ), THEMIM, &PlayerController::setVolumeUp );
-    current->addAction( QIcon( ":/menu/volume-low.svg" ), qtr( "&Decrease Volume" ), THEMIM, &PlayerController::setVolumeDown );
-    current->addAction( QIcon( ":/menu/volume-muted.svg" ), qtr( "&Mute" ), THEMIM, &PlayerController::toggleMuted );
+    current->addAction( QIcon( ":/icons/figma/volume_high.svg" ), qtr( "&Increase Volume" ), THEMIM, &PlayerController::setVolumeUp );
+    current->addAction( QIcon( ":/icons/figma/volume_low.svg" ), qtr( "&Decrease Volume" ), THEMIM, &PlayerController::setVolumeDown );
+    current->addAction( QIcon( ":/icons/figma/volume_muted.svg" ), qtr( "&Mute" ), THEMIM, &PlayerController::toggleMuted );
 }
 
 /**
@@ -554,7 +554,7 @@ void VLCMenuBar::RebuildNavigMenu( qt_intf_t *p_intf, QMenu *menu )
 void VLCMenuBar::HelpMenu(qt_intf_t *p_intf, QMenu *menu )
 {
     addDPStaticEntry( menu, qtr( "&Help" ) ,
-        ":/menu/help.svg", &DialogsProvider::helpDialog, "F1" );
+        ":/menu/figma/folder_info.svg", &DialogsProvider::helpDialog, "F1" );
 #ifdef UPDATE_CHECK
     addDPStaticEntry( menu, qtr( "Check for &Updates..." ) , "",
                      [ctx = QPointer(p_intf->p_mi)]() {
@@ -567,7 +567,7 @@ void VLCMenuBar::HelpMenu(qt_intf_t *p_intf, QMenu *menu )
     });
 #endif
     menu->addSeparator();
-    addDPStaticEntry( menu, qfut( I_MENU_ABOUT ), ":/menu/info.svg",
+    addDPStaticEntry( menu, qfut( I_MENU_ABOUT ), ":/menu/figma/main_about_vlc.svg",
             &DialogsProvider::aboutDialog, "Shift+F1", QAction::AboutRole );
 }
 
@@ -590,35 +590,35 @@ void VLCMenuBar::PopupMenuPlaylistEntries( QMenu *menu, qt_intf_t *p_intf )
                 THEMPL->togglePlayPause();
         });
 #ifndef __APPLE__ /* No icons in menus in Mac */
-        action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( QStringLiteral(":/menu/ic_fluent_play_filled.svg"), menu ) );
+        action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( QStringLiteral(":/menu/figma/player_play.svg"), menu ) );
 #endif
     }
     else
     {
         action = addMPLStaticEntry( p_intf, menu, qtr( "Pause" ),
-                ":/menu/ic_pause_filled.svg", &PlaylistController::togglePlayPause );
+                ":/menu/figma/player_pause.svg", &PlaylistController::togglePlayPause );
     }
 
     /* Stop */
     action = addMPLStaticEntry( p_intf, menu, qtr( "&Stop" ),
-            ":/menu/ic_fluent_stop.svg", &PlaylistController::stop );
+            ":/menu/figma/player_stop.svg", &PlaylistController::stop );
     if( !hasInput )
         action->setEnabled( false );
 
     /* Next / Previous */
     bool bPlaylistEmpty = THEMPL->isEmpty();
     QAction* previousAction = addMPLStaticEntry( p_intf, menu, qtr( "Pre&vious" ),
-            ":/menu/ic_fluent_previous.svg", &PlaylistController::prev );
+            ":/menu/figma/player_previous_item.svg", &PlaylistController::prev );
     previousAction->setEnabled( !bPlaylistEmpty );
     connect( THEMPL, &PlaylistController::isEmptyChanged, previousAction, &QAction::setDisabled);
 
     QAction* nextAction = addMPLStaticEntry( p_intf, menu, qtr( "Ne&xt" ),
-            ":/menu/ic_fluent_next.svg", &PlaylistController::next );
+            ":/menu/figma/player_next_item.svg", &PlaylistController::next );
     nextAction->setEnabled( !bPlaylistEmpty );
     connect( THEMPL, &PlaylistController::isEmptyChanged, nextAction, &QAction::setDisabled);
 
     action = menu->addAction( qtr( "Record" ), THEMIM, &PlayerController::toggleRecord );
-    action->setIcon( QIcon( ":/menu/ic_fluent_record.svg" ) );
+    action->setIcon( QIcon( ":/menu/figma/player_record.svg" ) );
     if( !hasInput )
         action->setEnabled( false );
     menu->addSeparator();
@@ -636,30 +636,28 @@ void VLCMenuBar::PopupMenuControlEntries( QMenu *menu, qt_intf_t *p_intf,
         /* Faster/Slower */
         action = rateMenu->addAction( qtr( "&Faster" ), THEMIM,
                                   &PlayerController::faster );
-#ifndef __APPLE__ /* No icons in menus in Mac */
-        action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_fluent_fast_forward.svg", rateMenu ) );
-#endif
     }
 
-    action = rateMenu->addAction( ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_fluent_fast_forward.svg", rateMenu ), qtr( "Faster (fine)" ), THEMIM,
+    action = rateMenu->addAction( qtr( "Faster (fine)" ), THEMIM,
                               &PlayerController::littlefaster );
 
     action = rateMenu->addAction( qtr( "N&ormal Speed" ), THEMIM,
                               &PlayerController::normalRate );
 
-    action = rateMenu->addAction( ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_fluent_rewind.svg", rateMenu ), qtr( "Slower (fine)" ), THEMIM,
+    action = rateMenu->addAction( qtr( "Slower (fine)" ), THEMIM,
                               &PlayerController::littleslower );
 
     if( b_normal )
     {
         action = rateMenu->addAction( qtr( "Slo&wer" ), THEMIM,
                                   &PlayerController::slower );
-#ifndef __APPLE__ /* No icons in menus in Mac */
-        action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_fluent_rewind.svg", rateMenu ) );
-#endif
     }
 
     action = menu->addMenu( rateMenu );
+#ifndef __APPLE__ /* No icons in menus in Mac */
+    /* the design's icon set has a speed icon, no faster / slower arrows */
+    action->setIcon( QIcon( QStringLiteral( ":/icons/figma/speed.svg" ) ) );
+#endif
 
     menu->addSeparator();
 
@@ -668,13 +666,13 @@ void VLCMenuBar::PopupMenuControlEntries( QMenu *menu, qt_intf_t *p_intf,
     action = menu->addAction( qtr( "&Jump Forward" ), THEMIM,
              &PlayerController::jumpFwd );
 #ifndef __APPLE__ /* No icons in menus in Mac */
-    action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_fluent_skip_forward_10.svg", menu ) );
+    action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( ":/icons/figma/forward_10_sec.svg", menu ) );
 #endif
 
     action = menu->addAction( qtr( "Jump Bac&kward" ), THEMIM,
              &PlayerController::jumpBwd );
 #ifndef __APPLE__ /* No icons in menus in Mac */
-    action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( ":/menu/ic_fluent_skip_back_10.svg", menu ) );
+    action->setIcon( ColorizedSvgIcon::colorizedIconForWidget( ":/icons/figma/backward_10_sec.svg", menu ) );
 #endif
 
     action = menu->addAction( qfut( I_MENU_GOTOTIME ), THEDP, &DialogsProvider::gotoTimeDialog );
@@ -687,20 +685,20 @@ void VLCMenuBar::PopupMenuStaticEntries( QMenu *menu )
 {
     QMenu *openmenu = new QMenu( qtr( "Open Media" ), menu );
     addDPStaticEntry( openmenu, qfut( I_OP_OPF ),
-        ":/menu/file.svg", &DialogsProvider::openFileDialog);
+        ":/menu/figma/main_open_file_s.svg", &DialogsProvider::openFileDialog);
     addDPStaticEntry( openmenu, qfut( I_OP_OPDIR ),
-        ":/menu/folder.svg", &DialogsProvider::PLOpenDir);
+        ":/menu/figma/main_open_folder.svg", &DialogsProvider::PLOpenDir);
     addDPStaticEntry( openmenu, qtr( "Open &Disc..." ),
-        ":/menu/disc.svg", &DialogsProvider::openDiscDialog);
+        ":/menu/figma/main_open_disc.svg", &DialogsProvider::openDiscDialog);
     addDPStaticEntry( openmenu, qtr( "Open &Network..." ),
-        ":/menu/network.svg", &DialogsProvider::openNetDialog);
+        ":/menu/figma/main_open_network_stream.svg", &DialogsProvider::openNetDialog);
     addDPStaticEntry( openmenu, qtr( "Open &Capture Device..." ),
-        ":/menu/capture-card.svg", &DialogsProvider::openCaptureDialog);
+        ":/menu/figma/main_open_capture_device.svg", &DialogsProvider::openCaptureDialog);
     menu->addMenu( openmenu );
 
     menu->addSeparator();
 
-    addDPStaticEntry( menu, qtr( "Quit" ), ":/menu/exit.svg",
+    addDPStaticEntry( menu, qtr( "Quit" ), ":/menu/figma/player_quit_vlc.svg",
                       &DialogsProvider::quit, "Ctrl+Q", QAction::QuitRole );
 }
 
