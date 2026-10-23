@@ -221,6 +221,14 @@ SDDirectory::read() const
         }
         else if ( type == ITEM_TYPE_FILE )
         {
+            /* The medialibrary imports DVD .ifo files as playlists (one per
+             * VIDEO_TS title set). Hide them, so that existing ones are
+             * removed on the next scan too. */
+            const char* ext = strrchr( mrl, '.' );
+            if ( ext != nullptr && strchr( ext, '/' ) == nullptr &&
+                 strcasecmp( ext + 1, "ifo" ) == 0 )
+                continue;
+
             addFile( mrl, IFile::LinkedFileType::None, {} );
             for ( auto i = 0; i < m->i_slaves; ++i )
             {
