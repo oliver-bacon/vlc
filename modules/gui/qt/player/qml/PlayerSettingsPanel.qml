@@ -383,14 +383,14 @@ PlayerSidePopup {
 
         Label2 { text: qsTr("Essential") }
         Card {
-            FilterSlider { label: qsTr("Hue"); module: "adjust"; option: "hue"; decimals: 0 }
-            FilterSlider { label: qsTr("Brightness"); module: "adjust"; option: "brightness" }
-            FilterSlider { label: qsTr("Contrast"); module: "adjust"; option: "contrast" }
-            FilterSlider { label: qsTr("Saturation"); module: "adjust"; option: "saturation" }
-            FilterSlider { label: qsTr("Gamma"); module: "adjust"; option: "gamma" }
-            FilterSlider { label: qsTr("Sharpen Sigma"); module: "sharpen"; option: "sharpen-sigma" }
-            FilterSlider { label: qsTr("Banding Removal Radius"); module: "gradfun"; option: "gradfun-radius"; decimals: 0 }
-            FilterSlider { label: qsTr("Film Grain Variance"); module: "grain"; option: "grain-variance" }
+            FilterSlider { label: qsTr("Hue"); module: "adjust"; option: "hue"; decimals: 0; ticks: 2; tickSteps: false }
+            FilterSlider { label: qsTr("Brightness"); module: "adjust"; option: "brightness"; ticks: 2; tickSteps: false }
+            FilterSlider { label: qsTr("Contrast"); module: "adjust"; option: "contrast"; ticks: 2; tickSteps: false }
+            FilterSlider { label: qsTr("Saturation"); module: "adjust"; option: "saturation"; ticks: 3 }
+            FilterSlider { label: qsTr("Gamma"); module: "adjust"; option: "gamma"; ticks: 10; tickFrom: 0 }
+            FilterSlider { label: qsTr("Sharpen Sigma"); module: "sharpen"; option: "sharpen-sigma"; ticks: 4 }
+            FilterSlider { label: qsTr("Banding Removal Radius"); module: "gradfun"; option: "gradfun-radius"; decimals: 0; ticks: 7 }
+            FilterSlider { label: qsTr("Film Grain Variance"); module: "grain"; option: "grain-variance"; ticks: 10 }
         }
 
         Label2 { text: qsTr("Crop") }
@@ -444,7 +444,7 @@ PlayerSidePopup {
             }
             OptionToggle { label: qsTr("Color"); option: "gradient-color" }
             OptionToggle { label: qsTr("Cartoon"); option: "gradient-cartoon" }
-            FilterSlider { label: qsTr("Sepia Intensity"); module: "sepia"; option: "sepia-intensity"; decimals: 0 }
+            FilterSlider { label: qsTr("Sepia Intensity"); module: "sepia"; option: "sepia-intensity"; decimals: 0; ticks: 3 }
         }
     }
 
@@ -514,18 +514,18 @@ PlayerSidePopup {
         }
         AudioEffect {
             label: qsTr("Spatializer"); module: "spatializer"
-            FilterSlider { label: qsTr("Size"); module: "spatializer"; option: "spatializer-roomsize"; audio: true }
-            FilterSlider { label: qsTr("Width"); module: "spatializer"; option: "spatializer-width"; audio: true }
-            FilterSlider { label: qsTr("Wet"); module: "spatializer"; option: "spatializer-wet"; audio: true }
-            FilterSlider { label: qsTr("Dry"); module: "spatializer"; option: "spatializer-dry"; audio: true }
-            FilterSlider { label: qsTr("Damp"); module: "spatializer"; option: "spatializer-damp"; audio: true }
+            FilterSlider { label: qsTr("Size"); module: "spatializer"; option: "spatializer-roomsize"; audio: true; ticks: 11 }
+            FilterSlider { label: qsTr("Width"); module: "spatializer"; option: "spatializer-width"; audio: true; ticks: 10 }
+            FilterSlider { label: qsTr("Wet"); module: "spatializer"; option: "spatializer-wet"; audio: true; ticks: 10 }
+            FilterSlider { label: qsTr("Dry"); module: "spatializer"; option: "spatializer-dry"; audio: true; ticks: 10 }
+            FilterSlider { label: qsTr("Damp"); module: "spatializer"; option: "spatializer-damp"; audio: true; ticks: 10 }
         }
         AudioEffect {
             label: qsTr("Stereo Widener"); module: "stereo_widen"
             FilterSlider { label: qsTr("Delay Time"); module: "stereo_widen"; option: "stereowiden-delay"; audio: true; unit: " ms" }
-            FilterSlider { label: qsTr("Feedback Gain"); module: "stereo_widen"; option: "stereowiden-feedback"; audio: true }
-            FilterSlider { label: qsTr("Crossfeed"); module: "stereo_widen"; option: "stereowiden-crossfeed"; audio: true }
-            FilterSlider { label: qsTr("Dry Mix"); module: "stereo_widen"; option: "stereowiden-dry-mix"; audio: true }
+            FilterSlider { label: qsTr("Feedback Gain"); module: "stereo_widen"; option: "stereowiden-feedback"; audio: true; ticks: 9 }
+            FilterSlider { label: qsTr("Crossfeed"); module: "stereo_widen"; option: "stereowiden-crossfeed"; audio: true; ticks: 8 }
+            FilterSlider { label: qsTr("Dry Mix"); module: "stereo_widen"; option: "stereowiden-dry-mix"; audio: true; ticks: 10 }
         }
     }
 
@@ -1042,6 +1042,8 @@ PlayerSidePopup {
     component FxSlider: T.Slider {
         id: slider
         property var tickLabels: []
+        // Figma: 2 x 6 px marks dividing the track into tickCount parts
+        property int tickCount: 0
         property bool fillFromZero: false
         // handle x for a position 0..1
         function handleX(pos) { return 2 * root.dp1 + pos * (availableWidth - 12 * root.dp1) }
@@ -1069,6 +1071,18 @@ PlayerSidePopup {
                     height: 12 * root.dp1
                     radius: 4 * root.dp1
                     color: root.accentSurface
+                }
+            }
+            Repeater {
+                model: Math.max(0, slider.tickCount - 1)
+                Rectangle {
+                    required property int index
+                    x: slider.handleX((index + 1) / slider.tickCount) + 3 * root.dp1
+                    y: track.y + 5 * root.dp1
+                    width: 2 * root.dp1
+                    height: 6 * root.dp1
+                    radius: 1 * root.dp1
+                    color: root.tickColor
                 }
             }
             Repeater {
@@ -1109,6 +1123,12 @@ PlayerSidePopup {
         property int decimals: 1
         property real from: VLCConfig.range(option)?.min ?? 0
         property real to: VLCConfig.range(option)?.max ?? 1
+        // tick marks of the design; the slider moves from tick to tick
+        // unless tickSteps is false (a single mark in the middle)
+        property int ticks: 0
+        property bool tickSteps: true
+        // where the ticks start when it is not the minimum (gamma: 0, min 0.01)
+        property real tickFrom: from
         property real current: option !== "" ? Number(audio ? VLCEffects.audioValue(option) : VLCEffects.videoValue(option)) : 0
         signal valueSet(real value)
 
@@ -1128,13 +1148,14 @@ PlayerSidePopup {
             ValueBox { visible: fs.boxed; fontSize: 12 * root.dp1; text: fs.current.toFixed(fs.decimals) + fs.unit }
         }
         FxSlider {
-            from: fs.from; to: fs.to
-            // move in steps of the shown precision (0.1 for one decimal)
-            stepSize: Math.pow(10, -fs.decimals)
+            from: fs.tickFrom; to: fs.to
+            // from tick to tick, or in steps of the shown precision (0.1 for one decimal)
+            stepSize: fs.ticks > 1 && fs.tickSteps ? (fs.to - fs.tickFrom) / fs.ticks : Math.pow(10, -fs.decimals)
+            tickCount: fs.ticks
             value: fs.current
             tickLabels: []
             onMoved: {
-                fs.current = Number(value.toFixed(fs.decimals))
+                fs.current = Math.max(fs.from, Number(value.toFixed(fs.decimals)))
                 if (fs.option === "") {
                     fs.valueSet(fs.current)
                 } else if (fs.audio) {
