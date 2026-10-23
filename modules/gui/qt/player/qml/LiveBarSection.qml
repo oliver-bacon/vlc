@@ -54,6 +54,7 @@ Item {
 
     // width of the controls other than the seek bar, which takes the rest
     readonly property real _fixedWidth: {
+        void section._itemsChanged
         let width = 0
         for (let i = 0; i < repeater.count; ++i) {
             const item = repeater.itemAt(i)
@@ -63,6 +64,12 @@ Item {
         return width + Math.max(0, repeater.count - 1) * row.spacing
     }
 
+    // bumped when the repeater creates or deletes a control (itemAt() is
+    // not notified)
+    property int _itemsChanged: 0
+
+    readonly property real _seekMinWidth: VLCStyle.dp(160, VLCStyle.scale)
+
     readonly property ColorContext colorContext: ColorContext {
         id: theme
         colorSet: ColorContext.Window
@@ -70,7 +77,9 @@ Item {
 
     readonly property real _pad: VLCStyle.dp(3, VLCStyle.scale)
 
-    implicitWidth: Math.max(row.implicitWidth + 2 * _pad, VLCStyle.dp(40, VLCStyle.scale))
+    // not from the row: the seek bar's width follows the section's width
+    implicitWidth: Math.max(_fixedWidth + (_hasSeekBar ? _seekMinWidth : 0) + 2 * _pad,
+                            VLCStyle.dp(40, VLCStyle.scale))
     // (also when empty, to drop controls in)
     implicitHeight: Math.max(row.implicitHeight, VLCStyle.icon_toolbar + 2 * _pad) + 2 * _pad
 
@@ -149,6 +158,9 @@ Item {
 
             model: section.model
 
+            onItemAdded: section._itemsChanged++
+            onItemRemoved: section._itemsChanged++
+
             delegate: Item {
                 id: entry
 
@@ -164,7 +176,7 @@ Item {
                 readonly property var _control: _seekBar ? { "label": VLCIcons.time, "source": "" }
                                                          : PlayerControlbarControls.control(barControlId)
 
-                implicitWidth: _seekBar ? VLCStyle.dp(160, VLCStyle.scale)
+                implicitWidth: _seekBar ? section._seekMinWidth
                                         : Math.max(loader.implicitWidth, VLCStyle.dp(20, VLCStyle.scale)) + 2 * section._pad
                 implicitHeight: Math.max(loader.implicitHeight, VLCStyle.icon_toolbar) + 2 * section._pad
                 // the seek bar takes the free width of the part
