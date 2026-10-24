@@ -146,9 +146,9 @@ implemented yet. Icons and pictures from the Figma file were used, converted or 
 (see [CREDITS.md](CREDITS.md)). Juxtopposed is not involved in this project and has not
 endorsed it.
 
-**VLC:** VLC Gold is based on VLC by the [VideoLAN team and VLC contributors](THANKS),
-who make VLC and its Qt interface. "VLC", "VLC media player" and the cone logo are
-trademarks of VideoLAN.
+**VLC:** VLC Gold is based on VLC and its Qt interface. VLC is made by the
+[VideoLAN team and VLC contributors](THANKS). "VLC", "VLC media player" and the cone logo
+are trademarks of VideoLAN, which is not involved in this project.
 
 **VLC Gold:** Oliver Bacon ([@oliver-bacon](https://github.com/oliver-bacon)).
 

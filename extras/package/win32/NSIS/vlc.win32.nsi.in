@@ -59,7 +59,7 @@ SetCompressor /SOLID lzma
 
 SetOverwrite ifdiff
 CRCCheck on
-BrandingText "${PRODUCT_GROUP} ${PRODUCT_NAME}"
+BrandingText "${PRODUCT_NAME}"
 
 InstType "$(Name_InstTypeRecommended)"
 InstType "$(Name_InstTypeMinimum)"
@@ -116,8 +116,8 @@ RequestExecutionLevel admin
     !define MUI_PAGE_CUSTOMFUNCTION_PRE PageFastUpdatePre
     !define MUI_FINISHPAGE_RUN
     !define MUI_FINISHPAGE_RUN_FUNCTION AppExecAs
-    !define MUI_FINISHPAGE_LINK "$(Link_VisitWebsite)"
-    !define MUI_FINISHPAGE_LINK_LOCATION "https://www.videolan.org/vlc/"
+    !define MUI_FINISHPAGE_LINK "Visit the VLC Gold website"
+    !define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/oliver-bacon/vlc-gold"
     !define MUI_FINISHPAGE_NOREBOOTSUPPORT
     !insertmacro MUI_PAGE_FINISH
 
@@ -790,9 +790,9 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "DisplayVersion" "@GOLD_VERSION@"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "URLInfoAbout" "${PRODUCT_WEB_SITE}"
+    "URLInfoAbout" "https://github.com/oliver-bacon/vlc-gold"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
-    "Publisher" "${PRODUCT_PUBLISHER}"
+    "Publisher" "Oliver Bacon"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \
     "VersionMajor"  "@GOLD_VERSION_MAJOR@"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" \

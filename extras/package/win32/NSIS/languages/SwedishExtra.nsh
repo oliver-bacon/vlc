@@ -27,7 +27,7 @@ ${LangFileString} Desc_Section92 "Raderar VLC Golds inställningar och cachefile
 ${LangFileString} ShellAssociation_Play "Spela upp"
 ${LangFileString} ContextMenuEntry_PlayWith "Spela upp i VLC Gold"
 ${LangFileString} ContextMenuEntry_AddToPlaylist "Lägg till i VLC Gold-listan"
-${LangFileString} Link_VisitWebsite "Besök VideoLANs webbsida för VLC Gold"
+${LangFileString} Link_VisitWebsite "Besök webbplatsen för VLC Gold"
 ${LangFileString} Name_InstTypeRecommended "Rekommenderad"
 ${LangFileString} Name_InstTypeMinimum "Minimal"
 ${LangFileString} Name_InstTypeFull "Fullständig"
