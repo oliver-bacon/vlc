@@ -132,6 +132,7 @@ libqt_plugin_la_SOURCES = \
 	dialogs/mediainfo/info_panels.cpp dialogs/mediainfo/info_panels.hpp \
 	dialogs/mediainfo/info_widgets.cpp dialogs/mediainfo/info_widgets.hpp \
 	dialogs/mediainfo/mediainfo.cpp dialogs/mediainfo/mediainfo.hpp \
+	dialogs/mediainfo/mediainfomodel.cpp dialogs/mediainfo/mediainfomodel.hpp \
 	dialogs/messages/messages.cpp dialogs/messages/messages.hpp \
 	dialogs/open/open.cpp dialogs/open/open.hpp \
 	dialogs/open/open_panels.cpp dialogs/open/open_panels.hpp \
@@ -449,6 +450,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	dialogs/mediainfo/info_panels.moc.cpp \
 	dialogs/mediainfo/info_widgets.moc.cpp \
 	dialogs/mediainfo/mediainfo.moc.cpp \
+	dialogs/mediainfo/mediainfomodel.moc.cpp \
 	dialogs/messages/messages.moc.cpp \
 	dialogs/open/open.moc.cpp \
 	dialogs/open/open_panels.moc.cpp \
@@ -1438,6 +1440,7 @@ libqml_module_dialogs_a_QML = \
 	dialogs/figma/qml/FigmaDialog.qml \
 	dialogs/figma/qml/NetworkStreamDialog.qml \
 	dialogs/figma/qml/OpenMediaDialog.qml \
+	dialogs/figma/qml/MediaInfoDialog.qml \
 	dialogs/figma/qml/ConfirmDialog.qml \
 	dialogs/figma/qml/NewPlaylistDialog.qml \
 	dialogs/figma/qml/PlaylistPropertiesDialog.qml \

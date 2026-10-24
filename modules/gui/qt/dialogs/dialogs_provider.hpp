@@ -321,7 +321,8 @@ signals:
     void showAllSettingsWindow();
     /// Asks the QML interface to show one of the dialogs of the Figma
     /// redesign ("network", "openMedia", "newPlaylist", "shortcuts",
-    /// "subtitles", "customize"); args depend on the dialog
+    /// "subtitles", "customize", "mediaInfo", "mediaInfoItem"); args depend
+    /// on the dialog
     void showFigmaDialog(const QString& name, const QVariant& args);
 
     //visiblity signal

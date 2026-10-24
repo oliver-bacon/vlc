@@ -625,6 +625,8 @@ Item {
     readonly property var _figmaDialogs: ({
         "network": "NetworkStreamDialog.qml",
         "openMedia": "OpenMediaDialog.qml",
+        "mediaInfo": "MediaInfoDialog.qml",
+        "mediaInfoItem": "MediaInfoDialog.qml",
         "newPlaylist": "NewPlaylistDialog.qml",
         "playlistProperties": "PlaylistPropertiesDialog.qml",
         "shortcuts": "KeyboardShortcutsDialog.qml",
@@ -645,7 +647,18 @@ Item {
                 MainCtx.playerCustomizing = true
                 return
             }
-            let dialog = root._figmaDialogInstances[name]
+            // Media Information of the playing item: a second call on the
+            // same tab hides it, as the classic dialog
+            if (name === "mediaInfo") {
+                const shown = root._figmaDialogInstances[name]
+                if (shown && shown.visible && shown.isShowingTab(args?.tab)) {
+                    shown.close()
+                    return
+                }
+            }
+            // Media Information of a library or queue item: one window each
+            const single = (name !== "mediaInfoItem")
+            let dialog = single ? root._figmaDialogInstances[name] : null
             if (!dialog) {
                 const component = Qt.createComponent("qrc:///qt/qml/VLC/Dialogs/" + root._figmaDialogs[name])
                 if (component.status !== Component.Ready) {
@@ -656,7 +669,10 @@ Item {
                     return
                 }
                 dialog = component.createObject(root)
-                root._figmaDialogInstances[name] = dialog
+                if (single)
+                    root._figmaDialogInstances[name] = dialog
+                else
+                    dialog.closing.connect(() => dialog.destroy())
             }
             if (typeof dialog.reset === "function")
                 dialog.reset(args)

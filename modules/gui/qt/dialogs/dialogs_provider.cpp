@@ -453,6 +453,9 @@ void DialogsProvider::aboutDialog()
 
 void DialogsProvider::mediaInfoDialog( void )
 {
+    // the redesign's window; shown again or hidden like the classic one
+    if( figmaDialog( QStringLiteral( "mediaInfo" ), QVariantMap { { "tab", "general" } } ) )
+        return;
     ensureDialog(m_mediaInfoDialog);
     if( !m_mediaInfoDialog->isVisible() || m_mediaInfoDialog->currentTab() != MediaInfoDialog::META_PANEL )
         m_mediaInfoDialog->showTab( MediaInfoDialog::META_PANEL );
@@ -463,6 +466,11 @@ void DialogsProvider::mediaInfoDialog( void )
 void DialogsProvider::mediaInfoDialog( const SharedInputItem& inputItem )
 {
     assert(inputItem.get());
+
+    // one window per item, as the classic dialog
+    if( figmaDialog( QStringLiteral( "mediaInfoItem" ),
+                     QVariantMap { { "item", QVariant::fromValue( inputItem ) } } ) )
+        return;
 
     MediaInfoDialog * const mid = new MediaInfoDialog( p_intf, inputItem );
     mid->setWindowFlag( Qt::Dialog );
@@ -578,6 +586,8 @@ void DialogsProvider::answerQuestion(bool yes)
 
 void DialogsProvider::mediaCodecDialog()
 {
+    if( figmaDialog( QStringLiteral( "mediaInfo" ), QVariantMap { { "tab", "codec" } } ) )
+        return;
     ensureDialog(m_mediaInfoDialog);
 
     if( !m_mediaInfoDialog->isVisible() || m_mediaInfoDialog->currentTab() != MediaInfoDialog::INFO_PANEL )
