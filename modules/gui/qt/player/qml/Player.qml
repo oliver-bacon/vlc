@@ -326,6 +326,23 @@ FocusScope {
 
                     cursorShape: playerSpecializationLoader.cursorShape
 
+                    // VLC Gold: a DVD menu keeps the bars hidden so they don't
+                    // cover its buttons; the pointer at the top or bottom edge
+                    // (where the bars are) brings them back, so the menus and
+                    // the way back to the library stay reachable
+                    HoverHandler {
+                        enabled: Player.isInteractive
+                        onPointChanged: {
+                            if (!hovered)
+                                return
+                            const y = videoSurface.mapToItem(rootPlayer, point.position).y
+                            const zone = VLCStyle.dp(96, VLCStyle.scale)
+                            if (y < Math.max(topBar.height, zone)
+                                    || y > rootPlayer.height - Math.max(controlBar.height, zone))
+                                playerToolbarVisibilityFSM.edgeMove()
+                        }
+                    }
+
                     function onMouseEvent() {
                         //short interval for mouse events
                         if (Player.isInteractive)

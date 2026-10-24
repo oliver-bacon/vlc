@@ -48,6 +48,8 @@ FSM {
     //incoming signals
     signal askShow()
     signal mouseMove()
+    // VLC Gold: pointer at the top or bottom edge (shows the bars in DVD menus too)
+    signal edgeMove()
     signal keyboardMove()
     signal lock()
     signal unlock()
@@ -60,6 +62,8 @@ FSM {
 
     property int lockCount: 0 // Track the number of locks
     property int timeoutDuration: MainCtx.mouseHideTimeout
+    // shown by edgeMove: hide again after the timeout, even in a DVD menu
+    property bool _edgeShown: false
 
     initialState: ((Player.isInteractive && MainCtx.hasEmbededVideo))
                   ? fsmHidden : fsmVisible
@@ -67,6 +71,7 @@ FSM {
     signalMap: ({
         askShow: fsm.askShow,
         mouseMove: fsm.mouseMove,
+        edgeMove: fsm.edgeMove,
         keyboardMove: fsm.keyboardMove,
         lock: fsm.lock,
         timeout: fsm.timeout,
@@ -108,7 +113,7 @@ FSM {
                 function enter() {
                     timeout.interval = fsm.timeoutDuration;
 
-                    if (!Player.isInteractive)
+                    if (!Player.isInteractive || fsm._edgeShown)
                         timeout.restart();
                 }
 
@@ -126,6 +131,13 @@ FSM {
                     },
                     timeout: {
                         target: fsmHidden,
+                    },
+                    edgeMove: {
+                        action: () => {
+                            fsm.timeoutDuration = MainCtx.mouseHideTimeout;
+                            fsm._edgeShown = true;
+                        },
+                        target: fsmVideoMode
                     },
                     mouseMove: {
                         guard: () => !Player.isInteractive,
@@ -189,6 +201,14 @@ FSM {
                 target: fsmVisible
             },
             askShow: {
+                action: () => { fsm._edgeShown = false; },
+                target: fsmVisible
+            },
+            edgeMove: {
+                action: () => {
+                    fsm.timeoutDuration = MainCtx.mouseHideTimeout;
+                    fsm._edgeShown = true;
+                },
                 target: fsmVisible
             },
         })
