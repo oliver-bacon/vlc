@@ -323,7 +323,9 @@ Window {
                 T.TextField {
                     id: searchField
 
-                    Layout.preferredWidth: VLCStyle.dp(200, VLCStyle.scale)
+                    // as wide as the sidebar's panel, so the title below
+                    // starts where the page does
+                    Layout.preferredWidth: sidebar.width - 2 * VLCStyle.margin_xsmall
                     Layout.preferredHeight: VLCStyle.dp(34, VLCStyle.scale)
 
                     leftPadding: VLCStyle.dp(42, VLCStyle.scale)
@@ -384,7 +386,7 @@ Window {
             id: sidebar
 
             anchors { top: header.bottom; left: parent.left; bottom: parent.bottom }
-            width: VLCStyle.dp(216, VLCStyle.scale)
+            width: VLCStyle.dp(236, VLCStyle.scale)
             color: theme.bg.primary
 
             Rectangle {

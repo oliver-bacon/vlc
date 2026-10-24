@@ -214,7 +214,7 @@ Item {
             id: sidebar
 
             anchors { top: header.bottom; left: parent.left; bottom: parent.bottom }
-            width: VLCStyle.dp(216, VLCStyle.scale)
+            width: VLCStyle.dp(236, VLCStyle.scale)
             color: theme.bg.primary
 
             Rectangle {
