@@ -40,13 +40,21 @@ Window {
 
     title: qsTr("Open Media")
 
-    width: VLCStyle.dp(900, VLCStyle.scale)
-    height: titleBar.height + Math.max(sidebarColumn.implicitHeight + 2 * VLCStyle.margin_xsmall,
-                                       pageColumn.implicitHeight + 2 * root._pageMargin + footer.height)
-    minimumWidth: width
-    maximumWidth: width
-    minimumHeight: height
-    maximumHeight: height
+    // fixed size: what the page needs; never taller than the screen (the
+    // page scrolls then)
+    readonly property real _fitWidth: VLCStyle.dp(900, VLCStyle.scale)
+    readonly property real _contentHeight: titleBar.height
+            + Math.max(sidebarColumn.implicitHeight + moreOptionsRow.implicitHeight + 6 * VLCStyle.margin_xsmall,
+                       pageColumn.implicitHeight + 2 * root._pageMargin + footer.height)
+    readonly property real _fitHeight: Screen.desktopAvailableHeight > 0
+            ? Math.min(_contentHeight, Screen.desktopAvailableHeight - VLCStyle.dp(40, VLCStyle.scale))
+            : _contentHeight
+    width: _fitWidth
+    height: _fitHeight
+    minimumWidth: _fitWidth
+    maximumWidth: _fitWidth
+    minimumHeight: _fitHeight
+    maximumHeight: _fitHeight
 
     color: theme.bg.primary
 
@@ -114,7 +122,8 @@ Window {
         slaveSwitch.checked = false
         slaveField.text = ""
         extraField.text = ""
-        advancedOptions = []
+        advancedShown = false
+        advancedValues = {}
         _resetCaching()
         _refreshCapture()
     }
@@ -393,7 +402,13 @@ Window {
         return modes
     }
     property string captureMode: captureModes.length > 0 ? captureModes[0].value : "screen"
-    onCaptureModeChanged: advancedOptions = []
+    onCaptureModeChanged: {
+        advancedValues = {}
+        advancedList = []
+        if (advancedShown)
+            _loadAdvanced()
+    }
+    onAdvancedShownChanged: if (advancedShown && advancedList.length === 0) _loadAdvanced()
 
     // module of the "Advanced options" of each mode, and the options already
     // in the window (left out there), as the classic dialog
@@ -403,8 +418,51 @@ Window {
         "jack-input-use-vlc-pace", "jack-input-auto-connect",
         "dvb-adapter", "dvb-frequency", "dvb-modulation", "dvb-bandwidth"
     ]
-    // ":name=value" set in "Advanced options"
-    property var advancedOptions: []
+    // "Advanced options": the other options of the capture module, as the
+    // classic dialog; only the changed ones go into the options
+    property bool advancedShown: false
+    property var advancedList: []       // { name, type, text, choices, value }
+    property var advancedValues: ({})   // name -> changed value
+
+    function _loadAdvanced() {
+        const module = _captureModules[captureMode]
+        const rows = []
+        const sections = module ? (VLCConfig.moduleSettings(module).sections ?? []) : []
+        for (const section of sections) {
+            for (const name of section.options) {
+                if (name.startsWith("#") || _captureOptionsShown.includes(name))
+                    continue
+                const type = VLCConfig.type(name)
+                if (type === "" || type === "key")
+                    continue
+                rows.push({ "name": name, "type": type, "text": VLCConfig.text(name),
+                            "choices": VLCConfig.choices(name), "value": VLCConfig.value(name) })
+            }
+        }
+        advancedList = rows
+    }
+
+    function _setAdvanced(name, value) {
+        const values = Object.assign({}, advancedValues)
+        values[name] = value
+        advancedValues = values
+    }
+
+    readonly property var advancedOptions: {
+        const options = []
+        if (!advancedShown)
+            return options
+        for (const row of advancedList) {
+            const v = advancedValues[row.name]
+            if (v === undefined || String(v) === String(row.value))
+                continue
+            if (row.type === "bool")
+                options.push(v ? ":" + row.name : ":no-" + row.name)
+            else
+                options.push(":" + row.name + "=" + _escape(v))
+        }
+        return options
+    }
 
     property var dshowVideoDevices: []
     property var dshowAudioDevices: []
@@ -548,15 +606,6 @@ Window {
             onActiveChanged: if (active) root.startSystemMove()
         }
 
-        Widgets.BannerCone {
-            anchors.left: parent.left
-            anchors.leftMargin: VLCStyle.margin_small
-            anchors.verticalCenter: parent.verticalCenter
-            sourceSize.width: VLCStyle.icon_normal
-            sourceSize.height: VLCStyle.icon_normal
-            color: titleTheme.accent
-        }
-
         Text {
             anchors.centerIn: parent
             text: root.title
@@ -658,15 +707,46 @@ Window {
                     }
                 }
             }
+
+            // "Show more options": adds its rows below the page
+            RowLayout {
+                id: moreOptionsRow
+
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom
+                          margins: VLCStyle.dp(6, VLCStyle.scale); leftMargin: VLCStyle.dp(12, VLCStyle.scale) }
+                spacing: VLCStyle.margin_small
+
+                T.Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Show more options")
+                    elide: Text.ElideRight
+                    color: theme.fg.secondary
+                    font.pixelSize: VLCStyle.fontSize_large
+
+                    TapHandler { onTapped: root.moreOptions = !root.moreOptions }
+                }
+
+                Toggle {
+                    checkable: false
+                    checked: root.moreOptions
+                    onClicked: root.moreOptions = !root.moreOptions
+                    Accessible.name: qsTr("Show more options")
+                }
+            }
         }
     }
 
     // ---- pages ---------------------------------------------------------------------------
 
-    Item {
+    Flickable {
         id: pane
 
         anchors { top: titleBar.bottom; left: sidebar.right; right: parent.right; bottom: footer.top }
+        contentHeight: pageColumn.implicitHeight + 2 * root._pageMargin
+        interactive: contentHeight > height
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        T.ScrollBar.vertical: Widgets.ScrollBarExt { visible: pane.interactive }
 
         ColumnLayout {
             id: pageColumn
@@ -680,10 +760,12 @@ Window {
                 Layout.fillWidth: true
                 currentIndex: root.currentTab
                 // only the shown page counts (the window fits it)
-                Layout.preferredHeight: children[currentIndex]?.implicitHeight ?? 0
+                Layout.preferredHeight: [filePage, discPage, networkPage, capturePage][currentIndex].implicitHeight
 
                 // File
                 Page {
+                    id: filePage
+
                     SectionTitle { text: qsTr("File Selection") }
 
                     T.Label {
@@ -804,6 +886,8 @@ Window {
 
                 // Disc
                 Page {
+                    id: discPage
+
                     SectionTitle { text: qsTr("Disc Selection") }
 
                     Row2 {
@@ -876,6 +960,8 @@ Window {
 
                 // Network
                 Page {
+                    id: networkPage
+
                     SectionTitle { text: qsTr("Network Protocol") }
 
                     Row2 {
@@ -917,6 +1003,8 @@ Window {
 
                 // Capture Device
                 Page {
+                    id: capturePage
+
                     SectionTitle { text: qsTr("Capture Mode") }
 
                     Row2 {
@@ -1098,12 +1186,102 @@ Window {
                     }
                     Row2 {
                         visible: root._captureModules[root.captureMode] !== undefined
-                        label: root.advancedOptions.length > 0
-                               ? qsTr("Advanced options (%1 set)").arg(root.advancedOptions.length)
-                               : qsTr("Advanced options")
-                        SettingButton {
-                            text: qsTr("Open")
-                            onClicked: advancedPopup.openFor(root._captureModules[root.captureMode])
+                        label: qsTr("Advanced options")
+                        Toggle {
+                            checkable: false
+                            checked: root.advancedShown
+                            onClicked: root.advancedShown = !root.advancedShown
+                        }
+                    }
+
+                    // the module's other options; only this list scrolls
+                    Rectangle {
+                        visible: root.advancedShown && root._captureModules[root.captureMode] !== undefined
+                        Layout.fillWidth: true
+                        Layout.topMargin: VLCStyle.margin_xxsmall
+                        Layout.bottomMargin: VLCStyle.margin_xsmall
+                        Layout.preferredHeight: Math.min(advancedColumn.implicitHeight + 2 * VLCStyle.margin_xsmall,
+                                                         VLCStyle.dp(280, VLCStyle.scale))
+                        radius: root._radius
+                        color: root._well
+                        border.width: VLCStyle.dp(2, VLCStyle.scale)
+                        border.color: root._surface
+
+                        T.Label {
+                            anchors.centerIn: parent
+                            visible: root.advancedList.length === 0
+                            text: qsTr("This device has no other options.")
+                            color: root._mutedText
+                            font.pixelSize: VLCStyle.fontSize_large
+                        }
+
+                        Flickable {
+                            id: advancedFlick
+
+                            anchors.fill: parent
+                            anchors.margins: VLCStyle.margin_xsmall
+                            clip: true
+                            contentHeight: advancedColumn.implicitHeight
+                            boundsBehavior: Flickable.StopAtBounds
+                            T.ScrollBar.vertical: Widgets.ScrollBarExt { }
+
+                            ColumnLayout {
+                                id: advancedColumn
+
+                                x: VLCStyle.margin_small
+                                width: advancedFlick.width - 2 * VLCStyle.margin_small
+                                spacing: 0
+
+                                Repeater {
+                                    model: root.advancedList
+
+                                    Row2 {
+                                        id: optionRow
+
+                                        required property var modelData
+                                        readonly property var value: root.advancedValues[modelData.name] ?? modelData.value
+
+                                        label: modelData.text
+
+                                        Loader {
+                                            sourceComponent: optionRow.modelData.type === "bool" ? boolOption
+                                                           : optionRow.modelData.choices.length > 0 ? choiceOption
+                                                           : textOption
+                                        }
+
+                                        Component {
+                                            id: boolOption
+                                            Toggle {
+                                                checkable: false
+                                                checked: !!optionRow.value
+                                                onClicked: root._setAdvanced(optionRow.modelData.name, !optionRow.value)
+                                            }
+                                        }
+                                        Component {
+                                            id: choiceOption
+                                            Dropdown {
+                                                model: optionRow.modelData.choices
+                                                value: optionRow.value
+                                                onPicked: (v) => root._setAdvanced(optionRow.modelData.name, v)
+                                            }
+                                        }
+                                        Component {
+                                            id: textOption
+                                            InputField {
+                                                implicitWidth: root.controlWidth
+                                                text: String(optionRow.value ?? "")
+                                                echoMode: optionRow.modelData.type === "password" ? TextInput.Password : TextInput.Normal
+                                                onEditingFinished: {
+                                                    const t = optionRow.modelData.type
+                                                    root._setAdvanced(optionRow.modelData.name,
+                                                                      t === "int" ? (parseInt(text) || 0)
+                                                                    : t === "float" ? (parseFloat(text) || 0) : text)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1200,21 +1378,6 @@ Window {
             anchors.rightMargin: VLCStyle.margin_large
             spacing: VLCStyle.margin_xsmall
 
-            Toggle {
-                checkable: false
-                checked: root.moreOptions
-                onClicked: root.moreOptions = !root.moreOptions
-            }
-
-            T.Label {
-                Layout.leftMargin: VLCStyle.margin_xsmall
-                text: qsTr("Show more options")
-                color: root._text
-                font.pixelSize: VLCStyle.fontSize_large
-
-                TapHandler { onTapped: root.moreOptions = !root.moreOptions }
-            }
-
             Item { Layout.fillWidth: true }
 
             SettingButton {
@@ -1269,176 +1432,6 @@ Window {
         color: "transparent"
         border.width: VLCStyle.border
         border.color: titleTheme.border
-    }
-
-    // ---- capture "Advanced options": the other options of the module ---------------
-
-    T.Popup {
-        id: advancedPopup
-
-        property string module: ""
-        property var rows: []
-        // name -> value, while the popup is open
-        property var values: ({})
-
-        function openFor(module) {
-            const names = []
-            const sections = VLCConfig.moduleSettings(module).sections ?? []
-            for (const section of sections)
-                for (const name of section.options)
-                    if (!name.startsWith("#") && !root._captureOptionsShown.includes(name))
-                        names.push(name)
-            // the values set before, else the preferences
-            const set = {}
-            for (const o of root.advancedOptions) {
-                const m = /^:(no-)?([^=]+)(?:=(.*))?$/.exec(o)
-                if (m)
-                    set[m[2]] = m[3] !== undefined ? m[3].replace(/\\:/g, ":") : !m[1]
-            }
-            const values = {}
-            const rows = []
-            for (const name of names) {
-                const type = VLCConfig.type(name)
-                if (type === "" || type === "key")
-                    continue
-                values[name] = set[name] !== undefined ? set[name] : VLCConfig.value(name)
-                rows.push({ "name": name, "type": type, "text": VLCConfig.text(name), "choices": VLCConfig.choices(name) })
-            }
-            advancedPopup.module = module
-            advancedPopup.values = values
-            advancedPopup.rows = rows
-            open()
-        }
-
-        // as the classic dialog: every option of the module
-        function apply() {
-            const options = []
-            for (const row of rows) {
-                const v = values[row.name]
-                if (v === undefined || String(v) === String(VLCConfig.value(row.name)))
-                    continue
-                if (row.type === "bool")
-                    options.push(v ? ":" + row.name : ":no-" + row.name)
-                else
-                    options.push(":" + row.name + "=" + root._escape(v))
-            }
-            root.advancedOptions = options
-            close()
-        }
-
-        parent: T.Overlay.overlay
-        modal: true
-        x: (root.width - width) / 2
-        y: titleBar.height + VLCStyle.margin_small
-        width: root.width - 2 * VLCStyle.dp(60, VLCStyle.scale)
-        height: Math.min(implicitHeight, root.height - titleBar.height - 2 * VLCStyle.margin_small)
-        implicitHeight: advancedColumn.implicitHeight + 2 * padding
-        padding: VLCStyle.margin_large
-
-        background: Rectangle {
-            color: theme.bg.primary
-            radius: root._radius
-            border.width: VLCStyle.border
-            border.color: windowTheme.border
-        }
-
-        T.Overlay.modal: Rectangle { color: Qt.alpha("black", 0.4) }
-
-        contentItem: ColumnLayout {
-            id: advancedColumn
-
-            spacing: 0
-
-            SectionTitle { text: qsTr("Advanced Options") }
-
-            // a module can have many options: only this list scrolls
-            Flickable {
-                id: advancedFlick
-
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.preferredHeight: advancedRows.implicitHeight
-                clip: true
-                contentHeight: advancedRows.implicitHeight
-                boundsBehavior: Flickable.StopAtBounds
-                T.ScrollBar.vertical: Widgets.ScrollBarExt { }
-
-                ColumnLayout {
-                    id: advancedRows
-
-                    width: advancedFlick.width - VLCStyle.margin_small
-                    spacing: 0
-
-                    Repeater {
-                        model: advancedPopup.rows
-
-                        Row2 {
-                            id: optionRow
-
-                            required property var modelData
-
-                            label: modelData.text
-                            readonly property var value: advancedPopup.values[modelData.name]
-
-                            function set(v) {
-                                advancedPopup.values[modelData.name] = v
-                            }
-
-                            Loader {
-                                sourceComponent: optionRow.modelData.type === "bool" ? boolOption
-                                               : optionRow.modelData.choices.length > 0 ? choiceOption
-                                               : textOption
-                            }
-
-                            Component {
-                                id: boolOption
-                                Toggle {
-                                    checked: !!optionRow.value
-                                    onToggled: optionRow.set(checked)
-                                }
-                            }
-                            Component {
-                                id: choiceOption
-                                Dropdown {
-                                    model: optionRow.modelData.choices
-                                    value: optionRow.value
-                                    onPicked: (v) => optionRow.set(v)
-                                }
-                            }
-                            Component {
-                                id: textOption
-                                InputField {
-                                    implicitWidth: root.controlWidth
-                                    text: String(optionRow.value ?? "")
-                                    echoMode: optionRow.modelData.type === "password" ? TextInput.Password : TextInput.Normal
-                                    onTextEdited: optionRow.set(optionRow.modelData.type === "int" ? parseInt(text) || 0
-                                                              : optionRow.modelData.type === "float" ? parseFloat(text) || 0
-                                                              : text)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: VLCStyle.margin_normal
-                spacing: VLCStyle.margin_xsmall
-
-                Item { Layout.fillWidth: true }
-
-                SettingButton {
-                    text: qsTr("Cancel")
-                    onClicked: advancedPopup.close()
-                }
-                SettingButton {
-                    highlighted: true
-                    text: qsTr("OK")
-                    onClicked: advancedPopup.apply()
-                }
-            }
-        }
     }
 
     // ---- components (as SettingRow.qml) ---------------------------------------------
