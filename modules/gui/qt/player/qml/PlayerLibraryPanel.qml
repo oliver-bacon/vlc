@@ -133,7 +133,7 @@ FocusScope {
 
     function _addAction() {
         if (_kind === "networkRoot")
-            DialogsProvider.openNetDialog()
+            DialogsProvider.addNetworkStreamDialog()
         else
             _addFolder()
     }
@@ -814,7 +814,7 @@ FocusScope {
                             if (folder !== "")
                                 MainCtx.mediaLibrary.addFolder(folder)
                         } else {
-                            DialogsProvider.openNetDialog()
+                            DialogsProvider.addNetworkStreamDialog()
                         }
                     }
                 }

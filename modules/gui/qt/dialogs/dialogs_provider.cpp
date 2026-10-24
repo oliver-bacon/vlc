@@ -754,6 +754,10 @@ void DialogsProvider::openDiscDialog()
 }
 void DialogsProvider::openNetDialog()
 {
+    openDialog( OpenDialog::OPEN_NETWORK_TAB );
+}
+void DialogsProvider::addNetworkStreamDialog()
+{
     if( !figmaDialog( QStringLiteral( "network" ) ) )
         openDialog( OpenDialog::OPEN_NETWORK_TAB );
 }

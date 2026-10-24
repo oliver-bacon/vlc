@@ -16,86 +16,143 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Templates as T
 
 import VLC.MainInterface
 import VLC.Menus
 import VLC.Style
+import VLC.Util
+import VLC.Widgets as Widgets
 
-// VLC's Open Media window in the style of the redesign's dialogs (no Figma
-// frame): File, Disc, Network and Capture Device tabs with the Figma "Open"
-// menu icons, "More Options" (caching, start / stop time, extra media,
-// options), Enqueue, and Play with Stream / Convert in its menu. The MRLs
-// and options are the ones of the classic dialog (dialogs/open).
-FigmaDialog {
+// VLC's Open Media window (File, Disc, Network, Capture Device) in the
+// style of the settings window: the tabs on the left with the Figma "Open"
+// menu icons, the options as setting rows on the right. Same options, MRLs
+// and buttons as the classic dialog (dialogs/open): "Show more options",
+// Play with Enqueue / Stream / Convert. The window fits its content.
+Window {
     id: root
+
+    transientParent: MainCtx.intfMainWindow
+    flags: Qt.Dialog | Qt.FramelessWindowHint
+    modality: Qt.WindowModal
 
     title: qsTr("Open Media")
 
-    width: VLCStyle.dp(880, VLCStyle.scale)
-    height: VLCStyle.dp(650, VLCStyle.scale)
+    width: VLCStyle.dp(900, VLCStyle.scale)
+    height: titleBar.height + Math.max(sidebarColumn.implicitHeight + 2 * VLCStyle.margin_xsmall,
+                                       pageColumn.implicitHeight + 2 * root._pageMargin + footer.height)
+    minimumWidth: width
+    maximumWidth: width
+    minimumHeight: height
+    maximumHeight: height
 
-    showButtons: false
+    color: theme.bg.primary
 
     readonly property var _tabs: ["file", "disc", "network", "capture"]
     property int currentTab: 0
-    // opened to add to the queue (playlist "Add"): Enqueue is the main button
+    // opened to add to the queue (playlist "Add"): the main button enqueues
     property bool enqueueMode: false
-
     property bool moreOptions: false
 
-    // tab icons: grey with accent details when selected, all dim otherwise
-    readonly property color iconColor: dark ? "#8F8F8F" : "#2E2E2E"
-    readonly property color accentDimColor: VLCStyle.palette.accentDim
-    readonly property real labelWidth: VLCStyle.dp(180, VLCStyle.scale)
+    readonly property real _pageMargin: VLCStyle.dp(20, VLCStyle.scale)
+    readonly property real controlWidth: VLCStyle.dp(320, VLCStyle.scale)
 
-    // args: { tab: "file" | "disc" | "network" | "capture", enqueue: bool }
+    // colors of the settings window (SettingRow.qml)
+    readonly property ColorContext colorContext: ColorContext {
+        id: theme
+        palette: VLCStyle.palette
+        colorSet: ColorContext.View
+    }
+    readonly property ColorContext windowColorContext: ColorContext {
+        id: windowTheme
+        palette: VLCStyle.palette
+        colorSet: ColorContext.Window
+    }
+    readonly property ColorContext selectedColorContext: ColorContext {
+        id: selectedTheme
+        palette: VLCStyle.palette
+        colorSet: ColorContext.TabButton
+        focused: true
+    }
+    readonly property ColorContext itemColorContext: ColorContext {
+        id: itemTheme
+        palette: VLCStyle.palette
+        colorSet: ColorContext.Item
+    }
+    readonly property color _well: windowTheme.bg.secondary
+    readonly property color _surface: windowTheme.bg.primary
+    readonly property color _selected: itemTheme.bg.highlight
+    readonly property color _text: theme.fg.secondary
+    readonly property color _mutedText: Qt.alpha(theme.fg.secondary, 0.7)
+    readonly property real _radius: VLCStyle.dp(6, VLCStyle.scale)
+
+    // ---- opening ------------------------------------------------------------
+
+    // DialogsProvider: { tab: "file" | "disc" | "network" | "capture", enqueue: bool }
     function reset(args) {
         const tab = _tabs.indexOf(args?.tab ?? "file")
         currentTab = tab >= 0 ? tab : 0
         enqueueMode = args?.enqueue ?? false
-        moreOptions = VLCConfig.uiValue("OpenDialog/advanced", false) === true
-                   || VLCConfig.uiValue("OpenDialog/advanced", false) === "true"
+        const more = VLCConfig.uiValue("OpenDialog/advanced", false)
+        moreOptions = more === true || more === "true"
 
         files = []
-        subtitleCheck.checked = false
-        subtitleUrl = ""
-        urls.text = ""
+        subtitleSwitch.checked = false
+        subtitleField.text = ""
         discDevices = VLCOpenMedia.discDevices()
         _setDiscType(discType)
         titleField.text = ""
         chapterField.text = ""
         audioTrackField.text = ""
         subTrackField.text = ""
+        netHistory = _loadHistory()
+        urlField.text = ""
         startField.text = ""
         stopField.text = ""
-        slaveCheck.checked = false
+        slaveSwitch.checked = false
         slaveField.text = ""
         extraField.text = ""
+        advancedOptions = []
         _resetCaching()
         _refreshCapture()
-        _focusTab()
     }
 
-    function _focusTab() {
+    function open() {
+        const parentWindow = transientParent
+        if (parentWindow) {
+            x = parentWindow.x + (parentWindow.width - width) / 2
+            y = parentWindow.y + Math.max(0, (parentWindow.height - height) / 2)
+        }
+        show()
+        raise()
+        requestActivate()
         if (currentTab === 2)
-            urls.forceActiveFocus()
-        else
-            tabBar.forceActiveFocus()
+            urlField.forceActiveFocus()
     }
 
     onCurrentTabChanged: {
         _resetCaching()
-        if (currentTab === 3)
-            _refreshCapture()
         if (currentTab === 1)
             discDevices = VLCOpenMedia.discDevices()
+        if (currentTab === 2)
+            urlField.forceActiveFocus()
     }
 
     onMoreOptionsChanged: VLCConfig.setUiValue("OpenDialog/advanced", moreOptions)
 
-    // ---- result: MRLs and options ---------------------------------------
+    Component.onCompleted: {
+        if (MainCtx.createWindowWithoutRedirectionSurface) // Win32
+            MainCtx.createWindowWithoutRedirectionSurface(this)
+    }
+
+    Shortcut {
+        sequence: StandardKey.Cancel
+        onActivated: root.close()
+    }
+
+    // ---- result: MRLs and options --------------------------------------------
 
     function _escape(s) {
         return String(s).replace(/:/g, "\\:")
@@ -132,8 +189,8 @@ FigmaDialog {
         switch (currentTab) {
         case 0:
             mrls = files.slice()
-            if (subtitleCheck.checked && subtitleUrl !== "")
-                options.push(":sub-file=" + VLCOpenMedia.optionPath(subtitleUrl))
+            if (subtitleSwitch.checked && subtitleField.text.trim() !== "")
+                options.push(":sub-file=" + _escape(subtitleField.text.trim()))
             break
         case 1: {
             const d = _discMrl()
@@ -142,10 +199,12 @@ FigmaDialog {
             options = d.options
             break
         }
-        case 2:
-            mrls = urls.text.split(/\s+/).filter((u) => u !== "").map((u) => VLCOpenMedia.fixupUrl(u))
-                                                                 .filter((u) => u !== "")
+        case 2: {
+            const url = VLCOpenMedia.fixupUrl(urlField.text.trim())
+            if (url !== "")
+                mrls = [url]
             break
+        }
         case 3: {
             const c = _captureMrl()
             mrls = c.mrls
@@ -154,9 +213,8 @@ FigmaDialog {
         }
         }
 
-        // more options
         if (moreOptions) {
-            if (slaveCheck.checked && slaveField.text.trim() !== "")
+            if (slaveSwitch.checked && slaveField.text.trim() !== "")
                 options.push(":input-slave=" + slaveField.text.trim())
             const caching = parseInt(cachingField.text)
             if (!isNaN(caching) && caching >= 0 && String(caching) !== String(VLCConfig.value(cachingMethod)))
@@ -167,7 +225,7 @@ FigmaDialog {
                 options.push(":start-time=" + start.toFixed(3))
             if (stop > 0 && stop > Math.max(start, 0))
                 options.push(":stop-time=" + stop.toFixed(3))
-            // as typed, separated by " :" like the classic dialog
+            // as typed, separated by " :" like the classic "Edit Options"
             const extra = extraField.text.trim()
             if (extra !== "")
                 for (const o of (" " + extra).split(" :"))
@@ -177,14 +235,15 @@ FigmaDialog {
         return { "mrls": mrls, "options": options }
     }
 
-    // the binding follows every value _build() reads
-    readonly property var result: { captureRevision; return _build() }
-
+    // follows every value _build() reads
+    readonly property var result: _build()
     readonly property bool canOpen: result.mrls.length > 0
 
     function _open(play) {
         if (!canOpen)
             return
+        if (currentTab === 2)
+            _remember(urlField.text.trim())
         VLCOpenMedia.open(result.mrls, result.options, play)
         close()
     }
@@ -198,10 +257,9 @@ FigmaDialog {
         Qt.callLater(() => VLCOpenMedia.stream(r.mrls, r.options, convert))
     }
 
-    // ---- File ---------------------------------------------------------------
+    // ---- File -------------------------------------------------------------------
 
     property var files: []
-    property string subtitleUrl: ""
 
     function _addFiles(list) {
         const merged = files.slice()
@@ -213,20 +271,14 @@ FigmaDialog {
         files = merged
     }
 
-    function _fileName(url) {
-        const path = decodeURIComponent(url.toString())
-        return path.substring(path.lastIndexOf("/") + 1) || path
-    }
+    // ---- Disc -------------------------------------------------------------------
 
-    // ---- Disc ---------------------------------------------------------------
-
-    // id, label, scheme; dvda has no menus option
     readonly property var _discTypes: [
-        { "id": "dvd", "text": qsTr("DVD") },
-        { "id": "bluray", "text": qsTr("Blu-ray") },
-        { "id": "cdda", "text": qsTr("Audio CD") },
-        { "id": "vcd", "text": qsTr("SVCD/VCD") },
-        { "id": "dvda", "text": qsTr("DVD-Audio") }
+        { "value": "dvd", "text": qsTr("DVD") },
+        { "value": "bluray", "text": qsTr("Blu-ray") },
+        { "value": "cdda", "text": qsTr("Audio CD") },
+        { "value": "vcd", "text": qsTr("SVCD/VCD") },
+        { "value": "dvda", "text": qsTr("DVD-Audio") }
     ]
     property string discType: "dvd"
     property var discDevices: []
@@ -247,7 +299,7 @@ FigmaDialog {
             device = discDevices[0].text
         deviceField.text = device
         if (type === "bluray")
-            noMenusCheck.checked = !VLCConfig.value("bluray-menu")
+            noMenusSwitch.checked = !VLCConfig.value("bluray-menu")
     }
 
     function _discDevicePath() {
@@ -260,7 +312,7 @@ FigmaDialog {
 
     function _discMrl() {
         const type = discType
-        const scheme = (type === "dvd" && noMenusCheck.checked) ? "dvdsimple" : type
+        const scheme = (type === "dvd" && noMenusSwitch.checked) ? "dvdsimple" : type
         const mrl = VLCOpenMedia.discMrl(_discDevicePath(), scheme)
         if (mrl === "")
             return { "mrl": "", "options": [] }
@@ -290,13 +342,35 @@ FigmaDialog {
             if (title > 0)
                 options.push(":cdda-track=" + title)
         } else if (type === "bluray") {
-            if (noMenusCheck.checked)
+            if (noMenusSwitch.checked)
                 options.push(":no-bluray-menu")
         }
         return { "mrl": mrl + anchor, "options": options }
     }
 
-    // ---- Capture -------------------------------------------------------------
+    // ---- Network -----------------------------------------------------------------
+
+    property var netHistory: []
+    readonly property bool _keepHistory: !!VLCConfig.value("save-recentplay")
+
+    function _loadHistory() {
+        if (!_keepHistory)
+            return []
+        const v = VLCConfig.uiValue("OpenDialog/netMRL", [])
+        return Array.isArray(v) ? v : (v ? [String(v)] : [])
+    }
+
+    // the last 10 URLs, as the classic dialog
+    function _remember(url) {
+        if (!_keepHistory || url === "")
+            return
+        const list = netHistory.filter((u) => u !== url)
+        list.unshift(url)
+        netHistory = list.slice(0, 10)
+        VLCConfig.setUiValue("OpenDialog/netMRL", netHistory)
+    }
+
+    // ---- Capture -----------------------------------------------------------------
 
     readonly property bool _windows: MainCtx.osName === MainCtx.Windows
 
@@ -304,43 +378,53 @@ FigmaDialog {
         const modes = []
         if (_windows) {
             if (VLCConfig.moduleExists("dshow"))
-                modes.push({ "id": "dshow", "text": qsTr("DirectShow") })
+                modes.push({ "value": "dshow", "text": "DirectShow" })
         } else {
             if (VLCConfig.moduleExists("v4l2"))
-                modes.push({ "id": "v4l2", "text": qsTr("Video Camera") })
+                modes.push({ "value": "v4l2", "text": qsTr("Video camera") })
             if (VLCConfig.moduleExists("jack"))
-                modes.push({ "id": "jack", "text": qsTr("JACK Audio") })
+                modes.push({ "value": "jack", "text": qsTr("JACK Audio Connection Kit") })
         }
         if (VLCConfig.moduleExists("dtv"))
-            modes.push({ "id": "dtv", "text": qsTr("TV - Digital") })
+            modes.push({ "value": "dtv", "text": qsTr("TV - digital") })
         if (!_windows && VLCConfig.moduleExists("v4l2"))
-            modes.push({ "id": "pvr", "text": qsTr("TV - Analog") })
-        modes.push({ "id": "screen", "text": qsTr("Desktop") })
+            modes.push({ "value": "pvr", "text": qsTr("TV - analog") })
+        modes.push({ "value": "screen", "text": qsTr("Desktop") })
         return modes
     }
-    property string captureMode: captureModes.length > 0 ? captureModes[0].id : "screen"
-    // bumped when a capture value that is not a text field changes
-    property int captureRevision: 0
+    property string captureMode: captureModes.length > 0 ? captureModes[0].value : "screen"
+    onCaptureModeChanged: advancedOptions = []
+
+    // module of the "Advanced options" of each mode, and the options already
+    // in the window (left out there), as the classic dialog
+    readonly property var _captureModules: ({ "dshow": "dshow", "v4l2": "v4l2", "pvr": "v4l2", "dtv": "dtv", "jack": "jack" })
+    readonly property var _captureOptionsShown: [
+        "dshow-vdev", "dshow-adev", "dshow-size", "v4l2-standard",
+        "jack-input-use-vlc-pace", "jack-input-auto-connect",
+        "dvb-adapter", "dvb-frequency", "dvb-modulation", "dvb-bandwidth"
+    ]
+    // ":name=value" set in "Advanced options"
+    property var advancedOptions: []
 
     property var dshowVideoDevices: []
     property var dshowAudioDevices: []
-    property string dshowVideo: ""
-    property string dshowAudio: ""
+    property var dshowVideo: ""
+    property var dshowAudio: ""
     property var videoStandards: []
-    property string videoStandard: ""
+    property var videoStandard: ""
     property string dvbSystem: "dvb-t"
     property var dvbBandwidths: []
     property var dvbBandwidth: 0
     property string dvbQam: "QAM"
     property string dvbPsk: "QPSK"
-    property bool jackPace: false
-    property bool jackConnect: false
+    property var videoDevices: []
+    property var alsaDevices: []
 
     readonly property var _dvbSystems: [
-        { "id": "dvb-c", "text": "DVB-C" }, { "id": "dvb-s", "text": "DVB-S" },
-        { "id": "dvb-s2", "text": "DVB-S2" }, { "id": "dvb-t", "text": "DVB-T" },
-        { "id": "dvb-t2", "text": "DVB-T2" }, { "id": "atsc", "text": "ATSC" },
-        { "id": "cqam", "text": qsTr("Clear QAM") }
+        { "value": "dvb-c", "text": "DVB-C" }, { "value": "dvb-s", "text": "DVB-S" },
+        { "value": "dvb-s2", "text": "DVB-S2" }, { "value": "dvb-t", "text": "DVB-T" },
+        { "value": "dvb-t2", "text": "DVB-T2" }, { "value": "atsc", "text": "ATSC" },
+        { "value": "cqam", "text": qsTr("Clear QAM") }
     ]
     readonly property var _qamModes: [
         { "value": "QAM", "text": qsTr("Automatic") }, { "value": "256QAM", "text": "256-QAM" },
@@ -362,25 +446,20 @@ FigmaDialog {
         }
         if (VLCConfig.exists("v4l2-standard")) {
             videoStandards = VLCConfig.choices("v4l2-standard")
-            videoStandard = String(VLCConfig.value("v4l2-standard") ?? "")
+            videoStandard = VLCConfig.value("v4l2-standard") ?? ""
         }
         if (VLCConfig.exists("dvb-bandwidth")) {
             dvbBandwidths = VLCConfig.choices("dvb-bandwidth")
             dvbBandwidth = VLCConfig.value("dvb-bandwidth") ?? 0
         }
-        if (VLCConfig.exists("screen-fps") && screenFpsField.text === "")
-            screenFpsField.text = String(VLCConfig.value("screen-fps"))
-        const videos = VLCOpenMedia.videoDevices()
-        videoDeviceField.suggestions = videos
-        pvrDeviceField.suggestions = videos
-        const alsa = VLCOpenMedia.alsaDevices()
-        audioDeviceField.suggestions = alsa
-        pvrAudioField.suggestions = alsa
-        if (videoDeviceField.text === "" && videos.length > 0)
-            videoDeviceField.text = videos[0]
-        if (pvrDeviceField.text === "" && videos.length > 0)
-            pvrDeviceField.text = videos[0]
-        captureRevision++
+        if (screenFpsField.text === "")
+            screenFpsField.text = VLCConfig.exists("screen-fps") ? String(VLCConfig.value("screen-fps")) : "1"
+        videoDevices = VLCOpenMedia.videoDevices()
+        alsaDevices = VLCOpenMedia.alsaDevices()
+        if (videoDeviceField.text === "" && videoDevices.length > 0)
+            videoDeviceField.text = videoDevices[0]
+        if (pvrDeviceField.text === "" && videoDevices.length > 0)
+            pvrDeviceField.text = videoDevices[0]
     }
 
     function _captureMrl() {
@@ -396,7 +475,7 @@ FigmaDialog {
             break
         case "v4l2":
             mrls.push("v4l2://" + videoDeviceField.text.trim())
-            if (videoStandard !== "")
+            if (String(videoStandard) !== "")
                 options.push(":v4l2-standard=" + videoStandard)
             if (audioDeviceField.text.trim() !== "")
                 options.push(":input-slave=alsa://" + audioDeviceField.text.trim())
@@ -404,14 +483,14 @@ FigmaDialog {
         case "jack":
             mrls.push("jack://channels=" + (parseInt(jackChannelsField.text) || 2)
                       + ":ports=" + (jackPortsField.text || ".*"))
-            if (jackPace)
+            if (jackPaceSwitch.checked)
                 options.push(":jack-input-use-vlc-pace")
-            if (jackConnect)
+            if (jackConnectSwitch.checked)
                 options.push(":jack-input-auto-connect")
             break
         case "pvr": {
             mrls.push("v4l2://" + pvrDeviceField.text.trim())
-            if (videoStandard !== "")
+            if (String(videoStandard) !== "")
                 options.push(":v4l2-standard=" + videoStandard)
             const freq = parseInt(pvrFreqField.text)
             if (freq > 0)
@@ -443,142 +522,190 @@ FigmaDialog {
             break
         }
         }
+        for (const o of advancedOptions)
+            options.push(o)
         return { "mrls": mrls, "options": options }
     }
 
-    // ---- header: tabs ---------------------------------------------------------
+    // ---- title bar (as the settings window) ---------------------------------------
 
-    headerContent: Row {
-        id: tabBar
+    Rectangle {
+        id: titleBar
 
-        width: parent.width
-        height: VLCStyle.dp(38, VLCStyle.scale)
-        spacing: VLCStyle.dp(4, VLCStyle.scale)
-        focus: true
+        readonly property ColorContext colorContext: ColorContext {
+            id: titleTheme
+            palette: VLCStyle.palette
+            colorSet: ColorContext.Window
+        }
 
-        Keys.onLeftPressed: root.currentTab = Math.max(0, root.currentTab - 1)
-        Keys.onRightPressed: root.currentTab = Math.min(3, root.currentTab + 1)
+        anchors { top: parent.top; left: parent.left; right: parent.right }
+        height: VLCStyle.globalToolbar_height
+        color: titleTheme.bg.primary
 
-        Repeater {
-            model: [
-                { "text": qsTr("File"), "icon": "main_open_file_s" },
-                { "text": qsTr("Disc"), "icon": "main_open_disc" },
-                { "text": qsTr("Network"), "icon": "main_open_network_stream" },
-                { "text": qsTr("Capture Device"), "icon": "main_open_capture_device" }
-            ]
+        DragHandler {
+            target: null
+            grabPermissions: PointerHandler.CanTakeOverFromAnything
+            onActiveChanged: if (active) root.startSystemMove()
+        }
 
-            delegate: T.TabButton {
-                id: tab
+        Widgets.BannerCone {
+            anchors.left: parent.left
+            anchors.leftMargin: VLCStyle.margin_small
+            anchors.verticalCenter: parent.verticalCenter
+            sourceSize.width: VLCStyle.icon_normal
+            sourceSize.height: VLCStyle.icon_normal
+            color: titleTheme.accent
+        }
 
-                required property var modelData
-                required property int index
+        Text {
+            anchors.centerIn: parent
+            text: root.title
+            color: titleTheme.fg.secondary
+            font.pixelSize: VLCStyle.fontSize_large
+        }
 
-                height: tabBar.height
-                leftPadding: VLCStyle.dp(12, VLCStyle.scale)
-                rightPadding: VLCStyle.dp(12, VLCStyle.scale)
-                checked: root.currentTab === index
-                focusPolicy: Qt.NoFocus
-                onClicked: root.currentTab = index
+        Widgets.CSDWindowButton {
+            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+            iconTxt: ((MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10)) ? "" : VLCIcons.window_close
+            isThemeDark: titleTheme.palette.isDark
+            color: hovered ? "white" : titleTheme.fg.primary
+            hoverColor: "red"
+            onClicked: root.close()
+        }
+    }
 
-                background: Item {
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.bottomMargin: VLCStyle.dp(2, VLCStyle.scale)
-                        radius: VLCStyle.dp(6, VLCStyle.scale)
-                        color: tab.hovered && !tab.checked ? root.surfaceColor : "transparent"
-                    }
-                    Rectangle {
-                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom
-                                  leftMargin: VLCStyle.dp(4, VLCStyle.scale); rightMargin: VLCStyle.dp(4, VLCStyle.scale) }
-                        height: VLCStyle.dp(2, VLCStyle.scale)
-                        visible: tab.checked
-                        color: root.accentColor
-                    }
-                }
-                contentItem: Row {
-                    spacing: VLCStyle.dp(8, VLCStyle.scale)
+    // ---- tabs on the left (as the settings categories) -----------------------------
 
-                    // Figma menu icon: two-tone when selected
-                    Image {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: VLCStyle.dp(20, VLCStyle.scale)
-                        height: width
-                        sourceSize: Qt.size(width * 2, height * 2)
-                        source: SVGColorImage.colorize("qrc:///menu/figma/" + tab.modelData.icon + ".svg")
-                                    .any({
-                                        "#8F8F8F": tab.checked ? root.iconColor : root.dimColor,
-                                        "#AB6314": tab.checked ? root.accentDimColor : root.dimColor
-                                    }).uri()
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: tab.modelData.text
-                        font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                        color: tab.checked ? root.titleColor : root.dimColor
+    Rectangle {
+        id: sidebar
+
+        anchors { top: titleBar.bottom; left: parent.left; bottom: parent.bottom }
+        width: VLCStyle.dp(236, VLCStyle.scale)
+        color: theme.bg.primary
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: VLCStyle.margin_xsmall
+            radius: root._radius
+            color: windowTheme.bg.primary
+
+            ColumnLayout {
+                id: sidebarColumn
+
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: VLCStyle.dp(6, VLCStyle.scale) }
+                spacing: VLCStyle.margin_xsmall
+
+                Repeater {
+                    model: [
+                        { "text": qsTr("File"), "icon": "main_open_file_s" },
+                        { "text": qsTr("Disc"), "icon": "main_open_disc" },
+                        { "text": qsTr("Network"), "icon": "main_open_network_stream" },
+                        { "text": qsTr("Capture Device"), "icon": "main_open_capture_device" }
+                    ]
+
+                    T.AbstractButton {
+                        id: tabButton
+
+                        required property var modelData
+                        required property int index
+                        readonly property bool selected: root.currentTab === index
+
+                        Layout.fillWidth: true
+                        implicitHeight: VLCStyle.dp(40, VLCStyle.scale)
+
+                        onClicked: root.currentTab = index
+
+                        Accessible.role: Accessible.PageTab
+                        Accessible.name: modelData.text
+
+                        background: Rectangle {
+                            radius: VLCStyle.dp(2, VLCStyle.scale)
+                            color: (tabButton.selected || tabButton.hovered) ? selectedTheme.bg.primary : "transparent"
+                            border.width: tabButton.visualFocus ? VLCStyle.focus_border : 0
+                            border.color: theme.visualFocus
+                        }
+
+                        contentItem: RowLayout {
+                            spacing: VLCStyle.margin_xsmall
+
+                            Item {
+                                Layout.preferredWidth: VLCStyle.dp(32, VLCStyle.scale)
+                                Layout.leftMargin: VLCStyle.dp(4, VLCStyle.scale)
+                                Layout.fillHeight: true
+
+                                // Figma menu icon: its details in the accent when selected
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: VLCStyle.icon_normal
+                                    height: VLCStyle.icon_normal
+                                    sourceSize: Qt.size(width * 2, height * 2)
+                                    source: SVGColorImage.colorize("qrc:///menu/figma/" + tabButton.modelData.icon + ".svg")
+                                                .any({
+                                                    "#8F8F8F": tabButton.selected ? theme.fg.primary : theme.fg.secondary,
+                                                    "#AB6314": tabButton.selected ? theme.accent : theme.fg.secondary
+                                                }).uri()
+                                }
+                            }
+
+                            T.Label {
+                                Layout.fillWidth: true
+                                text: tabButton.modelData.text
+                                elide: Text.ElideRight
+                                font.pixelSize: VLCStyle.fontSize_large
+                                color: tabButton.selected ? theme.fg.primary : theme.fg.secondary
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // ---- pages -----------------------------------------------------------------
+    // ---- pages ---------------------------------------------------------------------------
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 0
+    Item {
+        id: pane
 
-        Flickable {
-            id: flick
+        anchors { top: titleBar.bottom; left: sidebar.right; right: parent.right; bottom: footer.top }
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            contentHeight: pageColumn.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
+        ColumnLayout {
+            id: pageColumn
 
-            T.ScrollBar.vertical: T.ScrollBar {
-                policy: flick.contentHeight > flick.height ? T.ScrollBar.AlwaysOn : T.ScrollBar.AlwaysOff
-                contentItem: Rectangle {
-                    implicitWidth: VLCStyle.dp(4, VLCStyle.scale)
-                    radius: width / 2
-                    color: root.dividerColor
-                }
-            }
+            x: VLCStyle.margin_large
+            y: root._pageMargin
+            width: pane.width - 2 * VLCStyle.margin_large
+            spacing: 0
 
-            ColumnLayout {
-                id: pageColumn
-
-                width: flick.width - VLCStyle.dp(12, VLCStyle.scale)
-                spacing: VLCStyle.dp(16, VLCStyle.scale)
+            StackLayout {
+                Layout.fillWidth: true
+                currentIndex: root.currentTab
+                // only the shown page counts (the window fits it)
+                Layout.preferredHeight: children[currentIndex]?.implicitHeight ?? 0
 
                 // File
-                ColumnLayout {
-                    visible: root.currentTab === 0
-                    Layout.fillWidth: true
-                    spacing: VLCStyle.dp(16, VLCStyle.scale)
+                Page {
+                    SectionTitle { text: qsTr("File Selection") }
 
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Files")
-                        description: qsTr("Drag files into the box or click here to select files.")
+                    T.Label {
+                        Layout.fillWidth: true
+                        Layout.bottomMargin: VLCStyle.margin_small
+                        text: qsTr("You can select local files with the following list and buttons.")
+                        wrapMode: Text.WordWrap
+                        color: root._mutedText
+                        font.pixelSize: VLCStyle.fontSize_normal
                     }
 
+                    // the files; drop files here too
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: VLCStyle.dp(200, VLCStyle.scale)
-                        radius: root.radius
-                        color: dropArea.containsDrag ? Qt.lighter(root.wellColor, 1.6) : root.wellColor
-
-                        DashedBorder {
-                            anchors.fill: parent
-                            radius: root.radius
-                            dash: 4
-                            gap: 3
-                            color: root.dark ? "#2D2D2D" : "#9B9B9B"
-                        }
+                        Layout.preferredHeight: VLCStyle.dp(176, VLCStyle.scale)
+                        radius: root._radius
+                        color: dropArea.containsDrag ? Qt.lighter(root._well, 1.3) : root._well
+                        border.width: VLCStyle.dp(2, VLCStyle.scale)
+                        border.color: root._surface
 
                         DropArea {
                             id: dropArea
-
                             anchors.fill: parent
                             onDropped: (drop) => {
                                 if (drop.hasUrls)
@@ -586,448 +713,367 @@ FigmaDialog {
                             }
                         }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root._addFiles(VLCConfig.browseFiles(qsTr("Select Files")))
-                        }
-
-                        Column {
+                        T.Label {
                             anchors.centerIn: parent
                             visible: root.files.length === 0
-                            spacing: VLCStyle.dp(16, VLCStyle.scale)
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: qsTr("No files selected.")
-                                color: root.placeholderColor
-                                font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                            }
-
-                            FigmaDialog.PlusButton {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                implicitWidth: VLCStyle.dp(84, VLCStyle.scale)
-                                onClicked: root._addFiles(VLCConfig.browseFiles(qsTr("Select Files")))
-                            }
+                            text: qsTr("Drag files here or click \"Add...\".")
+                            color: root._mutedText
+                            font.pixelSize: VLCStyle.fontSize_large
                         }
 
                         ListView {
+                            id: fileList
+
                             anchors.fill: parent
-                            anchors.margins: VLCStyle.dp(13, VLCStyle.scale)
-                            visible: root.files.length > 0
+                            anchors.margins: VLCStyle.dp(6, VLCStyle.scale)
                             clip: true
                             model: root.files
-                            spacing: VLCStyle.dp(6, VLCStyle.scale)
+                            spacing: VLCStyle.dp(2, VLCStyle.scale)
+                            boundsBehavior: Flickable.StopAtBounds
 
-                            delegate: Item {
+                            delegate: Rectangle {
                                 required property var modelData
                                 required property int index
 
                                 width: ListView.view.width
-                                height: VLCStyle.dp(24, VLCStyle.scale)
+                                height: VLCStyle.dp(34, VLCStyle.scale)
+                                radius: VLCStyle.dp(4, VLCStyle.scale)
+                                color: rowHover.hovered ? root._surface : "transparent"
 
-                                Text {
-                                    anchors { left: parent.left; right: remove.left; verticalCenter: parent.verticalCenter }
-                                    text: root._fileName(modelData)
-                                    color: root.textColor
-                                    font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                                    elide: Text.ElideMiddle
-                                }
+                                HoverHandler { id: rowHover }
 
-                                FigmaDialog.CloseButton {
-                                    id: remove
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: VLCStyle.dp(10, VLCStyle.scale)
+                                    anchors.rightMargin: VLCStyle.dp(4, VLCStyle.scale)
+                                    spacing: VLCStyle.margin_xsmall
 
-                                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                                    implicitWidth: VLCStyle.dp(24, VLCStyle.scale)
-                                    implicitHeight: VLCStyle.dp(24, VLCStyle.scale)
-                                    onClicked: {
-                                        const list = root.files.slice()
-                                        list.splice(index, 1)
-                                        root.files = list
+                                    T.Label {
+                                        Layout.fillWidth: true
+                                        text: VLCOpenMedia.displayPath(modelData)
+                                        color: root._text
+                                        font.pixelSize: VLCStyle.fontSize_normal
+                                        elide: Text.ElideMiddle
+                                    }
+
+                                    SettingButton {
+                                        implicitHeight: VLCStyle.dp(26, VLCStyle.scale)
+                                        implicitWidth: VLCStyle.dp(80, VLCStyle.scale)
+                                        text: qsTr("Remove")
+                                        onClicked: {
+                                            const list = root.files.slice()
+                                            list.splice(index, 1)
+                                            root.files = list
+                                        }
                                     }
                                 }
                             }
                         }
                     }
 
-                    FigmaDialog.Divider { Layout.fillWidth: true }
-
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Subtitle File")
-                        suffix: qsTr("(optional)")
-                        description: qsTr("Loaded with the files above.")
-                    }
-
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: VLCStyle.dp(10, VLCStyle.scale)
+                        Layout.topMargin: VLCStyle.margin_small
+                        spacing: VLCStyle.margin_xsmall
+
+                        Item { Layout.fillWidth: true }
+
+                        SettingButton {
+                            text: qsTr("Add...")
+                            onClicked: root._addFiles(VLCConfig.browseFiles(qsTr("Select one or multiple files")))
+                        }
+                    }
+
+                    SectionTitle { text: qsTr("Subtitles") }
+
+                    Row2 {
+                        label: qsTr("Use a subtitle file")
                         enabled: root.files.length > 0
+                        Toggle { id: subtitleSwitch }
+                    }
 
-                        CheckBox {
-                            id: subtitleCheck
-                        }
-
-                        FigmaDialog.TextField {
-                            Layout.fillWidth: true
-                            readOnly: true
-                            enabled: subtitleCheck.checked
-                            text: root.subtitleUrl !== "" ? VLCOpenMedia.displayPath(root.subtitleUrl) : ""
-                            placeholderText: qsTr("Use a subtitle file")
-                        }
-
-                        FigmaDialog.Button {
-                            text: qsTr("Browse...")
-                            enabled: subtitleCheck.checked
-                            onClicked: {
-                                const list = VLCConfig.browseFiles(qsTr("Open subtitle file"))
-                                if (list.length > 0)
-                                    root.subtitleUrl = list[0].toString()
-                            }
+                    Row2 {
+                        label: qsTr("Subtitle file")
+                        enabled: root.files.length > 0 && subtitleSwitch.checked
+                        PathField {
+                            id: subtitleField
+                            title: qsTr("Open subtitle file")
                         }
                     }
                 }
 
                 // Disc
-                ColumnLayout {
-                    visible: root.currentTab === 1
-                    Layout.fillWidth: true
-                    spacing: VLCStyle.dp(16, VLCStyle.scale)
+                Page {
+                    SectionTitle { text: qsTr("Disc Selection") }
 
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Disc Type")
-                    }
-
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: VLCStyle.dp(8, VLCStyle.scale)
-
-                        Repeater {
+                    Row2 {
+                        label: qsTr("Disc type")
+                        Dropdown {
                             model: root._discTypes
-                            delegate: Choice {
-                                required property var modelData
-                                text: modelData.text
-                                checked: root.discType === modelData.id
-                                onClicked: root._setDiscType(modelData.id)
-                            }
+                            value: root.discType
+                            onPicked: (v) => root._setDiscType(v)
                         }
                     }
 
-                    FigmaDialog.Divider { Layout.fillWidth: true }
-
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Disc Device")
-                        description: MainCtx.osName === MainCtx.Windows
-                                     ? qsTr("Select a drive or a VIDEO_TS folder.")
-                                     : qsTr("Select a device or a VIDEO_TS directory.")
+                    Row2 {
+                        label: qsTr("No disc menus")
+                        enabled: root.discType === "dvd" || root.discType === "bluray"
+                        Toggle { id: noMenusSwitch }
                     }
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: VLCStyle.dp(10, VLCStyle.scale)
-
-                        ComboField {
+                    Row2 {
+                        label: qsTr("Disc device")
+                        EditCombo {
                             id: deviceField
-                            Layout.fillWidth: true
+                            Layout.preferredWidth: root.controlWidth - 2 * (VLCStyle.dp(80, VLCStyle.scale) + VLCStyle.margin_xsmall)
                             suggestions: root.discDevices.map((d) => d.text)
+                            ToolTipArea { text: qsTr("Select a device or a VIDEO_TS directory") }
                         }
-
-                        FigmaDialog.Button {
-                            text: qsTr("Browse...")
+                        SettingButton {
+                            implicitWidth: VLCStyle.dp(80, VLCStyle.scale)
+                            text: qsTr("Browse")
                             onClicked: {
-                                const url = VLCConfig.browseFolder(qsTr("Select a device or a VIDEO_TS folder"))
+                                const url = VLCConfig.browseFolder(qsTr("Select a device or a VIDEO_TS directory"))
                                 if (url !== "")
                                     deviceField.text = VLCOpenMedia.displayPath(url)
                             }
                         }
-
-                        FigmaDialog.Button {
+                        SettingButton {
+                            implicitWidth: VLCStyle.dp(80, VLCStyle.scale)
                             text: qsTr("Eject")
                             onClicked: VLCOpenMedia.eject(root._discDevicePath())
                         }
                     }
 
-                    CheckRow {
-                        id: noMenusCheck
-                        visible: root.discType === "dvd" || root.discType === "bluray"
-                        text: qsTr("No disc menus")
-                    }
+                    SectionTitle { text: qsTr("Starting Position") }
 
-                    FigmaDialog.Divider { Layout.fillWidth: true }
-
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Starting Position")
-                    }
-
-                    FormRow {
+                    Row2 {
                         label: root.discType === "cdda" ? qsTr("Track")
                              : root.discType === "vcd" ? qsTr("Entry") : qsTr("Title")
                         NumberField { id: titleField }
                     }
 
-                    FormRow {
-                        visible: root.discType === "dvd" || root.discType === "dvda"
+                    Row2 {
                         label: qsTr("Chapter")
+                        enabled: root.discType === "dvd" || root.discType === "dvda"
                         NumberField { id: chapterField }
                     }
 
-                    FigmaDialog.SectionHeader {
-                        visible: root.discType === "dvd" || root.discType === "vcd"
-                        Layout.topMargin: VLCStyle.dp(4, VLCStyle.scale)
-                        title: qsTr("Audio and Subtitles")
-                    }
+                    SectionTitle { text: qsTr("Audio and Subtitles") }
 
-                    FormRow {
-                        visible: root.discType === "dvd" || root.discType === "vcd"
+                    Row2 {
                         label: qsTr("Audio track")
+                        enabled: root.discType === "dvd" || root.discType === "vcd"
                         NumberField { id: audioTrackField }
                     }
 
-                    FormRow {
-                        visible: root.discType === "dvd" || root.discType === "vcd"
+                    Row2 {
                         label: qsTr("Subtitle track")
+                        enabled: root.discType === "dvd" || root.discType === "vcd"
                         NumberField { id: subTrackField }
                     }
                 }
 
                 // Network
-                ColumnLayout {
-                    visible: root.currentTab === 2
-                    Layout.fillWidth: true
-                    spacing: VLCStyle.dp(16, VLCStyle.scale)
+                Page {
+                    SectionTitle { text: qsTr("Network Protocol") }
 
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Network URL")
-                        description: qsTr("You can enter multiple links to load.")
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: VLCStyle.dp(192, VLCStyle.scale)
-                        radius: root.radius
-                        color: root.wellColor
-                        border.width: 1
-                        border.color: urls.activeFocus ? root.accentColor : root.panelColor
-
-                        Flickable {
-                            id: urlFlick
-
-                            anchors.fill: parent
-                            anchors.margins: VLCStyle.dp(13, VLCStyle.scale)
-                            contentHeight: urls.implicitHeight
-                            clip: true
-
-                            T.TextArea {
-                                id: urls
-
-                                width: urlFlick.width
-                                wrapMode: TextEdit.WrapAnywhere
-                                color: root.titleColor
-                                selectionColor: root.accentSurface
-                                font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                                placeholderText: qsTr("e.g., https://www.example.com/stream.avi")
-
-                                Text {
-                                    visible: urls.text === ""
-                                    text: urls.placeholderText
-                                    color: root.placeholderColor
-                                    font: urls.font
-                                }
-                            }
+                    Row2 {
+                        label: qsTr("Network URL")
+                        EditCombo {
+                            id: urlField
+                            Layout.preferredWidth: root.controlWidth + VLCStyle.dp(140, VLCStyle.scale)
+                            suggestions: root.netHistory
+                            placeholderText: "https://www.example.com/stream.avi"
+                            onAccepted: root._open(!root.enqueueMode)
                         }
                     }
 
-                    Text {
+                    T.Label {
                         Layout.fillWidth: true
+                        Layout.topMargin: VLCStyle.margin_xsmall
+                        Layout.bottomMargin: VLCStyle.margin_small
                         wrapMode: Text.WordWrap
-                        color: root.dimColor
-                        font.pixelSize: VLCStyle.dp(13, VLCStyle.scale)
-                        text: qsTr("For example: http://www.example.com/stream.avi, rtp://@:1234, mms://mms.examples.com/stream.asx, rtsp://server.example.org:8080/test.sdp")
+                        lineHeight: 1.3
+                        color: root._mutedText
+                        font.pixelSize: VLCStyle.fontSize_normal
+                        text: "http://www.example.com/stream.avi\nrtp://@:1234\nmms://mms.examples.com/stream.asx\n"
+                            + "rtsp://server.example.org:8080/test.sdp\nhttp://www.yourtube.com/watch?v=gg64x"
+                    }
+
+                    Row2 {
+                        label: qsTr("Clear the network URL browsing history")
+                        enabled: root._keepHistory && root.netHistory.length > 0
+                        SettingButton {
+                            text: qsTr("Clear History")
+                            implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
+                            onClicked: {
+                                root.netHistory = []
+                                VLCConfig.setUiValue("OpenDialog/netMRL", [])
+                            }
+                        }
                     }
                 }
 
                 // Capture Device
-                ColumnLayout {
-                    visible: root.currentTab === 3
-                    Layout.fillWidth: true
-                    spacing: VLCStyle.dp(16, VLCStyle.scale)
+                Page {
+                    SectionTitle { text: qsTr("Capture Mode") }
 
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("Capture Mode")
-                    }
-
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: VLCStyle.dp(8, VLCStyle.scale)
-
-                        Repeater {
+                    Row2 {
+                        label: qsTr("Capture mode")
+                        Dropdown {
                             model: root.captureModes
-                            delegate: Choice {
-                                required property var modelData
-                                text: modelData.text
-                                checked: root.captureMode === modelData.id
-                                onClicked: root.captureMode = modelData.id
-                            }
+                            value: root.captureMode
+                            onPicked: (v) => root.captureMode = v
                         }
                     }
 
-                    FigmaDialog.Divider { Layout.fillWidth: true }
+                    SectionTitle { text: qsTr("Device Selection") }
 
                     // DirectShow (Windows)
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "dshow"
-                        label: qsTr("Video device")
+                        label: qsTr("Video device name")
                         Dropdown {
-                            Layout.fillWidth: true
                             model: root.dshowVideoDevices
                             value: root.dshowVideo
-                            onActivated: (v) => root.dshowVideo = v
+                            onPicked: (v) => root.dshowVideo = v
                         }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "dshow"
-                        label: qsTr("Audio device")
+                        label: qsTr("Audio device name")
                         Dropdown {
-                            Layout.fillWidth: true
                             model: root.dshowAudioDevices
                             value: root.dshowAudio
-                            onActivated: (v) => root.dshowAudio = v
-                        }
-                    }
-                    FormRow {
-                        visible: root.captureMode === "dshow"
-                        label: qsTr("Video size")
-                        FigmaDialog.TextField {
-                            id: dshowSizeField
-                            Layout.preferredWidth: VLCStyle.dp(200, VLCStyle.scale)
-                            placeholderText: qsTr("e.g., 1280x720")
+                            onPicked: (v) => root.dshowAudio = v
                         }
                     }
 
-                    // Video camera (V4L2)
-                    FormRow {
+                    // Video camera
+                    Row2 {
                         visible: root.captureMode === "v4l2"
-                        label: qsTr("Video device")
-                        ComboField { id: videoDeviceField; Layout.fillWidth: true }
+                        label: qsTr("Video device name")
+                        EditCombo { id: videoDeviceField; suggestions: root.videoDevices }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "v4l2"
-                        label: qsTr("Audio device")
-                        ComboField {
-                            id: audioDeviceField
-                            Layout.fillWidth: true
-                            placeholderText: qsTr("None")
-                        }
+                        label: qsTr("Audio device name")
+                        EditCombo { id: audioDeviceField; suggestions: root.alsaDevices }
                     }
 
                     // JACK
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "jack"
                         label: qsTr("Selected ports")
-                        FigmaDialog.TextField {
-                            id: jackPortsField
-                            Layout.fillWidth: true
-                            text: ".*"
-                        }
+                        InputField { id: jackPortsField; implicitWidth: root.controlWidth; text: ".*" }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "jack"
                         label: qsTr("Channels")
-                        NumberField { id: jackChannelsField; text: "2"; placeholderText: "2" }
-                    }
-                    CheckRow {
-                        visible: root.captureMode === "jack"
-                        text: qsTr("Use VLC pace")
-                        checked: root.jackPace
-                        onToggled: root.jackPace = checked
-                    }
-                    CheckRow {
-                        visible: root.captureMode === "jack"
-                        text: qsTr("Auto connection")
-                        checked: root.jackConnect
-                        onToggled: root.jackConnect = checked
+                        NumberField { id: jackChannelsField; text: "2" }
                     }
 
                     // TV - analog
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "pvr"
                         label: qsTr("Device name")
-                        ComboField { id: pvrDeviceField; Layout.fillWidth: true }
+                        EditCombo { id: pvrDeviceField; suggestions: root.videoDevices }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "pvr"
-                        label: qsTr("Audio device")
-                        ComboField {
-                            id: pvrAudioField
-                            Layout.fillWidth: true
-                            placeholderText: qsTr("None")
+                        label: qsTr("Audio device name")
+                        EditCombo { id: pvrAudioField; suggestions: root.alsaDevices }
+                    }
+
+                    // TV - digital
+                    Row2 {
+                        visible: root.captureMode === "dtv"
+                        label: qsTr("Tuner card")
+                        T.Label {
+                            visible: !root._windows
+                            text: "/dev/dvb/adapter"
+                            color: root._mutedText
+                            font.pixelSize: VLCStyle.fontSize_large
+                        }
+                        NumberField { id: dvbCardField; text: "0" }
+                    }
+                    Row2 {
+                        visible: root.captureMode === "dtv"
+                        label: qsTr("Delivery system")
+                        Dropdown {
+                            model: root._dvbSystems
+                            value: root.dvbSystem
+                            onPicked: (v) => root.dvbSystem = v
                         }
                     }
-                    FormRow {
+
+                    // Desktop
+                    T.Label {
+                        visible: root.captureMode === "screen"
+                        Layout.fillWidth: true
+                        Layout.topMargin: VLCStyle.margin_xsmall
+                        Layout.bottomMargin: VLCStyle.margin_xsmall
+                        wrapMode: Text.WordWrap
+                        color: root._text
+                        font.pixelSize: VLCStyle.fontSize_large
+                        text: qsTr("Your display will be opened and played in order to stream or save it.")
+                    }
+
+                    SectionTitle { text: qsTr("Options") }
+
+                    Row2 {
+                        visible: root.captureMode === "dshow"
+                        label: qsTr("Video size")
+                        InputField {
+                            id: dshowSizeField
+                            implicitWidth: root.controlWidth
+                            placeholderText: "1280x720"
+                        }
+                    }
+                    Row2 {
+                        visible: (root.captureMode === "v4l2" || root.captureMode === "pvr")
+                        label: qsTr("Video standard")
+                        Dropdown {
+                            model: root.videoStandards
+                            value: root.videoStandard
+                            onPicked: (v) => root.videoStandard = v
+                        }
+                    }
+                    Row2 {
                         visible: root.captureMode === "pvr"
                         label: qsTr("Frequency")
                         NumberField { id: pvrFreqField; unit: qsTr("kHz") }
                     }
-
-                    // video standard: camera and analog TV
-                    FormRow {
-                        visible: (root.captureMode === "v4l2" || root.captureMode === "pvr")
-                                 && root.videoStandards.length > 0
-                        label: qsTr("Video standard")
-                        Dropdown {
-                            Layout.preferredWidth: VLCStyle.dp(260, VLCStyle.scale)
-                            model: root.videoStandards
-                            value: root.videoStandard
-                            onActivated: (v) => root.videoStandard = v
-                        }
+                    Row2 {
+                        visible: root.captureMode === "jack"
+                        label: qsTr("Use VLC pace")
+                        Toggle { id: jackPaceSwitch }
                     }
-
-                    // TV - digital
-                    FormRow {
-                        visible: root.captureMode === "dtv"
-                        label: qsTr("Tuner card")
-                        NumberField {
-                            id: dvbCardField
-                            text: "0"
-                            prefix: MainCtx.osName === MainCtx.Windows ? "" : "/dev/dvb/adapter"
-                        }
+                    Row2 {
+                        visible: root.captureMode === "jack"
+                        label: qsTr("Auto connection")
+                        Toggle { id: jackConnectSwitch }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "dtv"
-                        label: qsTr("Delivery system")
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: VLCStyle.dp(8, VLCStyle.scale)
-                            Repeater {
-                                model: root._dvbSystems
-                                delegate: Choice {
-                                    required property var modelData
-                                    text: modelData.text
-                                    checked: root.dvbSystem === modelData.id
-                                    onClicked: root.dvbSystem = modelData.id
-                                }
-                            }
-                        }
-                    }
-                    FormRow {
-                        visible: root.captureMode === "dtv"
-                        label: qsTr("Frequency")
+                        label: qsTr("Transponder/multiplex frequency")
                         NumberField { id: dvbFreqField; unit: qsTr("kHz") }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "dtv"
                                  && (root.dvbSystem === "dvb-c" || root.dvbSystem === "dvb-s" || root.dvbSystem === "dvb-s2")
-                        label: qsTr("Symbol rate")
+                        label: qsTr("Transponder symbol rate")
                         NumberField { id: dvbSrateField; unit: qsTr("bauds") }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "dtv"
                                  && (root.dvbSystem === "dvb-c" || root.dvbSystem === "cqam" || root.dvbSystem === "dvb-s2")
-                        label: qsTr("Modulation")
+                        label: qsTr("Modulation / Constellation")
                         Dropdown {
-                            Layout.preferredWidth: VLCStyle.dp(200, VLCStyle.scale)
                             model: root.dvbSystem === "dvb-s2" ? root._pskModes : root._qamModes
                             value: root.dvbSystem === "dvb-s2" ? root.dvbPsk : root.dvbQam
-                            onActivated: (v) => {
+                            onPicked: (v) => {
                                 if (root.dvbSystem === "dvb-s2")
                                     root.dvbPsk = v
                                 else
@@ -1035,206 +1081,173 @@ FigmaDialog {
                             }
                         }
                     }
-                    FormRow {
+                    Row2 {
                         visible: root.captureMode === "dtv"
                                  && (root.dvbSystem === "dvb-t" || root.dvbSystem === "dvb-t2")
-                                 && root.dvbBandwidths.length > 0
                         label: qsTr("Bandwidth")
                         Dropdown {
-                            Layout.preferredWidth: VLCStyle.dp(200, VLCStyle.scale)
                             model: root.dvbBandwidths
                             value: root.dvbBandwidth
-                            onActivated: (v) => root.dvbBandwidth = v
+                            onPicked: (v) => root.dvbBandwidth = v
                         }
                     }
-
-                    // Desktop
-                    Text {
+                    Row2 {
                         visible: root.captureMode === "screen"
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        color: root.dimColor
-                        font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                        text: qsTr("Your display will be opened and played in order to stream or save it.")
+                        label: qsTr("Desired frame rate for the capture.")
+                        NumberField { id: screenFpsField; unit: qsTr("f/s"); decimals: true }
                     }
-                    FormRow {
-                        visible: root.captureMode === "screen"
-                        label: qsTr("Frame rate")
-                        NumberField {
-                            id: screenFpsField
-                            unit: qsTr("f/s")
-                            decimals: true
+                    Row2 {
+                        visible: root._captureModules[root.captureMode] !== undefined
+                        label: root.advancedOptions.length > 0
+                               ? qsTr("Advanced options (%1 set)").arg(root.advancedOptions.length)
+                               : qsTr("Advanced options")
+                        SettingButton {
+                            text: qsTr("Open")
+                            onClicked: advancedPopup.openFor(root._captureModules[root.captureMode])
                         }
                     }
                 }
+            }
 
-                // More Options
-                ColumnLayout {
-                    visible: root.moreOptions
-                    Layout.fillWidth: true
-                    spacing: VLCStyle.dp(16, VLCStyle.scale)
+            // "Show more options"
+            ColumnLayout {
+                visible: root.moreOptions
+                Layout.fillWidth: true
+                Layout.topMargin: VLCStyle.margin_small
+                spacing: 0
 
-                    FigmaDialog.Divider { Layout.fillWidth: true }
+                SectionTitle { text: qsTr("More Options") }
 
-                    FigmaDialog.SectionHeader {
-                        title: qsTr("More Options")
+                Row2 {
+                    label: qsTr("Caching")
+                    NumberField { id: cachingField; unit: qsTr("ms") }
+                }
+
+                Row2 {
+                    label: qsTr("Start time / Stop time")
+                    InputField {
+                        id: startField
+                        implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
+                        horizontalAlignment: TextInput.AlignRight
+                        placeholderText: "00:00:00"
                     }
-
-                    FormRow {
-                        label: qsTr("Caching")
-                        NumberField { id: cachingField; unit: qsTr("ms") }
+                    T.Label {
+                        text: "–"
+                        color: root._mutedText
+                        font.pixelSize: VLCStyle.fontSize_large
                     }
-
-                    FormRow {
-                        label: qsTr("Start time")
-                        FigmaDialog.TextField {
-                            id: startField
-                            Layout.preferredWidth: VLCStyle.dp(140, VLCStyle.scale)
-                            placeholderText: "00:00:00"
-                        }
-                    }
-
-                    FormRow {
-                        label: qsTr("Stop time")
-                        FigmaDialog.TextField {
-                            id: stopField
-                            Layout.preferredWidth: VLCStyle.dp(140, VLCStyle.scale)
-                            placeholderText: "00:00:00"
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: VLCStyle.dp(10, VLCStyle.scale)
-
-                        CheckRow {
-                            id: slaveCheck
-                            Layout.preferredWidth: root.labelWidth
-                            text: qsTr("Extra media")
-                        }
-
-                        FigmaDialog.TextField {
-                            id: slaveField
-                            Layout.fillWidth: true
-                            enabled: slaveCheck.checked
-                            placeholderText: qsTr("Play another media synchronously (extra audio file, ...)")
-                        }
-
-                        FigmaDialog.Button {
-                            text: qsTr("Browse...")
-                            enabled: slaveCheck.checked
-                            onClicked: {
-                                const list = VLCConfig.browseFiles(qsTr("Select the file"))
-                                if (list.length > 0)
-                                    slaveField.text = list[0].toString()
-                            }
-                        }
-                    }
-
-                    FormRow {
-                        label: qsTr("Edit options")
-                        FigmaDialog.TextField {
-                            id: extraField
-                            Layout.fillWidth: true
-                            placeholderText: qsTr("e.g., :option=value :other-option")
-                        }
-                    }
-
-                    FormRow {
-                        label: qsTr("MRL")
-                        Text {
-                            Layout.fillWidth: true
-                            wrapMode: Text.WrapAnywhere
-                            maximumLineCount: 4
-                            elide: Text.ElideRight
-                            color: root.textColor
-                            font.pixelSize: VLCStyle.dp(13, VLCStyle.scale)
-                            text: root.result.mrls.concat(root.result.options).join(" ")
-                        }
+                    InputField {
+                        id: stopField
+                        implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
+                        horizontalAlignment: TextInput.AlignRight
+                        placeholderText: "00:00:00"
                     }
                 }
 
-                Item { Layout.preferredHeight: VLCStyle.dp(4, VLCStyle.scale) }
+                Row2 {
+                    label: qsTr("Play another media synchronously")
+                    Toggle { id: slaveSwitch }
+                }
+
+                Row2 {
+                    label: qsTr("Extra media")
+                    enabled: slaveSwitch.checked
+                    PathField {
+                        id: slaveField
+                        title: qsTr("Select the file")
+                        urls: true
+                    }
+                }
+
+                Row2 {
+                    label: qsTr("Edit options")
+                    InputField {
+                        id: extraField
+                        implicitWidth: root.controlWidth
+                        placeholderText: ":option=value"
+                    }
+                }
+
+                Row2 {
+                    label: qsTr("MRL")
+                    T.Label {
+                        Layout.preferredWidth: root.controlWidth
+                        horizontalAlignment: Text.AlignRight
+                        elide: Text.ElideMiddle
+                        color: root._mutedText
+                        font.pixelSize: VLCStyle.fontSize_normal
+                        text: root.result.mrls.concat(root.result.options).join(" ")
+
+                        ToolTipArea { text: parent.text }
+                    }
+                }
             }
         }
+    }
 
-        // ---- buttons ----------------------------------------------------------
+    // ---- buttons -------------------------------------------------------------------
+
+    Rectangle {
+        id: footer
+
+        anchors { left: sidebar.right; right: parent.right; bottom: parent.bottom }
+        height: VLCStyle.dp(60, VLCStyle.scale)
+        color: windowTheme.bg.secondary
 
         RowLayout {
-            Layout.fillWidth: true
-            Layout.topMargin: VLCStyle.dp(14, VLCStyle.scale)
-            spacing: VLCStyle.dp(10, VLCStyle.scale)
+            anchors.fill: parent
+            anchors.leftMargin: VLCStyle.margin_large
+            anchors.rightMargin: VLCStyle.margin_large
+            spacing: VLCStyle.margin_xsmall
 
-            FigmaDialog.Button {
-                text: root.cancelText
-                onClicked: root.reject()
+            Toggle {
+                checkable: false
+                checked: root.moreOptions
+                onClicked: root.moreOptions = !root.moreOptions
             }
 
-            // flat: text and chevron
-            T.Button {
-                id: moreButton
+            T.Label {
+                Layout.leftMargin: VLCStyle.margin_xsmall
+                text: qsTr("Show more options")
+                color: root._text
+                font.pixelSize: VLCStyle.fontSize_large
 
-                implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
-                leftPadding: VLCStyle.dp(10, VLCStyle.scale)
-                rightPadding: VLCStyle.dp(6, VLCStyle.scale)
-                onClicked: root.moreOptions = !root.moreOptions
-
-                background: Rectangle {
-                    radius: VLCStyle.dp(6, VLCStyle.scale)
-                    color: moreButton.hovered ? root.surfaceColor : "transparent"
-                }
-                contentItem: Row {
-                    spacing: VLCStyle.dp(4, VLCStyle.scale)
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: qsTr("More Options")
-                        color: root.textColor
-                        font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                    }
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        font.family: VLCIcons.fontFamily
-                        font.pixelSize: VLCStyle.icon_small
-                        text: root.moreOptions ? VLCIcons.chevron_up : VLCIcons.chevron_down
-                        color: root.textColor
-                    }
-                }
+                TapHandler { onTapped: root.moreOptions = !root.moreOptions }
             }
 
             Item { Layout.fillWidth: true }
 
-            FigmaDialog.Button {
+            SettingButton {
+                text: qsTr("Cancel")
+                onClicked: root.close()
+            }
+
+            SettingButton {
                 text: root.enqueueMode ? qsTr("Play") : qsTr("Enqueue")
                 enabled: root.canOpen
                 onClicked: root._open(root.enqueueMode)
             }
 
-            // main button and its menu (Stream, Convert)
+            // the main button, and Stream / Convert in its menu
             Row {
-                spacing: 1
+                spacing: VLCStyle.dp(2, VLCStyle.scale)
 
-                FigmaDialog.Button {
-                    primary: true
+                SettingButton {
+                    highlighted: true
                     text: root.enqueueMode ? qsTr("Enqueue") : qsTr("Play")
                     enabled: root.canOpen
                     onClicked: root._open(!root.enqueueMode)
                 }
 
-                FigmaDialog.Button {
+                SettingButton {
                     id: menuButton
 
-                    primary: true
-                    enabled: root.canOpen
+                    highlighted: true
                     implicitWidth: VLCStyle.dp(32, VLCStyle.scale)
-                    contentItem: Text {
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        font.family: VLCIcons.fontFamily
-                        font.pixelSize: VLCStyle.icon_small
-                        text: VLCIcons.chevron_down
-                        color: menuButton.enabled ? root.accentColor : root.placeholderColor
-                    }
-                    onClicked: actionMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)), [
+                    enabled: root.canOpen
+                    text: VLCIcons.chevron_down
+                    font.family: VLCIcons.fontFamily
+                    onClicked: actionMenu.popup(menuButton.mapToGlobal(0, menuButton.height + VLCStyle.dp(2, VLCStyle.scale)), [
                         { "text": qsTr("Stream...") },
                         { "text": qsTr("Convert / Save...") }
                     ])
@@ -1249,236 +1262,589 @@ FigmaDialog {
         }
     }
 
-    // ---- components -------------------------------------------------------------
+    // outline instead of the system frame
+    Rectangle {
+        anchors.fill: parent
+        z: 99
+        color: "transparent"
+        border.width: VLCStyle.border
+        border.color: titleTheme.border
+    }
 
-    // label on the left, controls on the right
-    component FormRow: RowLayout {
+    // ---- capture "Advanced options": the other options of the module ---------------
+
+    T.Popup {
+        id: advancedPopup
+
+        property string module: ""
+        property var rows: []
+        // name -> value, while the popup is open
+        property var values: ({})
+
+        function openFor(module) {
+            const names = []
+            const sections = VLCConfig.moduleSettings(module).sections ?? []
+            for (const section of sections)
+                for (const name of section.options)
+                    if (!name.startsWith("#") && !root._captureOptionsShown.includes(name))
+                        names.push(name)
+            // the values set before, else the preferences
+            const set = {}
+            for (const o of root.advancedOptions) {
+                const m = /^:(no-)?([^=]+)(?:=(.*))?$/.exec(o)
+                if (m)
+                    set[m[2]] = m[3] !== undefined ? m[3].replace(/\\:/g, ":") : !m[1]
+            }
+            const values = {}
+            const rows = []
+            for (const name of names) {
+                const type = VLCConfig.type(name)
+                if (type === "" || type === "key")
+                    continue
+                values[name] = set[name] !== undefined ? set[name] : VLCConfig.value(name)
+                rows.push({ "name": name, "type": type, "text": VLCConfig.text(name), "choices": VLCConfig.choices(name) })
+            }
+            advancedPopup.module = module
+            advancedPopup.values = values
+            advancedPopup.rows = rows
+            open()
+        }
+
+        // as the classic dialog: every option of the module
+        function apply() {
+            const options = []
+            for (const row of rows) {
+                const v = values[row.name]
+                if (v === undefined || String(v) === String(VLCConfig.value(row.name)))
+                    continue
+                if (row.type === "bool")
+                    options.push(v ? ":" + row.name : ":no-" + row.name)
+                else
+                    options.push(":" + row.name + "=" + root._escape(v))
+            }
+            root.advancedOptions = options
+            close()
+        }
+
+        parent: T.Overlay.overlay
+        modal: true
+        x: (root.width - width) / 2
+        y: titleBar.height + VLCStyle.margin_small
+        width: root.width - 2 * VLCStyle.dp(60, VLCStyle.scale)
+        height: Math.min(implicitHeight, root.height - titleBar.height - 2 * VLCStyle.margin_small)
+        implicitHeight: advancedColumn.implicitHeight + 2 * padding
+        padding: VLCStyle.margin_large
+
+        background: Rectangle {
+            color: theme.bg.primary
+            radius: root._radius
+            border.width: VLCStyle.border
+            border.color: windowTheme.border
+        }
+
+        T.Overlay.modal: Rectangle { color: Qt.alpha("black", 0.4) }
+
+        contentItem: ColumnLayout {
+            id: advancedColumn
+
+            spacing: 0
+
+            SectionTitle { text: qsTr("Advanced Options") }
+
+            // a module can have many options: only this list scrolls
+            Flickable {
+                id: advancedFlick
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: advancedRows.implicitHeight
+                clip: true
+                contentHeight: advancedRows.implicitHeight
+                boundsBehavior: Flickable.StopAtBounds
+                T.ScrollBar.vertical: Widgets.ScrollBarExt { }
+
+                ColumnLayout {
+                    id: advancedRows
+
+                    width: advancedFlick.width - VLCStyle.margin_small
+                    spacing: 0
+
+                    Repeater {
+                        model: advancedPopup.rows
+
+                        Row2 {
+                            id: optionRow
+
+                            required property var modelData
+
+                            label: modelData.text
+                            readonly property var value: advancedPopup.values[modelData.name]
+
+                            function set(v) {
+                                advancedPopup.values[modelData.name] = v
+                            }
+
+                            Loader {
+                                sourceComponent: optionRow.modelData.type === "bool" ? boolOption
+                                               : optionRow.modelData.choices.length > 0 ? choiceOption
+                                               : textOption
+                            }
+
+                            Component {
+                                id: boolOption
+                                Toggle {
+                                    checked: !!optionRow.value
+                                    onToggled: optionRow.set(checked)
+                                }
+                            }
+                            Component {
+                                id: choiceOption
+                                Dropdown {
+                                    model: optionRow.modelData.choices
+                                    value: optionRow.value
+                                    onPicked: (v) => optionRow.set(v)
+                                }
+                            }
+                            Component {
+                                id: textOption
+                                InputField {
+                                    implicitWidth: root.controlWidth
+                                    text: String(optionRow.value ?? "")
+                                    echoMode: optionRow.modelData.type === "password" ? TextInput.Password : TextInput.Normal
+                                    onTextEdited: optionRow.set(optionRow.modelData.type === "int" ? parseInt(text) || 0
+                                                              : optionRow.modelData.type === "float" ? parseFloat(text) || 0
+                                                              : text)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: VLCStyle.margin_normal
+                spacing: VLCStyle.margin_xsmall
+
+                Item { Layout.fillWidth: true }
+
+                SettingButton {
+                    text: qsTr("Cancel")
+                    onClicked: advancedPopup.close()
+                }
+                SettingButton {
+                    highlighted: true
+                    text: qsTr("OK")
+                    onClicked: advancedPopup.apply()
+                }
+            }
+        }
+    }
+
+    // ---- components (as SettingRow.qml) ---------------------------------------------
+
+    component Page: ColumnLayout {
+        spacing: 0
+    }
+
+    component SectionTitle: T.Label {
+        Layout.fillWidth: true
+        topPadding: VLCStyle.dp(10, VLCStyle.scale)
+        bottomPadding: VLCStyle.dp(10, VLCStyle.scale)
+        color: theme.fg.primary
+        opacity: 0.85
+        font.pixelSize: VLCStyle.fontSize_xlarge
+        font.weight: Font.DemiBold
+    }
+
+    // label on the left, controls on the right; greyed out when disabled
+    component Row2: RowLayout {
         property string label
 
         Layout.fillWidth: true
-        spacing: VLCStyle.dp(10, VLCStyle.scale)
+        Layout.minimumHeight: VLCStyle.dp(46, VLCStyle.scale)
+        spacing: VLCStyle.margin_xsmall
+        opacity: enabled ? 1.0 : 0.4
 
-        Text {
-            Layout.preferredWidth: root.labelWidth
+        T.Label {
+            Layout.fillWidth: true
+            Layout.rightMargin: VLCStyle.margin_small
             text: parent.label
-            color: root.dimColor
-            font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
+            color: root._text
+            font.pixelSize: VLCStyle.fontSize_large
             elide: Text.ElideRight
         }
     }
 
-    // selectable chip (disc type, capture mode): accent when selected
-    component Choice: T.Button {
-        id: choice
+    // text input: well with a 2px surface border, accent while editing
+    component InputField: T.TextField {
+        id: field
 
-        checkable: false
-        implicitHeight: VLCStyle.dp(34, VLCStyle.scale)
-        implicitWidth: Math.max(VLCStyle.dp(90, VLCStyle.scale), label.implicitWidth + VLCStyle.dp(28, VLCStyle.scale))
+        implicitHeight: VLCStyle.dp(36, VLCStyle.scale)
+        leftPadding: VLCStyle.dp(12, VLCStyle.scale)
+        rightPadding: VLCStyle.dp(12, VLCStyle.scale)
+        verticalAlignment: TextInput.AlignVCenter
+
+        color: root._text
+        selectionColor: root._selected
+        selectedTextColor: theme.fg.primary
+        placeholderTextColor: Qt.alpha(theme.fg.secondary, 0.4)
+        font.pixelSize: VLCStyle.fontSize_large
 
         background: Rectangle {
-            radius: VLCStyle.dp(6, VLCStyle.scale)
-            color: choice.checked ? root.accentSurface
-                 : choice.hovered ? (root.dark ? Qt.lighter(root.surfaceColor, 1.3) : Qt.darker(root.surfaceColor, 1.06))
-                 : root.surfaceColor
-            border.width: choice.visualFocus ? VLCStyle.focus_border : 0
-            border.color: root.accentColor
-        }
-        contentItem: Text {
-            id: label
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: choice.text
-            font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-            font.weight: choice.checked ? Font.DemiBold : Font.Normal
-            color: choice.checked ? root.accentColor : root.textColor
-        }
-    }
+            color: root._well
+            radius: root._radius
+            border.width: VLCStyle.dp(2, VLCStyle.scale)
+            border.color: field.activeFocus ? theme.accent : root._surface
 
-    component CheckBox: T.CheckBox {
-        id: check
-
-        implicitWidth: VLCStyle.dp(16, VLCStyle.scale)
-        implicitHeight: VLCStyle.dp(16, VLCStyle.scale)
-        indicator: Rectangle {
-            anchors.fill: parent
-            radius: VLCStyle.dp(3, VLCStyle.scale)
-            color: check.checked ? root.accentSurface : "transparent"
-            border.width: 1.5
-            border.color: check.checked ? root.accentColor : (check.enabled ? root.textColor : root.placeholderColor)
-
-            Text {
-                anchors.centerIn: parent
-                visible: check.checked
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: VLCStyle.dp(12, VLCStyle.scale)
-                text: VLCIcons.check
-                color: root.accentColor
+            // templates do not draw the placeholder
+            T.Label {
+                anchors.fill: parent
+                anchors.leftMargin: field.leftPadding
+                anchors.rightMargin: field.rightPadding
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: field.horizontalAlignment === TextInput.AlignRight ? Text.AlignRight : Text.AlignLeft
+                visible: field.text === "" && !field.preeditText
+                text: field.placeholderText
+                color: field.placeholderTextColor
+                font: field.font
+                elide: Text.ElideRight
             }
         }
     }
 
-    // check box and its text
-    component CheckRow: T.CheckBox {
-        id: checkRow
-
-        implicitHeight: VLCStyle.dp(24, VLCStyle.scale)
-        implicitWidth: box.width + spacing + rowText.implicitWidth
-        spacing: VLCStyle.dp(10, VLCStyle.scale)
-
-        indicator: Rectangle {
-            id: box
-            anchors.verticalCenter: parent.verticalCenter
-            width: VLCStyle.dp(16, VLCStyle.scale)
-            height: width
-            radius: VLCStyle.dp(3, VLCStyle.scale)
-            color: checkRow.checked ? root.accentSurface : "transparent"
-            border.width: 1.5
-            border.color: checkRow.checked ? root.accentColor : (checkRow.enabled ? root.textColor : root.placeholderColor)
-
-            Text {
-                anchors.centerIn: parent
-                visible: checkRow.checked
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: VLCStyle.dp(12, VLCStyle.scale)
-                text: VLCIcons.check
-                color: root.accentColor
-            }
-        }
-        contentItem: Text {
-            id: rowText
-            leftPadding: box.width + checkRow.spacing
-            verticalAlignment: Text.AlignVCenter
-            text: checkRow.text
-            color: checkRow.enabled ? root.textColor : root.placeholderColor
-            font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-            elide: Text.ElideRight
-        }
-    }
-
-    // whole numbers (or decimals), with an optional prefix and unit
+    // whole numbers (or decimals) with a unit
     component NumberField: RowLayout {
         id: numberField
 
         property alias text: numberInput.text
-        property alias placeholderText: numberInput.placeholderText
         property string unit: ""
-        property string prefix: ""
         property bool decimals: false
 
-        spacing: VLCStyle.dp(8, VLCStyle.scale)
+        spacing: VLCStyle.margin_xsmall
 
-        Text {
-            visible: parent.prefix !== ""
-            text: parent.prefix
-            color: root.dimColor
-            font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-        }
-
-        FigmaDialog.TextField {
+        InputField {
             id: numberInput
-            Layout.preferredWidth: VLCStyle.dp(140, VLCStyle.scale)
-            placeholderText: qsTr("Default")
+            Layout.preferredWidth: VLCStyle.dp(120, VLCStyle.scale)
+            horizontalAlignment: TextInput.AlignRight
             validator: RegularExpressionValidator {
-                regularExpression: numberField.decimals ? /[0-9]*[.,]?[0-9]*/ : /-?[0-9]*/
+                regularExpression: numberField.decimals ? /[0-9]*[.]?[0-9]*/ : /-?[0-9]*/
             }
         }
 
-        Text {
-            visible: parent.unit !== ""
-            text: parent.unit
-            color: root.dimColor
-            font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
+        T.Label {
+            visible: numberField.unit !== ""
+            Layout.preferredWidth: VLCStyle.dp(44, VLCStyle.scale)
+            text: numberField.unit
+            font.pixelSize: VLCStyle.fontSize_large
+            color: root._mutedText
         }
     }
 
-    // choice among { value, text } items
-    component Dropdown: T.Button {
-        id: dropdown
+    // a file path (or URL) with a Browse button
+    component PathField: RowLayout {
+        id: pathField
 
-        property var model: []
-        property var value
-        signal activated(var value)
+        property alias text: pathInput.text
+        property string title
+        // the URL of the file instead of its path
+        property bool urls: false
 
-        readonly property var _current: model.find((m) => String(m.value) === String(value))
+        spacing: VLCStyle.margin_xsmall
 
-        implicitWidth: VLCStyle.dp(200, VLCStyle.scale)
-        implicitHeight: VLCStyle.dp(35, VLCStyle.scale)
+        InputField {
+            id: pathInput
+            Layout.preferredWidth: root.controlWidth - VLCStyle.dp(100, VLCStyle.scale) - VLCStyle.margin_xsmall
+        }
+
+        SettingButton {
+            text: qsTr("Browse")
+            onClicked: {
+                const list = VLCConfig.browseFiles(pathField.title)
+                if (list.length > 0)
+                    pathInput.text = pathField.urls ? list[0].toString() : VLCOpenMedia.displayPath(list[0].toString())
+            }
+        }
+    }
+
+    // ON/OFF switch (Figma "Toggle": 68x32)
+    component Toggle: T.AbstractButton {
+        id: toggle
+
+        checkable: true
+        implicitWidth: VLCStyle.dp(68, VLCStyle.scale)
+        implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+
+        readonly property real _inset: VLCStyle.dp(3, VLCStyle.scale)
+        readonly property real _knob: height - 2 * _inset
 
         background: Rectangle {
-            radius: root.radius
-            color: dropdown.hovered ? Qt.lighter(root.wellColor, root.dark ? 1.6 : 0.98) : root.wellColor
-            border.width: dropdown.visualFocus ? 1 : 0
-            border.color: root.accentColor
-        }
-        contentItem: RowLayout {
-            spacing: VLCStyle.dp(6, VLCStyle.scale)
-            Text {
-                Layout.fillWidth: true
-                Layout.leftMargin: VLCStyle.dp(13, VLCStyle.scale)
-                text: dropdown._current ? dropdown._current.text : String(dropdown.value ?? "")
-                color: root.titleColor
-                font.pixelSize: VLCStyle.dp(14, VLCStyle.scale)
-                elide: Text.ElideRight
-            }
-            Text {
-                Layout.rightMargin: VLCStyle.dp(8, VLCStyle.scale)
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: VLCStyle.icon_small
-                text: VLCIcons.chevron_down
-                color: root.textColor
-            }
-        }
+            color: root._well
+            radius: root._radius
+            border.width: toggle.visualFocus ? VLCStyle.focus_border : 0
+            border.color: theme.visualFocus
 
-        onClicked: dropdownMenu.popup(mapToGlobal(0, height + VLCStyle.dp(4, VLCStyle.scale)),
-                                      model.map((m) => ({ "text": m.text || String(m.value), "checked": String(m.value) === String(value) })))
+            Rectangle {
+                x: toggle.checked ? toggle._inset : (toggle.width - width - toggle._inset)
+                anchors.verticalCenter: parent.verticalCenter
+                width: toggle.width - toggle._knob - 3 * toggle._inset
+                height: toggle._knob
+                radius: VLCStyle.dp(3, VLCStyle.scale)
+                color: toggle.checked ? root._selected : root._surface
 
-        StringListMenu {
-            id: dropdownMenu
-            ctx: MainCtx
-            onSelected: (index, _) => {
-                const item = dropdown.model[index]
-                if (item !== undefined)
-                    dropdown.activated(item.value)
+                T.Label {
+                    anchors.centerIn: parent
+                    text: toggle.checked ? qsTr("ON") : qsTr("OFF")
+                    font.pixelSize: VLCStyle.fontSize_normal
+                    color: toggle.checked ? theme.accent : root._mutedText
+                }
+            }
+
+            Rectangle {
+                x: toggle.checked ? (toggle.width - width - toggle._inset) : toggle._inset
+                anchors.verticalCenter: parent.verticalCenter
+                width: toggle._knob
+                height: toggle._knob
+                radius: VLCStyle.dp(3, VLCStyle.scale)
+                color: toggle.checked ? Qt.darker(theme.accent, 1.23) : theme.border
+
+                Behavior on x {
+                    NumberAnimation { duration: VLCStyle.duration_veryShort; easing.type: Easing.InOutSine }
+                }
             }
         }
     }
 
-    // text field with a list of suggestions (devices)
-    component ComboField: FigmaDialog.TextField {
+    // button of the settings window; highlighted = the main one
+    component SettingButton: T.Button {
+        id: button
+
+        implicitWidth: Math.max(VLCStyle.dp(100, VLCStyle.scale), contentItem.implicitWidth + VLCStyle.dp(28, VLCStyle.scale))
+        implicitHeight: VLCStyle.dp(34, VLCStyle.scale)
+        font.pixelSize: VLCStyle.fontSize_large
+        font.weight: Font.DemiBold
+
+        background: Rectangle {
+            radius: root._radius
+            readonly property color fill: button.highlighted ? root._selected : root._surface
+            color: button.hovered && button.enabled ? Qt.lighter(fill, 1.2) : fill
+            border.width: button.visualFocus ? VLCStyle.focus_border : 0
+            border.color: theme.visualFocus
+        }
+        contentItem: T.Label {
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            text: button.text
+            font: button.font
+            opacity: button.enabled ? 1.0 : 0.4
+            color: button.highlighted ? theme.accent : root._text
+        }
+    }
+
+    // drop-down list of { value, text } (Figma "Dropdown": 320x36)
+    component Dropdown: T.ComboBox {
         id: combo
+
+        property var value
+        signal picked(var value)
+
+        implicitWidth: root.controlWidth
+        implicitHeight: VLCStyle.dp(36, VLCStyle.scale)
+
+        textRole: "text"
+        valueRole: "value"
+        // the index of `value`, also when it changes from outside
+        function _sync() {
+            const m = model ?? []
+            let index = -1
+            for (let i = 0; i < m.length; ++i)
+                if (String(m[i].value) === String(value))
+                    index = i
+            currentIndex = index
+        }
+        onValueChanged: _sync()
+        onModelChanged: _sync()
+        Component.onCompleted: _sync()
+        onActivated: (index) => picked(valueAt(index))
+
+        background: Rectangle {
+            color: root._well
+            radius: root._radius
+            border.width: combo.visualFocus ? VLCStyle.focus_border : 0
+            border.color: theme.visualFocus
+
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: VLCStyle.dp(2, VLCStyle.scale)
+                radius: VLCStyle.dp(4, VLCStyle.scale)
+                color: combo.hovered ? Qt.lighter(root._surface, 1.2) : root._surface
+            }
+        }
+
+        contentItem: T.Label {
+            leftPadding: VLCStyle.dp(14, VLCStyle.scale)
+            rightPadding: VLCStyle.dp(14, VLCStyle.scale) + VLCStyle.icon_normal
+            verticalAlignment: Text.AlignVCenter
+            text: combo.currentIndex >= 0 ? combo.displayText : String(combo.value ?? "")
+            color: root._text
+            font.pixelSize: VLCStyle.fontSize_large
+            elide: Text.ElideRight
+        }
+
+        indicator: T.Label {
+            x: combo.width - width - VLCStyle.dp(10, VLCStyle.scale)
+            anchors.verticalCenter: combo.verticalCenter
+            text: VLCIcons.chevron_down
+            font.family: VLCIcons.fontFamily
+            font.pixelSize: VLCStyle.icon_normal
+            color: root._text
+        }
+
+        delegate: T.ItemDelegate {
+            required property var modelData
+            required property int index
+
+            width: combo.width - VLCStyle.dp(4, VLCStyle.scale)
+            implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+            highlighted: combo.highlightedIndex === index
+
+            contentItem: T.Label {
+                leftPadding: VLCStyle.dp(12, VLCStyle.scale)
+                verticalAlignment: Text.AlignVCenter
+                text: modelData.text || String(modelData.value)
+                color: (combo.currentIndex === index) ? theme.accent : root._text
+                font.pixelSize: VLCStyle.fontSize_large
+                elide: Text.ElideRight
+            }
+            background: Rectangle {
+                radius: VLCStyle.dp(4, VLCStyle.scale)
+                color: parent.highlighted ? root._surface : "transparent"
+            }
+        }
+
+        popup: T.Popup {
+            y: combo.height + VLCStyle.dp(2, VLCStyle.scale)
+            width: combo.width
+            implicitHeight: Math.min(contentItem.implicitHeight + 2 * padding, VLCStyle.dp(320, VLCStyle.scale))
+            padding: VLCStyle.dp(2, VLCStyle.scale)
+
+            contentItem: ListView {
+                clip: true
+                implicitHeight: contentHeight
+                model: combo.popup.visible ? combo.delegateModel : null
+                currentIndex: combo.highlightedIndex
+            }
+
+            background: Rectangle {
+                color: root._well
+                radius: root._radius
+                border.width: VLCStyle.border
+                border.color: windowTheme.border
+            }
+        }
+    }
+
+    // text field with a list of values to pick (devices, URL history)
+    component EditCombo: InputField {
+        id: editCombo
 
         property var suggestions: []
 
-        rightPadding: VLCStyle.dp(36, VLCStyle.scale)
+        implicitWidth: root.controlWidth
+        rightPadding: VLCStyle.dp(12, VLCStyle.scale) + (suggestions.length > 0 ? VLCStyle.icon_normal : 0)
 
-        T.Button {
-            id: comboButton
+        T.Label {
+            id: editIndicator
 
-            visible: combo.suggestions.length > 0
-            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
-            width: VLCStyle.dp(34, VLCStyle.scale)
-            focusPolicy: Qt.NoFocus
+            visible: editCombo.suggestions.length > 0
+            anchors { right: parent.right; rightMargin: VLCStyle.dp(10, VLCStyle.scale); verticalCenter: parent.verticalCenter }
+            text: VLCIcons.chevron_down
+            font.family: VLCIcons.fontFamily
+            font.pixelSize: VLCStyle.icon_normal
+            color: root._text
 
-            background: Rectangle {
-                radius: root.radius
-                color: comboButton.hovered ? root.surfaceColor : "transparent"
+            TapHandler {
+                onTapped: suggestionPopup.opened ? suggestionPopup.close() : suggestionPopup.open()
             }
-            contentItem: Text {
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                font.family: VLCIcons.fontFamily
-                font.pixelSize: VLCStyle.icon_small
-                text: VLCIcons.chevron_down
-                color: root.textColor
-            }
-            onClicked: comboMenu.popup(combo.mapToGlobal(0, combo.height + VLCStyle.dp(4, VLCStyle.scale)),
-                                       combo.suggestions.map((s) => ({ "text": s, "checked": s === combo.text })))
         }
 
-        StringListMenu {
-            id: comboMenu
-            ctx: MainCtx
-            onSelected: (index, _) => combo.text = combo.suggestions[index] ?? combo.text
+        T.Popup {
+            id: suggestionPopup
+
+            y: editCombo.height + VLCStyle.dp(2, VLCStyle.scale)
+            width: editCombo.width
+            implicitHeight: Math.min(suggestionList.contentHeight + 2 * padding, VLCStyle.dp(320, VLCStyle.scale))
+            padding: VLCStyle.dp(2, VLCStyle.scale)
+
+            contentItem: ListView {
+                id: suggestionList
+
+                clip: true
+                model: editCombo.suggestions
+                delegate: T.ItemDelegate {
+                    id: suggestion
+
+                    required property var modelData
+
+                    width: suggestionList.width
+                    implicitHeight: VLCStyle.dp(32, VLCStyle.scale)
+                    onClicked: {
+                        editCombo.text = modelData
+                        suggestionPopup.close()
+                    }
+
+                    contentItem: T.Label {
+                        leftPadding: VLCStyle.dp(12, VLCStyle.scale)
+                        verticalAlignment: Text.AlignVCenter
+                        text: suggestion.modelData
+                        color: suggestion.modelData === editCombo.text ? theme.accent : root._text
+                        font.pixelSize: VLCStyle.fontSize_large
+                        elide: Text.ElideMiddle
+                    }
+                    background: Rectangle {
+                        radius: VLCStyle.dp(4, VLCStyle.scale)
+                        color: suggestion.hovered ? root._surface : "transparent"
+                    }
+                }
+            }
+
+            background: Rectangle {
+                color: root._well
+                radius: root._radius
+                border.width: VLCStyle.border
+                border.color: windowTheme.border
+            }
+        }
+    }
+
+    // tool tip over its parent
+    component ToolTipArea: HoverHandler {
+        id: hover
+
+        property string text
+
+        property T.ToolTip tip: T.ToolTip {
+            parent: hover.parent
+            visible: hover.hovered && hover.text !== ""
+            delay: VLCStyle.delayToolTipAppear
+            text: hover.text
+            y: -height - VLCStyle.dp(6, VLCStyle.scale)
+            implicitWidth: contentItem.implicitWidth + leftPadding + rightPadding
+            implicitHeight: contentItem.implicitHeight + topPadding + bottomPadding
+            width: Math.min(implicitWidth, VLCStyle.dp(420, VLCStyle.scale))
+            padding: VLCStyle.margin_small
+            contentItem: T.Label {
+                text: hover.text
+                color: theme.fg.primary
+                wrapMode: Text.WrapAnywhere
+                font.pixelSize: VLCStyle.fontSize_normal
+            }
+            background: Rectangle {
+                color: windowTheme.bg.primary
+                radius: root._radius
+                border.width: VLCStyle.dp(2, VLCStyle.scale)
+                border.color: root._well
+            }
         }
     }
 }

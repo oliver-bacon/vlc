@@ -51,7 +51,7 @@ Widgets.PageExt {
 
     function _activate(modelData) {
         if (!modelData.uri)
-            DialogsProvider.openNetDialog()
+            DialogsProvider.addNetworkStreamDialog()
         else if (modelData.source)
             History.push(modelData.uri, { "source_name": modelData.source })
         else

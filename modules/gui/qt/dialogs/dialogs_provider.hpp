@@ -269,6 +269,9 @@ public slots:
     void openFileDialog();
     void openUrlDialog();
     void openNetDialog();
+    /// "Add Network Stream" of the library: the redesign's network dialog
+    /// (URLs, saved as a playlist)
+    void addNetworkStreamDialog();
     void openCaptureDialog();
 
     void PLOpenDir();
