@@ -19,7 +19,9 @@
 #ifndef VIDEOFOLDERFILTER_HPP
 #define VIDEOFOLDERFILTER_HPP
 
+#include <QSet>
 #include <QSortFilterProxyModel>
+#include <QStringList>
 
 // Keeps the folders and the video files of a NetworkMediaModel, for the
 // "Videos" folder view of the VLC Redesign (VideoFoldersDisplay.qml).
@@ -42,6 +44,33 @@ signals:
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+};
+
+// Leaves the music folders (VLCConfig.musicFolders) out of the library
+// folders (MLFolderModel), for "Videos": folders added from Music stay in Music.
+class VideoLibraryFolderFilter : public QSortFilterProxyModel
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QStringList hiddenUrls READ hiddenUrls WRITE setHiddenUrls NOTIFY hiddenUrlsChanged FINAL)
+    Q_PROPERTY(int count READ rowCount NOTIFY countChanged FINAL)
+
+public:
+    explicit VideoLibraryFolderFilter(QObject *parent = nullptr);
+
+    QStringList hiddenUrls() const { return m_hiddenUrls; }
+    void setHiddenUrls(const QStringList &urls);
+
+signals:
+    void hiddenUrlsChanged();
+    void countChanged();
+
+protected:
+    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const override;
+
+private:
+    QStringList m_hiddenUrls;
+    QSet<QString> m_hiddenKeys;
 };
 
 #endif // VIDEOFOLDERFILTER_HPP

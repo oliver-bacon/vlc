@@ -1105,3 +1105,24 @@ void ConfigBridge::setUiValue(const QString& key, const QVariant& value)
     settings->setValue(key, value);
     emit uiValueChanged(key);
 }
+
+QStringList ConfigBridge::musicFolders() const
+{
+    return uiValue(QStringLiteral("Library/MusicFolders")).toStringList();
+}
+
+void ConfigBridge::setMusicFolder(const QString& url, bool music)
+{
+    const QString key = QUrl(url).adjusted(QUrl::StripTrailingSlash | QUrl::NormalizePathSegments)
+                            .toString(QUrl::FullyEncoded);
+    if (key.isEmpty())
+        return;
+    QStringList list = musicFolders();
+    if (music == list.contains(key))
+        return;
+    if (music)
+        list.append(key);
+    else
+        list.removeAll(key);
+    setUiValue(QStringLiteral("Library/MusicFolders"), list);
+}

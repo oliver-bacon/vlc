@@ -110,21 +110,30 @@ Widgets.PageExt {
 
     function _addFolder() {
         const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
-        if (folder !== "")
+        if (folder !== "") {
+            VLCConfig.setMusicFolder(folder, false)
             MainCtx.mediaLibrary.addFolder(folder)
+        }
     }
 
+    // all folders of the library
     MLFolderModel {
-        id: libraryFolders
+        id: allFolders
         ctx: MainCtx
+    }
 
-        // the model has no count property
-        property int count: 0
-        function _updateCount() { count = rowCount() }
-        onRowsInserted: _updateCount()
-        onRowsRemoved: _updateCount()
-        onModelReset: _updateCount()
-        Component.onCompleted: _updateCount()
+    // without the folders added from Music
+    VideoLibraryFolderFilter {
+        id: libraryFolders
+        sourceModel: allFolders
+        hiddenUrls: VLCConfig.musicFolders()
+
+        function _reloadHidden(key) {
+            if (key === "" || key === "Library/MusicFolders")
+                hiddenUrls = VLCConfig.musicFolders()
+        }
+        Component.onCompleted: VLCConfig.uiValueChanged.connect(_reloadHidden)
+        Component.onDestruction: VLCConfig.uiValueChanged.disconnect(_reloadHidden)
     }
 
     // raised to read the shown folder again (a file was deleted)
@@ -179,7 +188,7 @@ Widgets.PageExt {
         dataAt: root._entryData
         playAt: (i) => folderModel.addAndPlay(videoFilter.sourceRow(i))
         enqueueAt: (i) => folderModel.addToPlaylist(videoFilter.sourceRow(i))
-        libraryFolders: libraryFolders
+        libraryFolders: allFolders
         deletedAt: (i) => root._reloadCount++
     }
 

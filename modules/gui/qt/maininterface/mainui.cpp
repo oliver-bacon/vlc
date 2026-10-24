@@ -390,6 +390,7 @@ void MainUI::registerQMLTypes()
         // @uri VLC.Network
         qmlRegisterType<NetworkMediaModel>( uri, versionMajor, versionMinor, "NetworkMediaModel");
         qmlRegisterType<VideoFolderFilter>( uri, versionMajor, versionMinor, "VideoFolderFilter");
+        qmlRegisterType<VideoLibraryFolderFilter>( uri, versionMajor, versionMinor, "VideoLibraryFolderFilter");
         qmlRegisterType<NetworkDeviceModel>( uri, versionMajor, versionMinor, "NetworkDeviceModel");
         qmlRegisterType<NetworkSourcesModel>( uri, versionMajor, versionMinor, "NetworkSourcesModel");
         qmlRegisterType<AddonsModel>( uri, versionMajor, versionMinor, "ServicesDiscoveryModel");
@@ -504,6 +505,7 @@ void MainUI::registerQMLTypes()
         qmlRegisterType<NetworkDeviceModel>( uri, versionMajor, versionMinor, "NetworkDeviceModel");
         qmlRegisterType<NetworkSourcesModel>( uri, versionMajor, versionMinor, "NetworkSourcesModel");
         qmlRegisterType<VideoFolderFilter>( uri, versionMajor, versionMinor, "VideoFolderFilter");
+        qmlRegisterType<VideoLibraryFolderFilter>( uri, versionMajor, versionMinor, "VideoLibraryFolderFilter");
         qmlRegisterType<AddonsModel>( uri, versionMajor, versionMinor, "ServicesDiscoveryModel");
         qmlRegisterType<MLFoldersModel>( uri, versionMajor, versionMinor, "MLFolderModel");
         qmlRegisterType<MLRecentMediaModel>( uri, versionMajor, versionMinor, "MLRecentMediaModel" );

@@ -117,8 +117,11 @@ Widgets.PageExt {
                             History.push(modelData.uri)
                         } else {
                             const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
-                            if (folder !== "")
+                            if (folder !== "") {
+                                // music folders stay out of Videos
+                                VLCConfig.setMusicFolder(folder, true)
                                 MainCtx.mediaLibrary.addFolder(folder)
+                            }
                         }
                     }
                 }

@@ -140,8 +140,11 @@ FocusScope {
 
     function _addFolder() {
         const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
-        if (folder !== "")
+        if (folder !== "") {
+            // folders added from Music stay out of Videos
+            VLCConfig.setMusicFolder(folder, _kind === "musicRoot")
             MainCtx.mediaLibrary.addFolder(folder)
+        }
     }
 
     // ---- pinned items, shared with the library side navigation
@@ -202,7 +205,7 @@ FocusScope {
     // Videos starts on the folders added to the library, or directly on the
     // content of the only one (like the Videos page of the library)
     function _videoRootLevel() {
-        const folders = _ml ? _ml.libraryFolders : null
+        const folders = _ml ? _ml.videoLibraryFolders : null
         const count = folders ? folders.rowCount() : 0
         if (count === 1) {
             const url = String(folders.data(folders.index(0, 0), Qt.UserRole + 3))
@@ -212,7 +215,7 @@ FocusScope {
     }
 
     function _libraryFolderRows() {
-        const folders = _ml ? _ml.libraryFolders : null
+        const folders = _ml ? _ml.videoLibraryFolders : null
         const rows = []
         for (let i = 0; folders && i < folders.rowCount(); ++i) {
             const url = String(folders.data(folders.index(i, 0), Qt.UserRole + 3))

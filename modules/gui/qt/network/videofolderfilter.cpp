@@ -87,3 +87,43 @@ bool VideoFolderFilter::filterAcceptsRow(int row, const QModelIndex &parent) con
     const qsizetype dot = path.lastIndexOf(QLatin1Char('.'));
     return dot >= 0 && videoExtensions().contains(path.mid(dot + 1).toLower());
 }
+
+VideoLibraryFolderFilter::VideoLibraryFolderFilter(QObject *parent)
+    : QSortFilterProxyModel(parent)
+{
+    connect(this, &QAbstractItemModel::rowsInserted, this, &VideoLibraryFolderFilter::countChanged);
+    connect(this, &QAbstractItemModel::rowsRemoved, this, &VideoLibraryFolderFilter::countChanged);
+    connect(this, &QAbstractItemModel::modelReset, this, &VideoLibraryFolderFilter::countChanged);
+    connect(this, &QAbstractItemModel::layoutChanged, this, &VideoLibraryFolderFilter::countChanged);
+}
+
+namespace {
+
+QString folderKey(const QUrl &url)
+{
+    return url.adjusted(QUrl::StripTrailingSlash | QUrl::NormalizePathSegments)
+              .toString(QUrl::FullyEncoded);
+}
+
+} // namespace
+
+void VideoLibraryFolderFilter::setHiddenUrls(const QStringList &urls)
+{
+    if (m_hiddenUrls == urls)
+        return;
+    m_hiddenUrls = urls;
+    m_hiddenKeys.clear();
+    for (const QString &url : urls)
+        m_hiddenKeys.insert(folderKey(QUrl(url)));
+    invalidateFilter();
+    emit hiddenUrlsChanged();
+}
+
+bool VideoLibraryFolderFilter::filterAcceptsRow(int row, const QModelIndex &parent) const
+{
+    const QAbstractItemModel *model = sourceModel();
+    if (!model)
+        return false;
+    const QModelIndex idx = model->index(row, 0, parent);
+    return !m_hiddenKeys.contains(folderKey(model->data(idx, roleId(model, "url")).toUrl()));
+}

@@ -152,6 +152,12 @@ public:
     Q_INVOKABLE QVariant uiValue(const QString& key, const QVariant& defaultValue = {}) const;
     Q_INVOKABLE void setUiValue(const QString& key, const QVariant& value);
 
+    /// Library folders added from Music (interface setting
+    /// "Library/MusicFolders"): "Videos" leaves them out. Adding a folder
+    /// from Videos takes it off the list again (music = false).
+    Q_INVOKABLE QStringList musicFolders() const;
+    Q_INVOKABLE void setMusicFolder(const QString& url, bool music);
+
 signals:
     /// `name` / `key` is empty when a settings profile changed all of them
     void valueChanged(const QString& name);

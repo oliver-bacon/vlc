@@ -36,6 +36,19 @@ Item {
     readonly property MLVideoFoldersModel videoFolders: MLVideoFoldersModel { ml: MediaLib }
     // folders added to the library (Videos starts there)
     readonly property MLFolderModel libraryFolders: MLFolderModel { ctx: MainCtx }
+    // the ones Videos starts on: without the folders added from Music
+    readonly property VideoLibraryFolderFilter videoLibraryFolders: VideoLibraryFolderFilter {
+        id: videoLibraryFolders
+        sourceModel: root.libraryFolders
+        hiddenUrls: VLCConfig.musicFolders()
+
+        function _reloadHidden(key) {
+            if (key === "" || key === "Library/MusicFolders")
+                hiddenUrls = VLCConfig.musicFolders()
+        }
+        Component.onCompleted: VLCConfig.uiValueChanged.connect(_reloadHidden)
+        Component.onDestruction: VLCConfig.uiValueChanged.disconnect(_reloadHidden)
+    }
     readonly property MLAudioModel tracks: MLAudioModel { ml: MediaLib }
     // tracks of an album, artist or genre (parentId set by the panel)
     readonly property MLAudioModel tracksOf: MLAudioModel { ml: MediaLib }
