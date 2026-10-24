@@ -529,6 +529,13 @@ static int UpdateFormat(vout_display_t *vd, const video_format_t *fmtp, vlc_vide
 {
     vout_display_sys_t *sys = static_cast<vout_display_sys_t *>(vd->sys);
 
+    /* hardware pictures can't be rendered without their video context */
+    if (is_d3d11_opaque(fmtp->i_chroma) && GetD3D11ContextPrivate(vctx) == NULL)
+    {
+        msg_Err(vd, "no D3D11 video context for %4.4s", (const char *)&fmtp->i_chroma);
+        return VLC_EGENERIC;
+    }
+
     video_format_t fmt;
     video_format_Copy(&fmt, fmtp);
     video_format_Copy(&sys->picQuad.quad_fmt, &fmt);
