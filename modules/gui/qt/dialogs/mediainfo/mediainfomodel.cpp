@@ -27,7 +27,6 @@
 #include <vlc_url.h>
 #include <vlc_meta.h>
 #include <vlc_input_item.h>
-#include <vlc_list.hpp>
 
 #include "maininterface/mainctx.hpp"
 #include "player/player_controller.hpp"
@@ -254,17 +253,21 @@ void MediaInfoModel::updateCodecInfo()
     if (item)
     {
         vlc_mutex_locker lock(&item->lock);
-        for (auto& cat : vlc::from(item->categories, &info_category_t::node))
+        // (vlc_list.hpp can only be included once in the plugin: its
+        // operators are not inline, info_panels.cpp has it)
+        info_category_t* cat;
+        vlc_list_foreach(cat, &item->categories, node)
         {
-            if (info_category_IsHidden(&cat))
+            if (info_category_IsHidden(cat))
                 continue;
 
             QVariantList infos;
-            for (auto& info : vlc::from(cat.infos, &info_t::node))
-                infos.append(nameValue(qfu(info.psz_name), qfu(info.psz_value)));
+            info_t* info;
+            vlc_list_foreach(info, &cat->infos, node)
+                infos.append(nameValue(qfu(info->psz_name), qfu(info->psz_value)));
 
             categories.append(QVariantMap {
-                { QStringLiteral("name"), qfu(cat.psz_name) },
+                { QStringLiteral("name"), qfu(cat->psz_name) },
                 { QStringLiteral("infos"), infos },
             });
         }
