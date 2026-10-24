@@ -180,10 +180,18 @@ void RenderTask::onRegisterVideoWindow(unsigned int surface)
 
 void RenderTask::onVideoPositionChanged(const QRect& position)
 {
-    if (m_videoPosition == position)
-        return;
-    m_videoPosition = position;
-    emit requestRefreshInternal(m_refreshRequestId, QPrivateSignal());
+    // The video geometry is reported while the interface frame that places
+    // the video there is still being drawn. Applying it right away would
+    // draw the video at its new place under the previous interface frame,
+    // so a moving video (e.g. dragging the PiP player) would slip out of its
+    // frame for a moment. It is applied with that interface frame instead.
+    m_pendingVideoPosition = position;
+}
+
+void RenderTask::onInterfaceUpdated()
+{
+    m_videoPosition = m_pendingVideoPosition;
+    requestRefresh();
 }
 
 void RenderTask::onInterfaceSizeChanged(const QSize& size)
@@ -428,7 +436,7 @@ bool CompositorX11RenderWindow::startRendering()
     m_renderTask->moveToThread(m_renderThread);
     connect(m_renderThread, &QThread::finished, m_renderTask, &QObject::deleteLater);
 
-    connect(m_interfaceWindow, &CompositorX11UISurface::updated, m_renderTask, &RenderTask::requestRefresh);
+    connect(m_interfaceWindow, &CompositorX11UISurface::updated, m_renderTask, &RenderTask::onInterfaceUpdated);
     connect(m_interfaceWindow, &CompositorX11UISurface::sizeChanged, m_renderTask, &RenderTask::onInterfaceSizeChanged);
 
     connect(this, &CompositorX11RenderWindow::windowSizeChanged, m_renderTask, &RenderTask::onWindowSizeChanged);

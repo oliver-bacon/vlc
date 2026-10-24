@@ -78,6 +78,7 @@ public slots:
     void onRegisterVideoWindow(unsigned int surface);
 
     void onVideoPositionChanged(const QRect& position);
+    void onInterfaceUpdated();
     void onInterfaceSizeChanged(const QSize& size);
 
     void onVisibilityChanged(bool visible);
@@ -103,6 +104,7 @@ private:
     xcb_drawable_t m_wid = 0;
     unsigned int m_refreshRequestId = 0;
     QRect m_videoPosition;
+    QRect m_pendingVideoPosition;
     QSize m_interfaceSize;
 
     CompositorX11RenderClient* m_videoClient = nullptr;
