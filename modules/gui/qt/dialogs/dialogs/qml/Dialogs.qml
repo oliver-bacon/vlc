@@ -680,20 +680,11 @@ Item {
                 settingsWindowLoader.active = true
                 settingsWindowLoader.item.openPage(page)
             }
-        }
-    }
 
-    Loader {
-        id: allSettingsWindowLoader
-        active: false
-        source: "qrc:///qt/qml/VLC/Dialogs/AllSettingsWindow.qml"
-
-        Connections {
-            target: DialogsProvider
-
+            // "All Settings" is a view of the settings window
             function onShowAllSettingsWindow() {
-                allSettingsWindowLoader.active = true
-                allSettingsWindowLoader.item.open()
+                settingsWindowLoader.active = true
+                settingsWindowLoader.item.openAllSettings()
             }
         }
     }

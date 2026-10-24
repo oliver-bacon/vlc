@@ -28,8 +28,8 @@ import VLC.Widgets as Widgets
 // Settings window from the "VLC Redesign" Figma file: categories on the
 // left (App / Media / System), a search field, and the options of the
 // selected category on the right. Every change is saved immediately.
-// Options without a place here stay reachable through "All Settings…"
-// (AllSettingsWindow.qml).
+// The header's toggle switches the window to "All Settings", every VLC
+// option (AllSettingsView.qml), and back.
 Window {
     id: root
 
@@ -37,7 +37,7 @@ Window {
     // VLC draws the title bar like the player's top bar (TitleBar below)
     flags: Qt.Window | Qt.FramelessWindowHint
 
-    title: qsTr("Settings")
+    title: allSettings ? qsTr("All Settings") : qsTr("Settings")
 
     width: VLCStyle.dp(1048, VLCStyle.scale)
     height: VLCStyle.dp(865, VLCStyle.scale)
@@ -47,6 +47,8 @@ Window {
     color: theme.bg.primary
 
     property string currentPage: "general"
+    // showing "All Settings" instead of these settings
+    property bool allSettings: false
     // rows marked `aout` show only for these audio outputs
     property string currentAout: String(VLCConfig.value("aout") ?? "")
     readonly property string searchText: searchField.text.trim().toLowerCase()
@@ -66,11 +68,14 @@ Window {
     function openPage(page) {
         searchField.text = ""
         currentPage = page
+        allSettings = false
         open()
     }
 
-    function openAdvancedSettings() {
-        DialogsProvider.allSettingsDialog()
+    // DialogsProvider.allSettingsDialog()
+    function openAllSettings() {
+        allSettings = true
+        open()
     }
 
     function openShortcuts() {
@@ -174,11 +179,13 @@ Window {
     }
 
     Shortcut {
+        enabled: !root.allSettings
         sequence: StandardKey.Find
         onActivated: searchField.forceActiveFocus()
     }
 
     Shortcut {
+        enabled: !root.allSettings
         sequence: StandardKey.Cancel
         onActivated: {
             if (searchField.text !== "")
@@ -278,6 +285,7 @@ Window {
         id: content
 
         anchors { top: titleBar.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        visible: !root.allSettings
 
         readonly property ColorContext colorContext: ColorContext {
             id: theme
@@ -309,7 +317,7 @@ Window {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: VLCStyle.margin_xsmall
-                anchors.rightMargin: VLCStyle.dp(14, VLCStyle.scale)
+                anchors.rightMargin: VLCStyle.dp(14, VLCStyle.scale) + modeButton.width
                 spacing: 0
 
                 T.TextField {
@@ -367,51 +375,6 @@ Window {
                     color: theme.fg.secondary
                     font.pixelSize: VLCStyle.fontSize_xlarge
                     elide: Text.ElideRight
-                }
-
-                // every VLC option (AllSettingsWindow.qml); flat icon and
-                // text, as the player panel's "Open Advanced Settings"
-                T.AbstractButton {
-                    id: allSettingsButton
-
-                    Layout.preferredHeight: VLCStyle.dp(34, VLCStyle.scale)
-                    implicitWidth: allSettingsRow.implicitWidth + 2 * VLCStyle.margin_xsmall
-
-                    onClicked: root.openAdvancedSettings()
-
-                    Accessible.role: Accessible.Button
-                    Accessible.name: qsTr("All Settings")
-
-                    background: Rectangle {
-                        radius: VLCStyle.dp(6, VLCStyle.scale)
-                        color: allSettingsButton.hovered ? windowTheme.bg.primary : "transparent"
-                        border.width: allSettingsButton.visualFocus ? VLCStyle.focus_border : 0
-                        border.color: theme.visualFocus
-                    }
-
-                    contentItem: Item {
-                        Row {
-                            id: allSettingsRow
-
-                            anchors.centerIn: parent
-                            spacing: VLCStyle.margin_xsmall
-
-                            T.Label {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: VLCIcons.settings
-                                font.family: VLCIcons.fontFamily
-                                font.pixelSize: VLCStyle.icon_normal
-                                color: allSettingsButton.hovered ? theme.fg.primary : theme.fg.secondary
-                            }
-
-                            T.Label {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: qsTr("All Settings")
-                                font.pixelSize: VLCStyle.fontSize_large
-                                color: allSettingsButton.hovered ? theme.fg.primary : theme.fg.secondary
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -617,6 +580,77 @@ Window {
                     text: qsTr("No settings match \"%1\".").arg(searchField.text.trim())
                     color: theme.fg.secondary
                     font.pixelSize: VLCStyle.fontSize_large
+                }
+            }
+        }
+    }
+
+    // every VLC option; created the first time it is shown, then kept
+    Loader {
+        id: allSettingsLoader
+
+        anchors { top: titleBar.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        active: false
+        visible: root.allSettings
+        source: "qrc:///qt/qml/VLC/Dialogs/AllSettingsView.qml"
+
+        onLoaded: item.headerRightInset = Qt.binding(() => modeButton.width)
+
+        Connections {
+            target: allSettingsLoader.item
+            function onCloseRequested() { root.close() }
+        }
+    }
+
+    onAllSettingsChanged: if (allSettings) allSettingsLoader.active = true
+
+    // "All Settings" / "Simple Settings" at the right of the header; flat
+    // icon and text, as the player panel's "Open Advanced Settings"
+    T.AbstractButton {
+        id: modeButton
+
+        readonly property string label: root.allSettings ? qsTr("Simple Settings") : qsTr("All Settings")
+
+        z: 1
+        anchors.right: parent.right
+        anchors.rightMargin: VLCStyle.dp(14, VLCStyle.scale)
+        // centred in the 50 dp header under the title bar
+        y: titleBar.height + (VLCStyle.dp(50, VLCStyle.scale) - height) / 2
+        height: VLCStyle.dp(34, VLCStyle.scale)
+        width: modeRow.implicitWidth + 2 * VLCStyle.margin_xsmall
+
+        onClicked: root.allSettings = !root.allSettings
+
+        Accessible.role: Accessible.Button
+        Accessible.name: label
+
+        background: Rectangle {
+            radius: VLCStyle.dp(6, VLCStyle.scale)
+            color: modeButton.hovered ? windowTheme.bg.primary : "transparent"
+            border.width: modeButton.visualFocus ? VLCStyle.focus_border : 0
+            border.color: theme.visualFocus
+        }
+
+        contentItem: Item {
+            Row {
+                id: modeRow
+
+                anchors.centerIn: parent
+                spacing: VLCStyle.margin_xsmall
+
+                T.Label {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: VLCIcons.settings
+                    font.family: VLCIcons.fontFamily
+                    font.pixelSize: VLCStyle.icon_normal
+                    color: modeButton.hovered ? theme.fg.primary : theme.fg.secondary
+                }
+
+                T.Label {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: modeButton.label
+                    font.pixelSize: VLCStyle.fontSize_large
+                    color: modeButton.hovered ? theme.fg.primary : theme.fg.secondary
                 }
             }
         }

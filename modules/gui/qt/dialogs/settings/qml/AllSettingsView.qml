@@ -16,7 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA 02110-1301, USA.
  *****************************************************************************/
 import QtQuick
-import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Templates as T
 
@@ -25,25 +24,20 @@ import VLC.Style
 import VLC.Dialogs
 import VLC.Widgets as Widgets
 
-// "All Settings": every VLC option, in the style of the settings window.
-// The sidebar holds VLC's categories (opened with the arrow) and their
-// pages, as the classic preferences tree, but without the modules: a page
-// lists its modules in a "Choose a module" drop-down, and shows the settings
-// of the chosen one. Every change is saved immediately.
-Window {
+// "All Settings": every VLC option, in the style of the settings window,
+// shown inside it (SettingsWindow.qml toggles between the two). The sidebar
+// holds VLC's categories (opened with the arrow) and their pages, as the
+// classic preferences tree, but without the modules: a page lists its
+// modules in a "Choose a module" drop-down, and shows the settings of the
+// chosen one. Every change is saved immediately.
+Item {
     id: root
 
-    transientParent: MainCtx.intfMainWindow
-    flags: Qt.Window | Qt.FramelessWindowHint
+    // room kept free at the right of the header (the window's toggle button)
+    property real headerRightInset: 0
 
-    title: qsTr("All Settings")
-
-    width: VLCStyle.dp(1048, VLCStyle.scale)
-    height: VLCStyle.dp(865, VLCStyle.scale)
-    minimumWidth: VLCStyle.dp(760, VLCStyle.scale)
-    minimumHeight: VLCStyle.dp(480, VLCStyle.scale)
-
-    color: theme.bg.primary
+    // Escape with an empty search field
+    signal closeRequested()
 
     readonly property var tree: VLCConfig.settingsTree()
     property int currentSubcat: tree.length > 0 ? tree[0].subcat : -1
@@ -67,15 +61,6 @@ Window {
         advanced: VLCIcons.settings
     })
 
-    function open() {
-        if (visibility === Window.Minimized)
-            showNormal()
-        else
-            show()
-        raise()
-        requestActivate()
-    }
-
     function showPage(subcat) {
         searchField.text = ""
         currentSubcat = subcat
@@ -92,13 +77,9 @@ Window {
     }
 
     onCurrentSubcatChanged: contentFlickable.contentY = 0
+    onSearchTextChanged: searchTimer.restart()
 
     Component.onCompleted: {
-        if (MainCtx.createWindowWithoutRedirectionSurface) { // Win32
-            const ret = MainCtx.createWindowWithoutRedirectionSurface(this)
-            if (!ret)
-                console.debug("MainCtx::createWindowWithoutRedirectionSurface(): returned false for window", this)
-        }
         if (tree.length > 0)
             setExpanded(tree[0].cat, true)
     }
@@ -114,110 +95,26 @@ Window {
     }
 
     Shortcut {
+        enabled: root.visible
         sequence: StandardKey.Find
         onActivated: searchField.forceActiveFocus()
     }
 
     Shortcut {
+        enabled: root.visible
         sequence: StandardKey.Cancel
         onActivated: {
             if (searchField.text !== "")
                 searchField.text = ""
             else
-                root.close()
-        }
-    }
-
-    // Title bar in the style of the player's top bar: cone, title in the
-    // middle, minimize / maximize / close (WindowButtons.qml)
-    Rectangle {
-        id: titleBar
-
-        readonly property ColorContext colorContext: ColorContext {
-            id: titleTheme
-            palette: VLCStyle.palette
-            colorSet: ColorContext.Window
-        }
-
-        readonly property bool useWinIcons: ((MainCtx.osName === MainCtx.Windows) && (MainCtx.osVersion >= 10))
-        readonly property bool maximized: root.visibility === Window.Maximized
-
-        anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: VLCStyle.globalToolbar_height
-        color: titleTheme.bg.primary
-
-        // drag to move, double-click to maximize
-        TapHandler {
-            gesturePolicy: TapHandler.DragThreshold
-            onDoubleTapped: titleBar.toggleMaximized()
-        }
-        DragHandler {
-            target: null
-            grabPermissions: PointerHandler.CanTakeOverFromAnything
-            onActiveChanged: if (active) root.startSystemMove()
-        }
-
-        function toggleMaximized() {
-            if (maximized)
-                root.showNormal()
-            else
-                root.showMaximized()
-        }
-
-        Widgets.BannerCone {
-            anchors.left: parent.left
-            anchors.leftMargin: VLCStyle.margin_small
-            anchors.verticalCenter: parent.verticalCenter
-            sourceSize.width: VLCStyle.icon_normal
-            sourceSize.height: VLCStyle.icon_normal
-            color: titleTheme.accent
-        }
-
-        Text {
-            anchors.centerIn: parent
-            width: Math.min(implicitWidth, parent.width - 2 * windowButtons.width)
-            text: root.title
-            elide: Text.ElideRight
-            color: titleTheme.fg.secondary
-            font.pixelSize: VLCStyle.fontSize_large
-        }
-
-        component TitleButton: Widgets.CSDWindowButton {
-            property bool isClose: false
-            height: titleBar.height
-            isThemeDark: titleTheme.palette.isDark
-            color: (isClose && hovered) ? "white" : titleTheme.fg.primary
-            hoverColor: isClose ? "red" : titleTheme.fg.primary.alpha(0.12)
-        }
-
-        Row {
-            id: windowButtons
-
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-
-            TitleButton {
-                iconTxt: titleBar.useWinIcons ? "\uE921" : VLCIcons.window_minimize
-                onClicked: root.showMinimized()
-            }
-            TitleButton {
-                iconTxt: titleBar.useWinIcons ? (titleBar.maximized ? "\uE923" : "\uE922")
-                                              : (titleBar.maximized ? VLCIcons.window_restore : VLCIcons.window_maximize)
-                onClicked: titleBar.toggleMaximized()
-            }
-            TitleButton {
-                isClose: true
-                iconTxt: titleBar.useWinIcons ? "\uE8BB" : VLCIcons.window_close
-                onClicked: root.close()
-            }
+                root.closeRequested()
         }
     }
 
     Item {
         id: content
 
-        anchors { top: titleBar.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        anchors.fill: parent
 
         readonly property ColorContext colorContext: ColorContext {
             id: theme
@@ -249,13 +146,15 @@ Window {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: VLCStyle.margin_xsmall
-                anchors.rightMargin: VLCStyle.dp(14, VLCStyle.scale)
+                anchors.rightMargin: VLCStyle.dp(14, VLCStyle.scale) + root.headerRightInset
                 spacing: 0
 
                 T.TextField {
                     id: searchField
 
-                    Layout.preferredWidth: VLCStyle.dp(200, VLCStyle.scale)
+                    // as wide as the sidebar's panel, so the title below
+                    // starts where the page does
+                    Layout.preferredWidth: sidebar.width - 2 * VLCStyle.margin_xsmall
                     Layout.preferredHeight: VLCStyle.dp(34, VLCStyle.scale)
 
                     leftPadding: VLCStyle.dp(42, VLCStyle.scale)
@@ -301,7 +200,7 @@ Window {
 
                 T.Label {
                     Layout.fillWidth: true
-                    Layout.leftMargin: VLCStyle.margin_xlarge
+                    Layout.leftMargin: VLCStyle.margin_xsmall + VLCStyle.margin_large
                     text: root.searching ? qsTr("Search results") : (root.page ? root.page.path : "")
                     color: theme.fg.secondary
                     font.pixelSize: VLCStyle.fontSize_xlarge
@@ -634,8 +533,6 @@ Window {
         }
     }
 
-    // ------------------------------------------------------------------
-
     component SidebarButton: T.AbstractButton {
         id: sidebarButton
 
@@ -756,43 +653,5 @@ Window {
                 }
             }
         }
-    }
-
-    // resize at the edges and corners (no system frame)
-    component ResizeArea: MouseArea {
-        property int edges: 0
-        z: 100
-        enabled: root.visibility !== Window.Maximized
-        cursorShape: {
-            if (edges === (Qt.LeftEdge | Qt.TopEdge) || edges === (Qt.RightEdge | Qt.BottomEdge))
-                return Qt.SizeFDiagCursor
-            if (edges === (Qt.RightEdge | Qt.TopEdge) || edges === (Qt.LeftEdge | Qt.BottomEdge))
-                return Qt.SizeBDiagCursor
-            if (edges & (Qt.LeftEdge | Qt.RightEdge))
-                return Qt.SizeHorCursor
-            return Qt.SizeVerCursor
-        }
-        onPressed: root.startSystemResize(edges)
-    }
-
-    readonly property real _edge: VLCStyle.dp(5, VLCStyle.scale)
-
-    ResizeArea { edges: Qt.LeftEdge; x: 0; y: root._edge; width: root._edge; height: root.height - 2 * root._edge }
-    ResizeArea { edges: Qt.RightEdge; x: root.width - root._edge; y: root._edge; width: root._edge; height: root.height - 2 * root._edge }
-    ResizeArea { edges: Qt.TopEdge; x: root._edge; y: 0; width: root.width - 2 * root._edge; height: root._edge }
-    ResizeArea { edges: Qt.BottomEdge; x: root._edge; y: root.height - root._edge; width: root.width - 2 * root._edge; height: root._edge }
-    ResizeArea { edges: Qt.LeftEdge | Qt.TopEdge; x: 0; y: 0; width: root._edge; height: root._edge }
-    ResizeArea { edges: Qt.RightEdge | Qt.TopEdge; x: root.width - root._edge; y: 0; width: root._edge; height: root._edge }
-    ResizeArea { edges: Qt.LeftEdge | Qt.BottomEdge; x: 0; y: root.height - root._edge; width: root._edge; height: root._edge }
-    ResizeArea { edges: Qt.RightEdge | Qt.BottomEdge; x: root.width - root._edge; y: root.height - root._edge; width: root._edge; height: root._edge }
-
-    // outline instead of the system frame
-    Rectangle {
-        anchors.fill: parent
-        z: 99
-        visible: root.visibility !== Window.Maximized
-        color: "transparent"
-        border.width: VLCStyle.border
-        border.color: titleTheme.border
     }
 }

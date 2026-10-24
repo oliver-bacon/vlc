@@ -651,7 +651,7 @@ qml_modules += {
         'dialogs/dialogs/qml/Dialogs.qml',
         'dialogs/dialogs/qml/ModalDialog.qml',
         'dialogs/dialogs/qml/WindowDialog.qml',
-        'dialogs/settings/qml/AllSettingsWindow.qml',
+        'dialogs/settings/qml/AllSettingsView.qml',
         'dialogs/settings/qml/EqualizerPanel.qml',
         'dialogs/settings/qml/SettingRow.qml',
         'dialogs/settings/qml/SettingsModel.qml',
