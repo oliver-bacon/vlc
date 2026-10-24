@@ -56,6 +56,12 @@ static picture_t *Filter(filter_t *filter, picture_t *src)
     return src;
 }
 
+static void Close(filter_t *filter)
+{
+    if (filter->vctx_out)
+        vlc_video_context_Release(filter->vctx_out);
+}
+
 static int Open(filter_t *filter)
 {
     const video_format_t *src = &filter->fmt_in.video;
@@ -95,9 +101,14 @@ static int Open(filter_t *filter)
                                   (video_orientation_t)
                        transform_Inverse((video_transform_t)dsc->operation));
 
+    /* The pictures go through unchanged, hardware ones included: keep their
+     * video context, the display needs it to render them */
+    if (filter->vctx_in)
+        filter->vctx_out = vlc_video_context_Hold(filter->vctx_in);
+
     static const struct vlc_filter_operations filter_ops =
     {
-        .filter_video = Filter,
+        .filter_video = Filter, .close = Close,
     };
     filter->ops = &filter_ops;
     return VLC_SUCCESS;
