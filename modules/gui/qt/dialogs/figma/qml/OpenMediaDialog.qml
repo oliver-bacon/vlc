@@ -1452,6 +1452,12 @@ Window {
 
         readonly property bool _used: bar.hovered || bar.pressed
 
+        // templates have no size of their own
+        implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                                implicitContentWidth + leftPadding + rightPadding)
+        implicitHeight: Math.max(implicitBackgroundHeight + topInset + bottomInset,
+                                 implicitContentHeight + topPadding + bottomPadding)
+
         policy: T.ScrollBar.AsNeeded
         padding: VLCStyle.dp(2, VLCStyle.scale)
         minimumSize: 0.1
