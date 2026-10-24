@@ -32,6 +32,8 @@ Widgets.PageExt {
 
     title: qsTr("Music")
 
+    hasGridListMode: true
+
     readonly property ColorContext colorContext: ColorContext {
         id: theme
         colorSet: ColorContext.View
@@ -44,6 +46,22 @@ Widgets.PageExt {
         { "title": qsTr("Genres"),  "icon": VLCIcons.genre,       "uri": ["music", "genres"] }
     ]
 
+    // "Add": add a folder to the library
+    readonly property var _entries: [{ "title": qsTr("Add"), "icon": VLCIcons.add, "uri": null }].concat(root._sections)
+
+    function _activate(modelData) {
+        if (modelData.uri) {
+            History.push(modelData.uri)
+        } else {
+            const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
+            if (folder !== "") {
+                // music folders stay out of Videos
+                VLCConfig.setMusicFolder(folder, true)
+                MainCtx.mediaLibrary.addFolder(folder)
+            }
+        }
+    }
+
     Item {
         id: content
 
@@ -51,7 +69,7 @@ Widgets.PageExt {
         focus: true
 
         function setCurrentItemFocus(reason) {
-            listView.forceActiveFocus(reason)
+            (MainCtx.gridView ? gridView : listView).forceActiveFocus(reason)
         }
 
         ColumnLayout {
@@ -67,65 +85,100 @@ Widgets.PageExt {
                 font.pixelSize: VLCStyle.fontSize_normal
             }
 
+            GridView {
+                id: gridView
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                visible: MainCtx.gridView
+                clip: true
+                focus: MainCtx.gridView
+                boundsBehavior: Flickable.StopAtBounds
+                model: root._entries
+
+                readonly property int _columns: Math.max(1, Math.floor(width / (VLCStyle.gridCover_video_width + VLCStyle.margin_normal)))
+                cellWidth: Math.floor(width / _columns)
+                cellHeight: VLCStyle.gridCover_video_height + VLCStyle.dp(56, VLCStyle.scale)
+
+                delegate: Entry {
+                    width: GridView.view.cellWidth
+                    height: GridView.view.cellHeight
+                    grid: true
+                }
+            }
+
             ListView {
                 id: listView
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                visible: !MainCtx.gridView
                 clip: true
-                focus: true
+                focus: !MainCtx.gridView
                 boundsBehavior: Flickable.StopAtBounds
+                model: root._entries
 
-                // "Add": add a folder to the library
-                model: [{ "title": qsTr("Add"), "icon": VLCIcons.add, "uri": null }].concat(root._sections)
-
-                delegate: T.ItemDelegate {
-                    id: row
-
-                    required property var modelData
-
+                delegate: Entry {
                     width: ListView.view.width
                     height: VLCStyle.dp(48, VLCStyle.scale)
-                    leftPadding: VLCStyle.margin_xsmall
-
-                    Accessible.name: modelData.title
-
-                    background: Rectangle {
-                        radius: VLCStyle.dp(4, VLCStyle.scale)
-                        color: row.hovered || row.activeFocus ? theme.bg.secondary : "transparent"
-                    }
-
-                    contentItem: RowLayout {
-                        spacing: VLCStyle.margin_small
-
-                        Widgets.IconLabel {
-                            Layout.preferredWidth: VLCStyle.icon_normal
-                            text: row.modelData.icon
-                            color: theme.fg.secondary
-                            font.pixelSize: VLCStyle.icon_normal
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: row.modelData.title
-                            color: theme.fg.primary
-                            font.pixelSize: VLCStyle.fontSize_normal
-                        }
-                    }
-
-                    onClicked: {
-                        if (modelData.uri) {
-                            History.push(modelData.uri)
-                        } else {
-                            const folder = VLCConfig.browseFolder(qsTr("Add a Folder to the Library"))
-                            if (folder !== "") {
-                                // music folders stay out of Videos
-                                VLCConfig.setMusicFolder(folder, true)
-                                MainCtx.mediaLibrary.addFolder(folder)
-                            }
-                        }
-                    }
                 }
             }
         }
+    }
+
+    // a section: a row in the list, a tile in the grid (like Videos)
+    component Entry: T.ItemDelegate {
+        id: entry
+
+        required property var modelData
+        property bool grid: false
+
+        padding: grid ? VLCStyle.margin_xxsmall : 0
+        leftPadding: grid ? VLCStyle.margin_xxsmall : VLCStyle.margin_xsmall
+
+        Accessible.name: modelData.title
+
+        background: Rectangle {
+            radius: VLCStyle.dp(4, VLCStyle.scale)
+            color: entry.hovered || entry.activeFocus ? theme.bg.secondary : "transparent"
+        }
+
+        contentItem: GridLayout {
+            columns: entry.grid ? 1 : 2
+            columnSpacing: VLCStyle.margin_small
+            rowSpacing: VLCStyle.margin_xxsmall
+
+            Item {
+                Layout.preferredWidth: entry.grid ? VLCStyle.gridCover_video_width : VLCStyle.icon_normal
+                Layout.preferredHeight: entry.grid ? VLCStyle.gridCover_video_height : VLCStyle.icon_normal
+                Layout.alignment: Qt.AlignHCenter
+
+                Rectangle {
+                    anchors.fill: parent
+                    visible: entry.grid
+                    radius: VLCStyle.dp(4, VLCStyle.scale)
+                    color: theme.bg.secondary
+                }
+                Widgets.IconLabel {
+                    anchors.centerIn: parent
+                    text: entry.modelData.icon
+                    color: theme.fg.secondary
+                    font.pixelSize: entry.grid ? VLCStyle.icon_large : VLCStyle.icon_normal
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                Layout.preferredWidth: entry.grid ? VLCStyle.gridCover_video_width : -1
+                Layout.alignment: entry.grid ? Qt.AlignHCenter : Qt.AlignVCenter
+                text: entry.modelData.title
+                elide: Text.ElideRight
+                maximumLineCount: 1
+                color: theme.fg.primary
+                font.pixelSize: VLCStyle.fontSize_normal
+            }
+        }
+
+        onClicked: root._activate(modelData)
     }
 }
