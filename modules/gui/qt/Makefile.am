@@ -136,6 +136,7 @@ libqt_plugin_la_SOURCES = \
 	dialogs/open/open.cpp dialogs/open/open.hpp \
 	dialogs/open/open_panels.cpp dialogs/open/open_panels.hpp \
 	dialogs/open/openurl.cpp dialogs/open/openurl.hpp \
+	dialogs/open/openmedia.cpp dialogs/open/openmedia.hpp \
 	dialogs/plugins/plugins.cpp dialogs/plugins/plugins.hpp \
 	dialogs/podcast/podcast_configuration.cpp \
 	dialogs/podcast/podcast_configuration.hpp \
@@ -452,6 +453,7 @@ nodist_libqt_plugin_la_SOURCES = \
 	dialogs/open/open.moc.cpp \
 	dialogs/open/open_panels.moc.cpp \
 	dialogs/open/openurl.moc.cpp \
+	dialogs/open/openmedia.moc.cpp \
 	dialogs/plugins/plugins.moc.cpp \
 	dialogs/podcast/podcast_configuration.moc.cpp \
 	dialogs/preferences/complete_preferences.moc.cpp \
@@ -1435,6 +1437,7 @@ libqml_module_dialogs_a_QML = \
 	dialogs/settings/qml/SettingsWindow.qml \
 	dialogs/figma/qml/FigmaDialog.qml \
 	dialogs/figma/qml/NetworkStreamDialog.qml \
+	dialogs/figma/qml/OpenMediaDialog.qml \
 	dialogs/figma/qml/ConfirmDialog.qml \
 	dialogs/figma/qml/NewPlaylistDialog.qml \
 	dialogs/figma/qml/PlaylistPropertiesDialog.qml \

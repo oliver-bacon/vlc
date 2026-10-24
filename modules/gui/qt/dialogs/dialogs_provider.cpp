@@ -720,8 +720,23 @@ void DialogsProvider::openFileGenericDialog( intf_dialog_args_t *p_arg )
  * Open Dialog first - Simple Open then
  ****************************************************************************/
 
+/* name of the tab in the redesign's Open Media window */
+static QString openTabName( OpenDialog::OpenTab tab )
+{
+    switch( tab )
+    {
+    case OpenDialog::OPEN_DISC_TAB:    return QStringLiteral( "disc" );
+    case OpenDialog::OPEN_NETWORK_TAB: return QStringLiteral( "network" );
+    case OpenDialog::OPEN_CAPTURE_TAB: return QStringLiteral( "capture" );
+    default:                           return QStringLiteral( "file" );
+    }
+}
+
 void DialogsProvider::openDialog( OpenDialog::OpenTab i_tab )
 {
+    if( figmaDialog( QStringLiteral( "openMedia" ),
+                     QVariantMap { { "tab", openTabName( i_tab ) }, { "enqueue", false } } ) )
+        return;
     ensureDialog(m_openDialog);
     m_openDialog->showTab( i_tab, OpenDialog::OPEN_AND_PLAY );
 }
@@ -750,6 +765,9 @@ void DialogsProvider::openCaptureDialog()
 /* Same as the open one, but force the enqueue */
 void DialogsProvider::PLAppendDialog( OpenDialog::OpenTab tab )
 {
+    if( figmaDialog( QStringLiteral( "openMedia" ),
+                     QVariantMap { { "tab", openTabName( tab ) }, { "enqueue", true } } ) )
+        return;
     ensureDialog(m_openDialog);
     m_openDialog->showTab( tab, OpenDialog::OPEN_AND_ENQUEUE );
 }

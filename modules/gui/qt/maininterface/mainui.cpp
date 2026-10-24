@@ -42,6 +42,7 @@
 
 #include "util/config_bridge.hpp"
 #include "util/opensubtitles.hpp"
+#include "dialogs/open/openmedia.hpp"
 #include "util/effects_bridge.hpp"
 #include "util/csdmenu.hpp"
 #include "util/item_key_event_filter.hpp"
@@ -249,6 +250,7 @@ void MainUI::registerQMLTypes()
         qmlRegisterSingletonInstance<ConfigBridge>(uri, versionMajor, versionMinor, "VLCConfig", new ConfigBridge(m_mainCtx->getIntf(), this));
         qmlRegisterSingletonInstance<EffectsBridge>(uri, versionMajor, versionMinor, "VLCEffects", new EffectsBridge(m_mainCtx->getIntf(), this));
         qmlRegisterSingletonInstance<OpenSubtitles>(uri, versionMajor, versionMinor, "VLCOpenSubtitles", new OpenSubtitles(m_mainCtx->getIntf(), this));
+        qmlRegisterSingletonInstance<OpenMediaHelper>(uri, versionMajor, versionMinor, "VLCOpenMedia", new OpenMediaHelper(m_mainCtx->getIntf(), this));
         qmlRegisterType<VideoSurface>(uri, versionMajor, versionMinor, "VideoSurface");
         qmlRegisterUncreatableType<BaseModel>( uri, versionMajor, versionMinor, "BaseModel", "Base Model is uncreatable." );
         qmlRegisterUncreatableType<VLCVarChoiceModel>(uri, versionMajor, versionMinor, "VLCVarChoiceModel", "generic variable with choice model" );

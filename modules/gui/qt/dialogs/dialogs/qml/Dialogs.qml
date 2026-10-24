@@ -624,6 +624,7 @@ Item {
     // dialogs of the Figma redesign, created on first use
     readonly property var _figmaDialogs: ({
         "network": "NetworkStreamDialog.qml",
+        "openMedia": "OpenMediaDialog.qml",
         "newPlaylist": "NewPlaylistDialog.qml",
         "playlistProperties": "PlaylistPropertiesDialog.qml",
         "shortcuts": "KeyboardShortcutsDialog.qml",
