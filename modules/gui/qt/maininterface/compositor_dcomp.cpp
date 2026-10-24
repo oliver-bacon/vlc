@@ -31,6 +31,7 @@
 #endif
 
 #include <QtGui/qpa/qplatformnativeinterface.h>
+#include <QThread>
 
 #if __has_include(<d3d11_1.h>)
 #define QRhiD3D11_ACTIVE
@@ -176,6 +177,14 @@ bool CompositorDirectComposition::init()
         msg_Warn(m_intf, "Can not create DCompositionDevice. CompositorDirectComposition will not work.");
         return false;
     }
+
+    // Qt queues up to 2 interface frames by default, so a frame shows up to
+    // 2 refreshes after it is presented, while the video visual moves on the
+    // next refresh. With 1, the interface and the video move together (e.g.
+    // the video stays in its frame while the PiP player is dragged). Read by
+    // Qt when the RHI is created, which happens later:
+    if (!qEnvironmentVariableIsSet("QT_D3D_MAX_FRAME_LATENCY"))
+        qputenv("QT_D3D_MAX_FRAME_LATENCY", "1");
 
     return true;
 }
@@ -525,6 +534,16 @@ bool CompositorDirectComposition::eventFilter(QObject *watched, QEvent *event)
 void CompositorDirectComposition::commitSurface()
 {
     assert(m_dcompDevice);
+
+    // Surface updates come from the render thread just before the interface
+    // frame is presented (`QQuickWindow::afterRendering`). Qt commits the
+    // DirectComposition device right after presenting, so the video visual
+    // moves with that frame. Committing here would move it before the frame
+    // is presented and the video would slip out of its place in the
+    // interface while it moves.
+    if (QThread::currentThread() != thread())
+        return;
+
     m_dcompDevice->Commit();
 }
 
