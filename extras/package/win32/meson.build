@@ -7,6 +7,7 @@ install_data('../../../README.md', rename : 'README.txt',  install_dir : '.')
 install_data('../../../THANKS',    rename : 'THANKS.txt',  install_dir : '.')
 
 install_data('../../../share/icons/vlc.ico',  install_dir : '.')
+install_data('../../../share/icons/vlc.ico',  install_dir : '.', rename : 'vlc-gold.ico')
 
 have_win64 = host_machine.cpu_family() == 'x86_64' or host_machine.cpu_family() == 'aarch64' or host_machine.cpu() == 'arm64'
 if have_win64
