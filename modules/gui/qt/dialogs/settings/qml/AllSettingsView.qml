@@ -214,7 +214,7 @@ Item {
             id: sidebar
 
             anchors { top: header.bottom; left: parent.left; bottom: parent.bottom }
-            width: VLCStyle.dp(236, VLCStyle.scale)
+            width: VLCStyle.dp(216, VLCStyle.scale)
             color: theme.bg.primary
 
             Rectangle {
@@ -238,7 +238,7 @@ Item {
                         // keep the list clear of the scroll bar
                         width: parent.width - (sidebarScrollBar._shown
                                                ? VLCStyle.scrollBarInteractingSize + VLCStyle.margin_xsmall : 0)
-                        spacing: VLCStyle.dp(2, VLCStyle.scale)
+                        spacing: VLCStyle.margin_xsmall
 
                         Repeater {
                             model: root.tree
@@ -351,7 +351,7 @@ Item {
 
                                         anchors { left: parent.left; right: parent.right; top: parent.top }
                                         anchors.margins: VLCStyle.dp(4, VLCStyle.scale)
-                                        spacing: VLCStyle.dp(2, VLCStyle.scale)
+                                        spacing: VLCStyle.margin_xsmall
 
                                 Repeater {
                                     model: category.isOpen ? category.modelData.subcats : []
@@ -362,7 +362,7 @@ Item {
                                         required property var modelData
 
                                         Layout.fillWidth: true
-                                        implicitHeight: VLCStyle.dp(34, VLCStyle.scale)
+                                        implicitHeight: VLCStyle.dp(40, VLCStyle.scale)
 
                                         text: modelData.name
                                         selected: !root.searching && root.currentSubcat === modelData.subcat
@@ -375,7 +375,7 @@ Item {
                                             verticalAlignment: Text.AlignVCenter
                                             text: pageButton.text
                                             elide: Text.ElideRight
-                                            font.pixelSize: VLCStyle.fontSize_normal
+                                            font.pixelSize: VLCStyle.fontSize_large
                                             color: pageButton.selected ? theme.fg.primary : theme.fg.secondary
                                         }
                                     }
@@ -419,7 +419,7 @@ Item {
                     text: root.page ? root.page.help : ""
                     wrapMode: Text.Wrap
                     color: Qt.alpha(theme.fg.secondary, 0.7)
-                    font.pixelSize: VLCStyle.fontSize_normal
+                    font.pixelSize: VLCStyle.fontSize_large
                 }
 
                 Repeater {
@@ -612,13 +612,8 @@ Item {
             anchors.rightMargin: VLCStyle.margin_normal
             spacing: 0
 
-            T.Label {
-                Layout.fillWidth: true
+            SectionTitle {
                 text: card.settings.title ?? ""
-                elide: Text.ElideRight
-                color: theme.fg.primary
-                font.pixelSize: VLCStyle.fontSize_large
-                font.weight: Font.DemiBold
             }
 
             T.Label {
@@ -630,7 +625,7 @@ Item {
                 onLinkActivated: (link) => Qt.openUrlExternally(link)
                 wrapMode: Text.Wrap
                 color: Qt.alpha(theme.fg.secondary, 0.7)
-                font.pixelSize: VLCStyle.fontSize_normal
+                font.pixelSize: VLCStyle.fontSize_large
             }
 
             T.Label {
@@ -638,7 +633,7 @@ Item {
                 visible: card.sections.length === 0
                 text: qsTr("This module has no settings.")
                 color: Qt.alpha(theme.fg.secondary, 0.7)
-                font.pixelSize: VLCStyle.fontSize_normal
+                font.pixelSize: VLCStyle.fontSize_large
             }
 
             Repeater {
