@@ -44,8 +44,9 @@ Window {
     // page scrolls then)
     readonly property real _fitWidth: VLCStyle.dp(900, VLCStyle.scale)
     readonly property real _contentHeight: titleBar.height
-            + Math.max(sidebarColumn.implicitHeight + moreOptionsRow.implicitHeight + 6 * VLCStyle.margin_xsmall,
+            + Math.max(sidebarColumn.implicitHeight + 2 * VLCStyle.margin_xsmall,
                        pageColumn.implicitHeight + 2 * root._pageMargin + footer.height)
+            + morePanel.height
     readonly property real _fitHeight: Screen.desktopAvailableHeight > 0
             ? Math.min(_contentHeight, Screen.desktopAvailableHeight - VLCStyle.dp(40, VLCStyle.scale))
             : _contentHeight
@@ -628,7 +629,7 @@ Window {
     Rectangle {
         id: sidebar
 
-        anchors { top: titleBar.bottom; left: parent.left; bottom: parent.bottom }
+        anchors { top: titleBar.bottom; left: parent.left; bottom: morePanel.top }
         width: VLCStyle.dp(236, VLCStyle.scale)
         color: theme.bg.primary
 
@@ -705,32 +706,6 @@ Window {
                             }
                         }
                     }
-                }
-            }
-
-            // "Show more options": adds its rows below the page
-            RowLayout {
-                id: moreOptionsRow
-
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom
-                          margins: VLCStyle.dp(6, VLCStyle.scale); leftMargin: VLCStyle.dp(12, VLCStyle.scale) }
-                spacing: VLCStyle.margin_small
-
-                T.Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Show more options")
-                    elide: Text.ElideRight
-                    color: theme.fg.secondary
-                    font.pixelSize: VLCStyle.fontSize_large
-
-                    TapHandler { onTapped: root.moreOptions = !root.moreOptions }
-                }
-
-                Toggle {
-                    checkable: false
-                    checked: root.moreOptions
-                    onClicked: root.moreOptions = !root.moreOptions
-                    Accessible.name: qsTr("Show more options")
                 }
             }
         }
@@ -1286,78 +1261,96 @@ Window {
                     }
                 }
             }
+        }
+    }
 
-            // "Show more options"
-            ColumnLayout {
-                visible: root.moreOptions
-                Layout.fillWidth: true
-                Layout.topMargin: VLCStyle.margin_small
-                spacing: 0
+    // ---- "Show more options": its own section under the window ---------------------
 
-                SectionTitle { text: qsTr("More Options") }
+    Rectangle {
+        id: morePanel
 
-                Row2 {
-                    label: qsTr("Caching")
-                    NumberField { id: cachingField; unit: qsTr("ms") }
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: root.moreOptions ? moreOptionsColumn.implicitHeight + VLCStyle.margin_small + VLCStyle.margin_large : 0
+        visible: root.moreOptions
+        color: theme.bg.primary
+
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; top: parent.top }
+            height: VLCStyle.border
+            color: titleTheme.border
+        }
+
+        ColumnLayout {
+            id: moreOptionsColumn
+
+            x: VLCStyle.margin_large
+            y: VLCStyle.margin_small
+            width: morePanel.width - 2 * VLCStyle.margin_large
+            spacing: 0
+
+            SectionTitle { text: qsTr("More Options") }
+
+            Row2 {
+                label: qsTr("Caching")
+                NumberField { id: cachingField; unit: qsTr("ms") }
+            }
+
+            Row2 {
+                label: qsTr("Start time / Stop time")
+                InputField {
+                    id: startField
+                    implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
+                    horizontalAlignment: TextInput.AlignRight
+                    placeholderText: "00:00:00"
                 }
-
-                Row2 {
-                    label: qsTr("Start time / Stop time")
-                    InputField {
-                        id: startField
-                        implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
-                        horizontalAlignment: TextInput.AlignRight
-                        placeholderText: "00:00:00"
-                    }
-                    T.Label {
-                        text: "–"
-                        color: root._mutedText
-                        font.pixelSize: VLCStyle.fontSize_large
-                    }
-                    InputField {
-                        id: stopField
-                        implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
-                        horizontalAlignment: TextInput.AlignRight
-                        placeholderText: "00:00:00"
-                    }
+                T.Label {
+                    text: "–"
+                    color: root._mutedText
+                    font.pixelSize: VLCStyle.fontSize_large
                 }
-
-                Row2 {
-                    label: qsTr("Play another media synchronously")
-                    Toggle { id: slaveSwitch }
+                InputField {
+                    id: stopField
+                    implicitWidth: VLCStyle.dp(120, VLCStyle.scale)
+                    horizontalAlignment: TextInput.AlignRight
+                    placeholderText: "00:00:00"
                 }
+            }
 
-                Row2 {
-                    label: qsTr("Extra media")
-                    enabled: slaveSwitch.checked
-                    PathField {
-                        id: slaveField
-                        title: qsTr("Select the file")
-                        urls: true
-                    }
+            Row2 {
+                label: qsTr("Play another media synchronously")
+                Toggle { id: slaveSwitch }
+            }
+
+            Row2 {
+                label: qsTr("Extra media")
+                enabled: slaveSwitch.checked
+                PathField {
+                    id: slaveField
+                    title: qsTr("Select the file")
+                    urls: true
                 }
+            }
 
-                Row2 {
-                    label: qsTr("Edit options")
-                    InputField {
-                        id: extraField
-                        implicitWidth: root.controlWidth
-                        placeholderText: ":option=value"
-                    }
+            Row2 {
+                label: qsTr("Edit options")
+                InputField {
+                    id: extraField
+                    implicitWidth: root.controlWidth
+                    placeholderText: ":option=value"
                 }
+            }
 
-                Row2 {
-                    label: qsTr("MRL")
-                    T.Label {
-                        Layout.preferredWidth: root.controlWidth
-                        horizontalAlignment: Text.AlignRight
-                        elide: Text.ElideMiddle
-                        color: root._mutedText
-                        font.pixelSize: VLCStyle.fontSize_normal
-                        text: root.result.mrls.concat(root.result.options).join(" ")
+            Row2 {
+                label: qsTr("MRL")
+                T.Label {
+                    Layout.preferredWidth: root.controlWidth
+                    horizontalAlignment: Text.AlignRight
+                    elide: Text.ElideMiddle
+                    color: root._mutedText
+                    font.pixelSize: VLCStyle.fontSize_normal
+                    text: root.result.mrls.concat(root.result.options).join(" ")
 
-                        ToolTipArea { text: parent.text }
-                    }
+                    ToolTipArea { text: parent.text }
                 }
             }
         }
@@ -1368,7 +1361,7 @@ Window {
     Rectangle {
         id: footer
 
-        anchors { left: sidebar.right; right: parent.right; bottom: parent.bottom }
+        anchors { left: sidebar.right; right: parent.right; bottom: morePanel.top }
         height: VLCStyle.dp(60, VLCStyle.scale)
         color: windowTheme.bg.secondary
 
@@ -1377,6 +1370,23 @@ Window {
             anchors.leftMargin: VLCStyle.margin_large
             anchors.rightMargin: VLCStyle.margin_large
             spacing: VLCStyle.margin_xsmall
+
+            // shows the "More Options" section under the window
+            Toggle {
+                checkable: false
+                checked: root.moreOptions
+                onClicked: root.moreOptions = !root.moreOptions
+                Accessible.name: qsTr("Show more options")
+            }
+
+            T.Label {
+                Layout.leftMargin: VLCStyle.margin_xsmall
+                text: qsTr("Show more options")
+                color: root._text
+                font.pixelSize: VLCStyle.fontSize_large
+
+                TapHandler { onTapped: root.moreOptions = !root.moreOptions }
+            }
 
             Item { Layout.fillWidth: true }
 
