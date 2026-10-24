@@ -36,10 +36,14 @@ All notable changes of VLC Gold. Versions use the tag scheme
 - Mini player: rounded and outlined video, padding, progress bar and card size as in the design
 - Seek bar preview has rounded corners; empty pages and the player placeholder show the cone
 - The queue's "+" button opens files
-- The About text, installer and `vlc.exe` file properties name VLC Gold on its own; the
-  installer's website link goes to this project
+- The About text, installer, AutoPlay and `vlc.exe` file properties name VLC Gold on its
+  own; the installer's website link goes to this project
 
 ### Fixed
+- DVD menus: the bars and the way back to the library could not be brought back; they
+  now show when the pointer is at the top or bottom edge
+- Windows installer: the desktop and start menu shortcuts showed VLC's old cone (Windows
+  kept the icon cached for VLC's path); they now use their own icon file
 - Flip works on Windows with hardware decoding (Direct3D 11); before, it did nothing and
   turned off all other video filters
 - The mini player's video slipped out of its frame while it was dragged

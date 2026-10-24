@@ -44,6 +44,7 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 - Find and download subtitles from [OpenSubtitles](https://www.opensubtitles.com/) for a
   video, a folder or a playlist
 - Favorites, "Continue watching", and a reorganized right-click menu with "Hide UI"
+- DVD menus stay free of the bars; move the pointer to the top or bottom edge to show them
 - New default keys: Record is `R`, Hide UI is `Ctrl+\`
 
 **Library**
