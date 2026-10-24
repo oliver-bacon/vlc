@@ -3,6 +3,52 @@
 All notable changes of VLC Gold. Versions use the tag scheme
 `redesign-vX.Y.Z`, so they cannot clash with VLC's own tags.
 
+## redesign-v0.5.0 (beta)
+
+### Added
+- Subtitles from OpenSubtitles (opensubtitles.com) in the Add Subtitles dialog: for one
+  video pick from the results, for a folder or playlist the best match per video; optional
+  login in Settings › Network. Subtitles are saved next to the video
+- Presets of all playback settings in the settings panel footer (subtitle, audio and video
+  options, filters, flip and rotation, delays)
+- Video tab of the playback settings: Defaults section with Flip, Rotate, Zoom, HDR,
+  Resolution, Aspect Ratio, Crop and Render
+- Playback settings for music files (Playback and Audio tabs)
+- Restore Defaults at the end of each playback settings tab
+- Customize Player: the seek bar is a control that can be dragged like the others, or put
+  in its own row above the player bar
+- All Settings: every VLC option and module, in the style of the settings window, opened
+  with the "All Settings" switch in its header
+- Settings window: the classic simple settings it was missing (interface language, layout,
+  interface scale, Last.fm, history, audio device, start volume, media library folders,
+  file associations, network buffering, …) and Reset all preferences
+- Grid and list view for the Music and Network pages
+- Seeking from the progress bar of the mini player
+
+### Changed
+- Open Media and Media Information windows in the style of the settings window, with all
+  the options of the old dialogs
+- Folders added from Music no longer show up in Videos
+- VLC's menus (More, More Settings) use the redesign's icons
+- Selected tab icons and active player bar buttons are two-tone as in the design
+- Settings panel controls, labels and colours as in the design; effect sliders move in
+  the steps they show, with tick marks
+- Mini player: rounded and outlined video, padding, progress bar and card size as in the design
+- Seek bar preview has rounded corners; empty pages and the player placeholder show the cone
+- The queue's "+" button opens files
+- The About text, installer and `vlc.exe` file properties name VLC Gold on its own; the
+  installer's website link goes to this project
+
+### Fixed
+- Flip works on Windows with hardware decoding (Direct3D 11); before, it did nothing and
+  turned off all other video filters
+- The mini player's video slipped out of its frame while it was dragged
+- Thumbnails that failed once (e.g. a timeout) are tried again; the thumbnailer gets 10 s
+- DVD `.ifo` files no longer show up as empty playlists in the library
+- Read-only files can be deleted from the library, like in File Explorer
+- Crashes on quit (`--play-and-exit`, shared media library)
+- OpenSubtitles: the subtitle language no longer becomes "c" on systems without a locale
+
 ## redesign-v0.3.0 (beta)
 
 ### Changed

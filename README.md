@@ -37,24 +37,37 @@ the Qt interface (`modules/gui/qt`), plus a few small changes elsewhere listed i
 - One-row player bar with a large seek bar, the cone-shaped volume, and buttons for audio,
   subtitles, playback settings and the queue
 - Seek bar with preview thumbnails for videos, a subtitle timeline and a waveform for music
-- Playback settings and the queue open as a panel on the right: speed, sleep timer, video
-  effects, equalizer and audio effects, subtitle delay, look and saved presets
+- Playback settings and the queue open as a panel on the right: speed, sleep timer, flip,
+  rotate, zoom, crop and other video options, video effects, equalizer and audio effects,
+  subtitle delay and look; also for music
+- Presets that save all playback settings at once (filters, delays, flip, subtitle look)
+- Find and download subtitles from [OpenSubtitles](https://www.opensubtitles.com/) for a
+  video, a folder or a playlist
 - Favorites, "Continue watching", and a reorganized right-click menu with "Hide UI"
 - New default keys: Record is `R`, Hide UI is `Ctrl+\`
 
 **Library**
 - Home with Continue Watching, Listen Again and Frequently Visited Folders
-- Videos by folder with clickable paths; Music by songs, albums, artists and genres
+- Videos by folder with clickable paths; Music by songs, albums, artists and genres;
+  folders added from Music stay out of Videos
 - Network streams, podcasts and radio
+- Grid or list view on the library pages
 - A compact library panel inside the player, and a mini player
 
 **Settings**
-- A new settings window with search, built on VLC's own options
+- A new settings window with search, built on VLC's own options, including Reset
+  preferences
+- All Settings: every VLC option and module in the same window, in the same style
 - Settings profiles (Movies, Shows, Music, Work, …) that switch everything at once
 - Customize Player: edit the player bars in place, with new buttons such as Favorite,
-  picture-in-picture, ±15 s and Chapters
+  picture-in-picture, ±15 s and Chapters; the seek bar can be moved too, or put in its own
+  row above the bar
 - Subtitles and audio tracks can be added to a file, folder or playlist and are loaded
   every time
+
+**Windows and dialogs**
+- Open Media and Media Information in the style of the settings window
+- Redesigned icons in VLC's menus, and yes/no questions in the redesign's style
 
 ## Download and install
 
