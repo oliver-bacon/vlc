@@ -351,7 +351,7 @@ Item {
 
                                         anchors { left: parent.left; right: parent.right; top: parent.top }
                                         anchors.margins: VLCStyle.dp(4, VLCStyle.scale)
-                                        spacing: VLCStyle.margin_xsmall
+                                        spacing: VLCStyle.dp(2, VLCStyle.scale)
 
                                 Repeater {
                                     model: category.isOpen ? category.modelData.subcats : []
@@ -362,7 +362,7 @@ Item {
                                         required property var modelData
 
                                         Layout.fillWidth: true
-                                        implicitHeight: VLCStyle.dp(40, VLCStyle.scale)
+                                        implicitHeight: VLCStyle.dp(34, VLCStyle.scale)
 
                                         text: modelData.name
                                         selected: !root.searching && root.currentSubcat === modelData.subcat
@@ -375,7 +375,7 @@ Item {
                                             verticalAlignment: Text.AlignVCenter
                                             text: pageButton.text
                                             elide: Text.ElideRight
-                                            font.pixelSize: VLCStyle.fontSize_large
+                                            font.pixelSize: VLCStyle.fontSize_normal
                                             color: pageButton.selected ? theme.fg.primary : theme.fg.secondary
                                         }
                                     }
