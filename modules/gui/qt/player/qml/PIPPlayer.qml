@@ -41,6 +41,7 @@ T.Control {
     readonly property color trackColor: dark ? "#090909" : "#D5D5D5"
     readonly property bool cardHovered: hoverHandler.hovered || playButton.hovered || closeButton.hovered
                                     || fullscreenButton.hovered || prevButton.hovered || nextButton.hovered
+                                    || seekArea.containsMouse || seekArea.pressed
 
     objectName: "pip window"
 
@@ -309,6 +310,9 @@ T.Control {
 
             readonly property real inset: VLCStyle.dp(2, VLCStyle.scale)
             readonly property real fillWidth: width - 2 * inset
+            // follows the pointer while seeking, so the fill does not jump
+            // back until the player reports the new position
+            readonly property real shownPosition: seekArea.pressed ? seekArea.position : Player.position
 
             Layout.fillWidth: true
             Layout.preferredHeight: VLCStyle.dp(16, VLCStyle.scale)
@@ -321,19 +325,40 @@ T.Control {
             Rectangle {
                 x: progressTrack.inset
                 y: progressTrack.inset
-                width: Math.max(2 * radius, progressTrack.fillWidth * Player.position)
+                width: Math.max(2 * radius, progressTrack.fillWidth * progressTrack.shownPosition)
                 height: parent.height - 2 * progressTrack.inset
                 radius: VLCStyle.dp(4, VLCStyle.scale)
                 color: root.dark ? VLCStyle.palette.accentBrightDark : VLCStyle.palette.accentBrightLight
             }
             Rectangle {
                 visible: root.cardHovered
-                x: progressTrack.inset + Math.max(0, progressTrack.fillWidth * Player.position - width)
+                x: progressTrack.inset + Math.max(0, progressTrack.fillWidth * progressTrack.shownPosition - width)
                 y: progressTrack.inset
                 width: VLCStyle.dp(8, VLCStyle.scale)
                 height: parent.height - 2 * progressTrack.inset
                 radius: VLCStyle.dp(4, VLCStyle.scale)
                 color: VLCStyle.palette.orange500
+            }
+
+            // click or drag to seek; above the card's drag / tap handlers
+            MouseArea {
+                id: seekArea
+
+                property real position: 0
+
+                anchors.fill: parent
+                enabled: Player.seekable
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                preventStealing: true
+
+                function seek(mouseX) {
+                    position = Helpers.clamp((mouseX - progressTrack.inset) / progressTrack.fillWidth, 0, 1)
+                    Player.position = position
+                }
+
+                onPressed: (mouse) => seek(mouse.x)
+                onPositionChanged: (mouse) => { if (pressed) seek(mouse.x) }
             }
         }
 
