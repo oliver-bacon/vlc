@@ -45,8 +45,8 @@ Window {
     readonly property real _fitWidth: VLCStyle.dp(900, VLCStyle.scale)
     readonly property real _contentHeight: titleBar.height
             + Math.max(sidebarColumn.implicitHeight + 2 * VLCStyle.margin_xsmall,
-                       pageColumn.implicitHeight + 2 * root._pageMargin + footer.height)
-            + morePanel.height
+                       pageColumn.implicitHeight + 2 * root._pageMargin)
+            + footer.height + morePanel.height
     readonly property real _fitHeight: Screen.desktopAvailableHeight > 0
             ? Math.min(_contentHeight, Screen.desktopAvailableHeight - VLCStyle.dp(40, VLCStyle.scale))
             : _contentHeight
@@ -629,7 +629,7 @@ Window {
     Rectangle {
         id: sidebar
 
-        anchors { top: titleBar.bottom; left: parent.left; bottom: morePanel.top }
+        anchors { top: titleBar.bottom; left: parent.left; bottom: footer.top }
         width: VLCStyle.dp(236, VLCStyle.scale)
         color: theme.bg.primary
 
@@ -721,7 +721,7 @@ Window {
         interactive: contentHeight > height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        T.ScrollBar.vertical: Widgets.ScrollBarExt { visible: pane.interactive }
+        T.ScrollBar.vertical: ScrollBar { visible: pane.interactive }
 
         ColumnLayout {
             id: pageColumn
@@ -1198,7 +1198,7 @@ Window {
                             clip: true
                             contentHeight: advancedColumn.implicitHeight
                             boundsBehavior: Flickable.StopAtBounds
-                            T.ScrollBar.vertical: Widgets.ScrollBarExt { }
+                            T.ScrollBar.vertical: ScrollBar { }
 
                             ColumnLayout {
                                 id: advancedColumn
@@ -1361,7 +1361,7 @@ Window {
     Rectangle {
         id: footer
 
-        anchors { left: sidebar.right; right: parent.right; bottom: morePanel.top }
+        anchors { left: parent.left; right: parent.right; bottom: morePanel.top }
         height: VLCStyle.dp(60, VLCStyle.scale)
         color: windowTheme.bg.secondary
 
@@ -1445,6 +1445,33 @@ Window {
     }
 
     // ---- components (as SettingRow.qml) ---------------------------------------------
+
+    // thin scroll bar in the colors of the window, wider while used
+    component ScrollBar: T.ScrollBar {
+        id: bar
+
+        readonly property bool _used: bar.hovered || bar.pressed
+
+        policy: T.ScrollBar.AsNeeded
+        padding: VLCStyle.dp(2, VLCStyle.scale)
+        minimumSize: 0.1
+
+        background: Rectangle {
+            radius: width / 2
+            visible: bar._used && bar.size < 1.0
+            color: root._surface
+        }
+        contentItem: Rectangle {
+            implicitWidth: bar._used ? VLCStyle.scrollBarInteractingSize : VLCStyle.scrollBarNonInteractingSize
+            radius: width / 2
+            visible: bar.size < 1.0
+            color: Qt.alpha(theme.fg.secondary, bar._used ? 0.8 : 0.5)
+
+            Behavior on implicitWidth {
+                NumberAnimation { duration: VLCStyle.duration_veryShort; easing.type: Easing.OutSine }
+            }
+        }
+    }
 
     component Page: ColumnLayout {
         spacing: 0
